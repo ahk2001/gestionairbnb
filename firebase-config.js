@@ -8,7 +8,7 @@
 // Mais detalhes no arquivo CONFIGURAR_FIREBASE.md
 
 window.AIRBNB_FIREBASE_CONFIG = window.AIRBNB_FIREBASE_CONFIG || {
-  apiKey: "AIzaSyDAM3AX2xjrkprBf553MNgbb1mqvcSPdjo",
+  apiKey: "AIzaSyDAM3AX2xJrkprBf553MNgbb1mqvcSPDjo",
   authDomain: "airbnbcontrolvalencia.firebaseapp.com",
   projectId: "airbnbcontrolvalencia",
   storageBucket: "airbnbcontrolvalencia.firebasestorage.app",
