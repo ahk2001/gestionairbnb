@@ -14,10 +14,12 @@
   let currentUserState = null;
   let lastAuthError = null;
 
+  let cachedModules = null;
+
   // Carregamento dinâmico dos módulos do Firebase SDK
   async function loadFirebaseModules() {
-    if (firebaseApp && firebaseAuth && firestoreDb) {
-      return { firebaseApp, firebaseAuth, firestoreDb };
+    if (cachedModules) {
+      return cachedModules;
     }
 
     try {
@@ -50,7 +52,7 @@
         firestoreDb = firestoreMod.getFirestore ? firestoreMod.getFirestore(firebaseApp) : null;
       }
 
-      return {
+      cachedModules = {
         appMod,
         authMod,
         firestoreMod,
@@ -58,6 +60,8 @@
         firebaseAuth,
         firestoreDb
       };
+
+      return cachedModules;
     } catch (err) {
       console.error('[AirbnbAuth] Falha ao carregar Firebase SDK da CDN:', err);
       throw err;
