@@ -1,0 +1,167 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================================================
+    // Funções de Autorização & Segurança no Servidor
+    // ========================================================================
+
+    // Administrador raiz pré-autorizado para bootstrap seguro
+    function isRootOwner() {
+      return request.auth != null &&
+             request.auth.token.email != null &&
+             (request.auth.token.email.lower() == 'gestionairbnb2026@gmail.com' ||
+              request.auth.token.email.lower() == 'gestao.airbnb.portugal@gmail.com');
+    }
+
+    // Usuário autenticado pelo Google com e-mail verificado
+    function isAuthenticated() {
+      return request.auth != null &&
+             request.auth.token.email != null &&
+             request.auth.token.email_verified == true;
+    }
+
+    // Busca o documento de acesso na allowlist
+    function getUserAccess() {
+      return get(/databases/$(database)/documents/access/$(request.auth.token.email.lower())).data;
+    }
+
+    // Verifica se possui registro ativo na allowlist
+    function hasActiveAccess() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/access/$(request.auth.token.email.lower())) &&
+             getUserAccess().active == true;
+    }
+
+    // Perfil de Proprietário / Gestor
+    function isOwner() {
+      return isAuthenticated() && (
+        isRootOwner() ||
+        (hasActiveAccess() && getUserAccess().role == 'owner')
+      );
+    }
+
+    // Perfil de Colaboradora da Equipe
+    function isStaff() {
+      return isAuthenticated() &&
+             hasActiveAccess() &&
+             getUserAccess().role == 'staff';
+    }
+
+    // Qualquer usuário autorizado no sistema (Dono ou Equipe ativa)
+    function isAuthorizedUser() {
+      return isOwner() || isStaff();
+    }
+
+    // ========================================================================
+    // 1. Controle de Acesso (Allowlist de E-mails)
+    // ========================================================================
+    match /access/{email} {
+      // Usuário pode ler seu próprio documento para saber seu perfil; Dono pode listar todos
+      allow get: if isAuthenticated() && (request.auth.token.email.lower() == email.lower() || isOwner());
+      allow list: if isOwner();
+
+      // Bootstrap: o root owner pode criar seu próprio registro caso não exista
+      allow create: if isOwner() || (isRootOwner() && request.auth.token.email.lower() == email.lower());
+
+      // Apenas o proprietário pode alterar papéis ou revogar acessos
+      allow update, delete: if isOwner();
+    }
+
+    // ========================================================================
+    // 2. Configurações Globais & Perfil do Gestor
+    // ========================================================================
+    match /settings/{docId} {
+      allow read: if isAuthorizedUser();
+      allow write: if isOwner();
+    }
+
+    // ========================================================================
+    // 3. Imóveis (JB, VN, HN)
+    // ========================================================================
+    match /properties/{propId} {
+      allow read: if isAuthorizedUser();
+      allow write: if isOwner();
+    }
+
+    // ========================================================================
+    // 4. Estoque & Catálogo de Produtos
+    // ========================================================================
+    match /products/{productId} {
+      allow read: if isAuthorizedUser();
+      allow create, update: if isAuthorizedUser();
+      allow delete: if isOwner();
+    }
+
+    // ========================================================================
+    // 5. Lixeira de Produtos (Até 30 dias)
+    // ========================================================================
+    match /trashProducts/{trashId} {
+      allow read: if isAuthorizedUser();
+      allow create, update: if isAuthorizedUser();
+      allow delete: if isOwner();
+    }
+
+    // ========================================================================
+    // 6. Cadastro de Membros da Equipe
+    // ========================================================================
+    match /staff/{staffId} {
+      allow read: if isAuthorizedUser();
+      allow create, delete: if isOwner();
+      // Colaboradora pode atualizar seu próprio perfil (nome/foto); Dono pode editar todos
+      allow update: if isOwner() || (
+        isStaff() &&
+        resource.data.email != null &&
+        resource.data.email == request.auth.token.email.lower()
+      );
+    }
+
+    // ========================================================================
+    // 7. Mural de Recados & Avisos
+    // ========================================================================
+    match /notes/{noteId} {
+      allow read: if isAuthorizedUser();
+      allow create, update, delete: if isAuthorizedUser();
+    }
+
+    // ========================================================================
+    // 8. Escalas & Calendário de Limpeza
+    // ========================================================================
+    match /calendar/{eventId} {
+      allow read: if isAuthorizedUser();
+      allow create, update: if isAuthorizedUser();
+      allow delete: if isOwner();
+    }
+
+    // ========================================================================
+    // 9. Compras & Comprovantes Fiscais
+    // ========================================================================
+    match /purchases/{purchaseId} {
+      allow read: if isAuthorizedUser();
+      allow create, update: if isAuthorizedUser();
+      // Integridade financeira: apenas o proprietário pode apagar comprovantes de compra
+      allow delete: if isOwner();
+    }
+
+    // ========================================================================
+    // 10. Registros de Horas Trabalhadas (Timesheets)
+    // ========================================================================
+    match /timesheets/{timesheetId} {
+      allow read: if isAuthorizedUser();
+      allow create: if isAuthorizedUser();
+      // Colaboradora só edita o próprio registro; Dono pode editar qualquer um
+      allow update: if isOwner() || (
+        isStaff() &&
+        resource.data.staffEmail != null &&
+        resource.data.staffEmail == request.auth.token.email.lower()
+      );
+      // Integridade de folha de pagamento: apenas o proprietário pode apagar registros
+      allow delete: if isOwner();
+    }
+
+    // Bloqueia qualquer outra rota não explicitamente declarada
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

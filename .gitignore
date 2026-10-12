@@ -1,0 +1,26 @@
+# Arquivos de ambiente e credenciais
+.env
+.env.local
+.env.*.local
+*.local
+
+# Vercel & Firebase
+.vercel
+.firebase
+
+# Dependências e caches Node / Python
+node_modules/
+package-lock.json
+__pycache__/
+*.pyc
+
+# Logs e arquivos temporários
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+desktop.ini

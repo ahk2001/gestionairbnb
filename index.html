@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0D11">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Sistema Mobile-First de Controle de Estoque Operacional Airbnb para JB, VN e HN.">
+  <link rel="manifest" href="manifest.json">
+  <title>Airbnb Control • Gestão JB • VN • HN</title>
+  <script>
+    // Limpeza forçada de caches legados para garantir que o navegador execute a versão mais nova
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (let r of registrations) r.unregister();
+        }).catch(() => {});
+      }
+      if (window.caches) {
+        caches.keys().then(names => {
+          for (let n of names) caches.delete(n);
+        }).catch(() => {});
+      }
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=60">
+</head>
+<body>
+
+  <!-- Wrapper Móvel Principal -->
+  <div id="mobile-wrapper">
+
+    <!-- ====================================================================
+         Portão de Entrada / Boas-Vindas (Splash Gate)
+         ==================================================================== -->
+    <div id="gate-screen">
+      <div class="gate-brand-box">
+        <div class="gate-logo-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div class="gate-location-tag">VALÈNCIA • ESPANHA</div>
+        <h1 class="gate-title">AIRBNB CONTROL</h1>
+        <p class="gate-subtitle">Gestão Operacional de Estoque & Escalas</p>
+        <div class="gate-properties-pills">
+          <span class="gate-prop-pill">JB</span>
+          <span class="gate-prop-pill">VN</span>
+          <span class="gate-prop-pill">HN</span>
+        </div>
+      </div>
+
+      <!-- CARD DE LOGIN UNIFICADO COM O GOOGLE -->
+      <div id="gate-card-auth" class="gate-auth-card">
+        <div id="gate-auth-idle">
+          <div class="gate-auth-security-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>Autenticação Oficial Google</span>
+          </div>
+          <h2 class="gate-auth-title">Acesso Seguro</h2>
+          <p class="gate-auth-desc">
+            Acesso restrito para proprietários e colaboradoras autorizadas dos 3 apartamentos.
+          </p>
+
+          <button id="btn-google-login-gate" class="google-oauth-btn gate-google-btn" type="button">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.78l7.98-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            <span>Continuar com o Google</span>
+          </button>
+
+          <div id="gate-config-hint" class="gate-config-hint" style="display: none;">
+            <span>ℹ️ Firebase aguardando credenciais em <code>firebase-config.js</code>.</span>
+          </div>
+        </div>
+
+        <!-- ESTADO: CARREGANDO / VALIDANDO -->
+        <div id="gate-auth-loading" style="display: none; text-align: center; padding: 20px 0;">
+          <div class="auth-spinner"></div>
+          <p class="gate-auth-loading-text">Conectando e verificando permissões...</p>
+        </div>
+
+        <!-- ESTADO: ACESSO NEGADO / NÃO AUTORIZADO -->
+        <div id="gate-auth-denied" style="display: none; text-align: center;">
+          <div class="gate-denied-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+          </div>
+          <h3 class="gate-denied-title">Acesso Não Autorizado</h3>
+          <p id="gate-denied-message" class="gate-denied-desc">
+            Sua conta Google não está cadastrada na lista de acesso autorizada.
+          </p>
+          <div id="gate-denied-email-badge" class="gate-denied-email"></div>
+          <button id="btn-gate-try-another" class="gate-btn gate-btn-staff" type="button" style="margin-top: 14px;">
+            <span>Entrar com outra conta Google</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="gate-footer-hint">
+        Autenticação com Google • Proteção de dados no servidor
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         Barra Superior do Aplicativo (Topbar)
+         ==================================================================== -->
+    <header class="app-topbar">
+      <div class="topbar-user" id="topbar-user-btn" title="Alternar Usuário">
+        <div class="user-avatar-badge" id="topbar-avatar">EQ</div>
+        <div class="user-info">
+          <span class="user-greeting">Olá,</span>
+          <span class="user-info-name">
+            <span id="topbar-username">Equipe</span>
+            <span class="user-chevron">▼</span>
+          </span>
+          <span class="user-info-role" id="topbar-role" style="display: none;">Equipe Operacional</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div id="cloud-sync-indicator" class="cloud-sync-badge status-idle" title="Status da Nuvem">
+          <span class="sync-badge-dot"></span>
+          <span class="sync-badge-text">Local</span>
+        </div>
+        <button id="btn-switch-user" class="topbar-btn" type="button">
+          <span>Sair</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         Seletor Fixo dos Imóveis (JB • VN • HN • Todos)
+         ==================================================================== -->
+    <nav class="property-tabs-wrapper" id="property-tabs-wrapper" aria-label="Seleção de Imóvel">
+      <div class="property-tabs" id="property-tabs-container">
+        <button class="property-tab-btn active" data-prop="JB" type="button">
+          <span class="prop-code">JB</span>
+        </button>
+        <button class="property-tab-btn" data-prop="VN" type="button">
+          <span class="prop-code">VN</span>
+        </button>
+        <button class="property-tab-btn" data-prop="HN" type="button">
+          <span class="prop-code">HN</span>
+        </button>
+        <button class="property-tab-btn" data-prop="ALL" type="button">
+          <span class="prop-code">TODOS</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ====================================================================
+         Área de Rolagem Principal de Conteúdo
+         ==================================================================== -->
+    <main class="main-content-scroll" id="main-scroll">
+
+      <!-- ================================================================
+           ABA 1: PRODUTOS (ORGANIZAÇÃO, CADASTRO, EDIÇÃO, EXCLUSÃO E LIXEIRA)
+           ================================================================ -->
+      <section id="view-products" class="tab-view" style="display: none;">
+        <!-- Cabeçalho da Aba Produtos -->
+        <div class="products-tab-header">
+          <div class="products-header-info">
+            <h3 class="products-header-title">Catálogo de Produtos</h3>
+            <p class="products-header-sub">Gerencie dados, cadastro e recuperação de produtos</p>
+          </div>
+          <button type="button" id="btn-open-add-product" class="btn-new-product-action">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Novo Produto</span>
+          </button>
+        </div>
+
+        <!-- Seletor de Sub-Abas: Ativos vs Lixeira (1 mês) -->
+        <div class="products-subtab-bar">
+          <button type="button" class="products-subtab-btn active" data-subtab="active">
+            <span>Produtos Ativos</span>
+            <span class="subtab-badge" id="count-products-active">0</span>
+          </button>
+          <button type="button" class="products-subtab-btn" data-subtab="trash">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+            <span>Lixeira (30 dias)</span>
+            <span class="subtab-badge subtab-badge-trash" id="count-products-trash">0</span>
+          </button>
+        </div>
+
+        <!-- Barra de busca no Catálogo de Produtos -->
+        <div class="search-input-box" style="margin-bottom: 12px;">
+          <span class="search-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+          </span>
+          <input type="text" id="catalog-search-input" class="search-input" placeholder="Buscar no catálogo por nome ou marca...">
+          <button type="button" id="btn-clear-catalog-search" class="clear-search-btn" style="display: none;">✕</button>
+        </div>
+
+        <!-- Container da Sub-Aba Ativos -->
+        <div id="subtab-view-active">
+          <div id="catalog-products-container" class="catalog-cards-list">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Container da Sub-Aba Lixeira -->
+        <div id="subtab-view-trash" style="display: none;">
+          <div class="trash-banner-info">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>Produtos excluídos ficam guardados por <strong>30 dias</strong>. Você pode restaurá-los com 1 clique para voltarem imediatamente aos estoques.</span>
+          </div>
+          <div id="trash-products-container" class="trash-cards-list">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================
+           ABA 2: ESTOQUE COMPLETO (PRODUTOS COM AS FOTOS REAIS)
+           ================================================================ -->
+      <section id="view-inventory" class="tab-view">
+        <!-- Resumo do Imóvel Selecionado (Estilo Card Escuro de Luxo) -->
+        <section class="property-overview-card" id="property-overview-card">
+          <div class="prop-header-row">
+            <div>
+              <div class="prop-kicker">ESTOQUE ATUAL</div>
+              <h2 class="prop-title" id="overview-prop-title">JB</h2>
+              <p class="prop-subtitle" id="overview-prop-subtitle" style="display: none;"></p>
+            </div>
+            <span class="prop-badge-small" id="overview-prop-badge">JB</span>
+          </div>
+
+          <div class="prop-stats-pill-group">
+            <div class="stat-chip stat-red" data-filter-status="falta" role="button" tabindex="0" title="Ver itens em falta">
+              <span class="stat-chip-dot solid-dot"></span>
+              <span class="stat-chip-num" id="stat-count-falta">0</span>
+              <span class="stat-chip-label">Falta</span>
+            </div>
+            <div class="stat-chip stat-yellow" data-filter-status="acabando" role="button" tabindex="0" title="Ver itens acabando">
+              <span class="stat-chip-dot mid-dot"></span>
+              <span class="stat-chip-num" id="stat-count-acabando">0</span>
+              <span class="stat-chip-label">Atenção</span>
+            </div>
+            <div class="stat-chip stat-green" data-filter-status="suficiente" role="button" tabindex="0" title="Ver itens suficientes">
+              <span class="stat-chip-dot ring-dot"></span>
+              <span class="stat-chip-num" id="stat-count-suficiente">0</span>
+              <span class="stat-chip-label">Suficiente</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Banner de Ação Rápida: Registrar Nova Compra (Apenas no Estoque) -->
+        <div class="framer-action-card" id="banner-quick-purchase">
+          <div class="action-card-left">
+            <div class="action-card-icon-bubble">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+            </div>
+            <div class="action-card-texts">
+              <h4 class="action-card-title">Registrar Nova Compra</h4>
+              <p class="action-card-sub">Lançar comprovante e repor estoque</p>
+            </div>
+          </div>
+          <button class="action-card-plus-btn" type="button" id="btn-banner-quick-buy" title="Registrar Compra">+</button>
+        </div>
+
+        <!-- Barra Superior do Estoque (Totalizador e Botão Discreto WhatsApp) -->
+        <div class="inventory-top-actions">
+          <div class="inventory-count-badge" id="inventory-count-display">
+            24 produtos
+          </div>
+
+          <!-- Botão Pílula Discreto WhatsApp (Mesmo estilo do badge 24 produtos) -->
+          <button type="button" id="btn-share-whatsapp-shortages" class="inventory-whatsapp-pill" title="Compartilhar lista de falta no WhatsApp" style="display: none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="whatsapp-pill-icon">
+              <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.04 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.11 7.44C8.95 7.44 8.68 7.5 8.46 7.74C8.24 7.97 7.62 8.56 7.62 9.76C7.62 10.96 8.5 12.11 8.62 12.28C8.75 12.44 10.33 14.88 12.76 15.93C13.34 16.18 13.79 16.33 14.14 16.44C14.72 16.63 15.25 16.6 15.67 16.54C16.14 16.47 17.11 15.95 17.31 15.38C17.52 14.81 17.52 14.33 17.45 14.22C17.39 14.12 17.23 14.06 17 13.94C16.76 13.83 15.6 13.25 15.38 13.17C15.17 13.09 15.01 13.05 14.86 13.28C14.7 13.51 14.26 14.03 14.12 14.18C13.99 14.34 13.85 14.36 13.62 14.24C13.38 14.13 12.61 13.88 11.7 13.07C10.99 12.44 10.51 11.66 10.38 11.43C10.24 11.2 10.36 11.08 10.48 10.96C10.59 10.85 10.72 10.67 10.84 10.53C10.96 10.39 11 10.29 11.08 10.13C11.15 9.97 11.11 9.83 11.05 9.71C11 9.59 10.54 8.46 10.35 8C10.16 7.56 9.97 7.62 9.83 7.61C9.7 7.61 9.54 7.61 9.38 7.61L9.11 7.44Z"/>
+            </svg>
+            <span>Lista no WhatsApp</span>
+            <span class="inventory-whatsapp-pill-badge" id="whatsapp-shortage-badge">0</span>
+          </button>
+        </div>
+
+        <!-- Campo de Pesquisa e Filtros de Categoria -->
+        <div class="search-filter-section">
+          <div class="search-input-box">
+            <span class="search-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+            </span>
+            <input type="text" id="inventory-search-input" class="search-input" placeholder="Buscar produto, marca ou categoria...">
+            <button id="btn-clear-search" class="clear-search-btn" style="display: none;" type="button">✕</button>
+          </div>
+
+          <div class="category-pills" id="category-pills">
+            <button class="cat-pill active" data-cat="all" type="button">Todos (24)</button>
+            <button class="cat-pill" data-cat="limpeza" type="button">Limpeza</button>
+            <button class="cat-pill" data-cat="amenities" type="button">Amenities</button>
+            <button class="cat-pill" data-cat="comida" type="button">Alimentos & Bebidas</button>
+          </div>
+        </div>
+
+        <!-- Grade de Produtos com Foto Real, Semáforo e Botões + / - -->
+        <div class="product-grid" id="products-list-container">
+          <!-- Injetado dinamicamente via JS -->
+        </div>
+
+        <!-- Botão de Ação Rápida Flutuante (FAB - Apenas no Estoque) -->
+        <button id="fab-quick-purchase" class="fab-btn" title="Registrar Nova Compra" type="button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </button>
+      </section>
+
+      <!-- ================================================================
+           ABA 3: BLOCO DE NOTAS DINÂMICO
+           ================================================================ -->
+      <section id="view-notes" class="tab-view" style="display: none;">
+        <div class="notes-input-card">
+          <label for="new-note-textarea" class="form-label" style="margin-bottom: 6px;">Deixar Recado para o Imóvel</label>
+          <textarea id="new-note-textarea" placeholder="Ex: Torneira gotejando, hóspede pediu toalhas extras, reposição feita..."></textarea>
+          <div class="notes-btn-row">
+            <button id="btn-post-note" class="btn-post-note" type="button">Publicar Recado</button>
+          </div>
+        </div>
+
+        <div class="notes-list" id="notes-list-container">
+          <!-- Injetado dinamicamente via JS -->
+        </div>
+      </section>
+
+      <!-- ================================================================
+           ABA 4: CALENDÁRIO OPERACIONAL (ESCALAS & LIMPEZAS)
+           ================================================================ -->
+      <section id="view-calendar" class="tab-view" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <h3 style="font-size: 1.10rem; font-weight: 800; letter-spacing: -0.02em;">Escalas e Limpezas</h3>
+            <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;">Cronograma operacional e controle de diárias</p>
+          </div>
+          <button id="btn-open-new-event-modal" class="topbar-btn" style="background: var(--primary-dark); color: white;" type="button">
+            + Agendar
+          </button>
+        </div>
+
+        <!-- Widget Visual do Calendário Mensal -->
+        <div id="calendar-widget-container" class="cal-board-card">
+          <!-- Renderizado dinamicamente via JS -->
+        </div>
+
+        <!-- Barra de Filtro / Status da Data Selecionada -->
+        <div id="calendar-filter-bar" class="cal-filter-bar">
+          <!-- Renderizado dinamicamente via JS -->
+        </div>
+
+        <!-- Lista de Cards de Escalas -->
+        <div class="calendar-events-list" id="calendar-events-container">
+          <!-- Injetado dinamicamente via JS -->
+        </div>
+      </section>
+
+      <!-- ================================================================
+           ABA 5: GESTÃO & FINANCEIRO (PAINEL DO DONO)
+           ================================================================ -->
+      <section id="view-owner" class="tab-view" style="display: none;">
+        <!-- Card de Perfil do Usuário (Foto, Nome e Botão de Editar) -->
+        <div class="owner-section-box user-profile-box" id="user-profile-section">
+          <div class="user-profile-card">
+            <div class="user-profile-left">
+              <div class="user-profile-avatar-wrap" id="user-profile-avatar-trigger" role="button" tabindex="0" title="Toque para alterar foto e nome">
+                <div class="user-profile-avatar-img-box" id="user-profile-avatar-display">
+                  <!-- Foto ou iniciais geradas dinamicamente via JS -->
+                </div>
+                <div class="user-profile-camera-badge">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="user-profile-info-col">
+                <div class="user-profile-name" id="user-profile-name-display">Equipe</div>
+                <div class="user-profile-role-tag" id="user-profile-role-display">Colaboradora</div>
+              </div>
+            </div>
+            <button type="button" class="btn-open-edit-profile" id="btn-open-edit-profile">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span>Editar Perfil</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Controle de Horas Trabalhadas (Equipe registra e edita / Gestor apenas visualiza e exporta) -->
+        <div class="owner-section-box timesheet-section" id="timesheet-section">
+          <div class="owner-section-title">
+            <div class="timesheet-title-wrap">
+              <span id="timesheet-section-title">Minhas Horas</span>
+              <small class="timesheet-section-sub" id="timesheet-section-sub">Registre início, pausa e fim do seu dia</small>
+            </div>
+            <button id="btn-open-timesheet-modal" class="timesheet-add-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Registrar Dia</span>
+            </button>
+          </div>
+          <div class="timesheet-staff-filter" id="timesheet-staff-filter" style="display: none;"></div>
+          <div id="timesheet-list-container">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Resumo Consolidado de Gastos (Exclusivo do Gestor) -->
+        <div class="owner-section-box owner-only-section" id="owner-finance-section">
+          <div class="owner-section-title">
+            <span>Prestação de Contas & Gastos</span>
+            <button id="btn-share-report" class="topbar-btn" type="button" title="Copiar relatório formatado para WhatsApp">
+              Copiar Relatório
+            </button>
+          </div>
+
+          <!-- Filtros de Período de Compras -->
+          <div class="purchase-filter-container">
+            <div class="purchase-filter-scroll" id="purchase-date-filters">
+              <button type="button" class="purchase-pill active" data-date-filter="todos">Todas</button>
+              <button type="button" class="purchase-pill" data-date-filter="hoje">Hoje</button>
+              <button type="button" class="purchase-pill" data-date-filter="ontem">Ontem</button>
+              <button type="button" class="purchase-pill" data-date-filter="semana">Esta Semana</button>
+              <button type="button" class="purchase-pill" data-date-filter="este_mes">Este Mês</button>
+            </div>
+
+            <!-- Seletor de Cada Mês Específico (Sem seletor nativo) -->
+            <div class="purchase-month-picker-row">
+              <span class="purchase-month-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                </svg>
+                Filtrar por mês:
+              </span>
+              <div class="purchase-month-select-wrap">
+                <select id="purchase-month-select" class="form-input custom-luxury-select">
+                  <option value="">Todos os meses...</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Resumo Informativo do Período Filtrado -->
+            <div class="purchase-filter-summary-bar" id="purchase-filter-summary-bar">
+              <span id="purchase-filter-info-text">Exibindo todas as compras</span>
+              <strong id="purchase-filter-sum-val">€ 0,00</strong>
+            </div>
+          </div>
+
+          <div class="financial-summary-grid">
+            <div class="fin-card fin-card-total">
+              <span class="fin-label">Gasto Total Consolidado</span>
+              <div class="fin-val" id="fin-total-consolidado">€ 0,00</div>
+            </div>
+            <div class="fin-card">
+              <span class="fin-label">JB</span>
+              <div class="fin-val" id="fin-total-jb">€ 0,00</div>
+            </div>
+            <div class="fin-card">
+              <span class="fin-label">VN</span>
+              <div class="fin-val" id="fin-total-vn">€ 0,00</div>
+            </div>
+            <div class="fin-card" style="grid-column: span 2;">
+              <span class="fin-label">HN</span>
+              <div class="fin-val" id="fin-total-hn">€ 0,00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gestão da Equipe (Exclusivo do Dono) -->
+        <div class="owner-section-box owner-only-section" id="owner-staff-management-section">
+          <div class="owner-section-title">
+            <span>Colaboradoras</span>
+            <button id="btn-open-new-staff-modal" class="topbar-btn" style="background: var(--primary-dark); color: white;" type="button">
+              + Nova Colaboradora
+            </button>
+          </div>
+          <p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 12px;">
+            Cadastre os e-mails Google das colaboradoras para liberar acesso seguro ao sistema.
+          </p>
+
+          <div id="staff-members-list-container">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Histórico Recente de Compras & Recibos (Exclusivo do Gestor) -->
+        <div class="owner-section-box owner-only-section" id="owner-purchases-section">
+          <div class="owner-section-title">
+            <span>Comprovantes Recentes</span>
+            <span class="owner-section-badge" id="purchases-total-count-badge">0 compras</span>
+          </div>
+
+          <div id="recent-purchases-container" class="purchases-list-container">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ====================================================================
+         Navegação Inferior Fixa Flutuante (Sticky Bottom Dock)
+         ==================================================================== -->
+    <nav class="bottom-nav" aria-label="Navegação Principal">
+      <button class="nav-item" data-tab="products" type="button">
+        <span class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Produtos</span>
+      </button>
+
+      <button class="nav-item active" data-tab="inventory" type="button">
+        <span class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+          </svg>
+        </span>
+        <span class="nav-label">Estoque</span>
+      </button>
+
+      <button class="nav-item" data-tab="notes" type="button">
+        <span class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Recados</span>
+      </button>
+
+      <button class="nav-item" data-tab="calendar" type="button">
+        <span class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+          </svg>
+        </span>
+        <span class="nav-label">Escalas</span>
+      </button>
+
+      <button class="nav-item" data-tab="owner" type="button" id="nav-item-owner">
+        <span class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
+          </svg>
+        </span>
+        <span class="nav-label">Gestão</span>
+      </button>
+    </nav>
+
+  </div><!-- /mobile-wrapper -->
+
+
+
+
+
+  <!-- ====================================================================
+       MODAL 3: BOTTOM SHEET DE REGISTRO DE COMPRAS (MERCADO)
+       ==================================================================== -->
+  <div id="modal-register-purchase" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title">Registrar Compra</h3>
+        <button class="sheet-close-btn" id="btn-close-purchase-modal" type="button">✕</button>
+      </div>
+
+      <form id="purchase-form" class="purchase-form">
+        <!-- Imóvel de Destino da Compra -->
+        <div class="form-group">
+          <label for="purchase-property-select" class="form-label">Apartamento de Destino</label>
+          <select id="purchase-property-select" class="form-input" required>
+            <option value="JB">JB</option>
+            <option value="VN">VN</option>
+            <option value="HN">HN</option>
+          </select>
+        </div>
+
+        <!-- Lista Dinâmica de Produtos Comprados -->
+        <div class="form-group">
+          <div class="purchase-items-header">
+            <label class="form-label" style="margin-bottom: 0;">Produtos Comprados no Cupom</label>
+            <span class="purchase-items-count-badge" id="purchase-items-count-badge">1 item</span>
+          </div>
+          <div id="purchase-items-container" class="purchase-items-container">
+            <!-- Renderizado dinamicamente pelo renderPurchaseItems() -->
+            <div class="purchase-item-card purchase-item-row" data-index="0">
+              <div class="purchase-item-card-header">
+                <span class="purchase-item-tag">Item 1</span>
+              </div>
+              <select id="purchase-product-select" class="form-input purchase-item-product-select" required>
+                <!-- Preenchido via JS com os 24 itens -->
+              </select>
+              <div class="purchase-item-stepper-wrap">
+                <span class="purchase-stepper-label">Qtd Adicionada</span>
+                <div class="purchase-stepper-controls">
+                  <button type="button" class="purchase-stepper-btn btn-step-minus">–</button>
+                  <input type="number" id="purchase-quantity-input" class="purchase-stepper-input purchase-item-qty-input" min="1" step="1" value="2" required>
+                  <button type="button" class="purchase-stepper-btn btn-step-plus">+</button>
+                  <span class="purchase-stepper-unit">un</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="btn-add-purchase-item" class="btn-add-purchase-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>+ Adicionar Outro Produto ao Cupom</span>
+          </button>
+        </div>
+
+        <!-- Grid Total Gasto no Cupom e Data -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="purchase-cost-input" class="form-label" id="purchase-cost-label">Total do Cupom (€)</label>
+            <input type="number" id="purchase-cost-input" class="form-input" min="0.01" step="0.01" placeholder="Ex: 24.50" required>
+          </div>
+
+          <div class="form-group">
+            <label for="purchase-date-input" class="form-label">Data da Compra</label>
+            <input type="date" id="purchase-date-input" class="form-input" required>
+          </div>
+        </div>
+
+        <!-- Quem Comprou -->
+        <div class="form-group">
+          <label for="purchase-buyer-input" class="form-label">Registrado / Comprado por</label>
+          <input type="text" id="purchase-buyer-input" class="form-input" readonly>
+        </div>
+
+        <!-- Foto Opcional do Cupom Fiscal / Recibo -->
+        <div class="form-group">
+          <label class="form-label">Comprovante / Cupom Fiscal (Opcional)</label>
+          <div class="receipt-upload-box" id="receipt-upload-box">
+            <div style="display: flex; justify-content: center; margin-bottom: 4px; color: var(--text-muted);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;">Tirar Foto ou Carregar Cupom</p>
+            <input type="file" id="purchase-receipt-file" accept="image/*" style="display: none;">
+            <img id="purchase-receipt-preview" class="receipt-preview-img" style="display: none;" alt="Preview Recibo">
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="form-group">
+          <label for="purchase-notes-input" class="form-label">Observação (Opcional)</label>
+          <input type="text" id="purchase-notes-input" class="form-input" placeholder="Ex: Mercadona Centro - Caixa 3">
+        </div>
+
+        <button type="submit" class="btn-submit-primary">
+          <span>Salvar Compra e Atualizar Estoque</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL: VISUALIZAR DETALHES DA COMPRA E NOTA FISCAL
+       ==================================================================== -->
+  <div id="modal-view-purchase" class="modal-overlay">
+    <div class="bottom-sheet view-purchase-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="prop-badge-small" id="view-purchase-prop-badge">JB</span>
+          <h3 class="sheet-title" id="view-purchase-title">Detalhes da Compra</h3>
+        </div>
+        <button class="sheet-close-btn" id="btn-close-view-purchase" type="button">✕</button>
+      </div>
+
+      <div class="view-purchase-content">
+        <!-- Hero Card com Valor Total e Informações Principais -->
+        <div class="purchase-detail-hero">
+          <div class="purchase-detail-total-box">
+            <span class="purchase-detail-total-lbl">Total Pago</span>
+            <div class="purchase-detail-total-val" id="view-purchase-total-val">€ 0,00</div>
+          </div>
+          <div class="purchase-detail-info-grid">
+            <div class="detail-info-item">
+              <span class="detail-info-lbl">Data da Compra</span>
+              <span class="detail-info-txt" id="view-purchase-date-txt">-</span>
+            </div>
+            <div class="detail-info-item">
+              <span class="detail-info-lbl">Comprado por</span>
+              <span class="detail-info-txt" id="view-purchase-buyer-txt">-</span>
+            </div>
+            <div class="detail-info-item">
+              <span class="detail-info-lbl">Imóvel de Destino</span>
+              <span class="detail-info-txt" id="view-purchase-property-txt">-</span>
+            </div>
+            <div class="detail-info-item">
+              <span class="detail-info-lbl">Qtd Total Itens</span>
+              <span class="detail-info-txt" id="view-purchase-units-txt">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Produtos Comprados -->
+        <div class="purchase-detail-section">
+          <h4 class="purchase-detail-section-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+            </svg>
+            <span>Produtos no Cupom</span>
+          </h4>
+          <div id="view-purchase-items-list" class="view-purchase-items-list">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="purchase-detail-section" id="view-purchase-notes-sec">
+          <h4 class="purchase-detail-section-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>Observações</span>
+          </h4>
+          <p class="purchase-notes-content" id="view-purchase-notes-txt">-</p>
+        </div>
+
+        <!-- Comprovante / Nota Fiscal -->
+        <div class="purchase-detail-section">
+          <h4 class="purchase-detail-section-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+            <span>Comprovante / Nota Fiscal</span>
+          </h4>
+          <div id="view-purchase-receipt-container">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <button type="button" class="form-submit-btn" id="btn-close-view-purchase-bottom" style="margin-top: 14px;">
+          Fechar Detalhes
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL 4: ZOOM NA FOTO DO PRODUTO OU COMPROVANTE
+       ==================================================================== -->
+  <div id="modal-zoom-photo" class="modal-overlay">
+    <div class="bottom-sheet" style="text-align: center;">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title" id="zoom-title">Foto do Produto</h3>
+        <button class="sheet-close-btn" id="btn-close-zoom-modal" type="button">✕</button>
+      </div>
+
+      <img id="zoom-img-target" class="zoom-modal-img" src="" alt="Foto ampliada">
+      <p id="zoom-description" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px;"></p>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL: NOTA DE PRODUTO ESPECÍFICO (COM BOLINHA LARANJA PULSANTE)
+       ==================================================================== -->
+  <div id="modal-product-note" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="orange-pulse-dot"></span>
+          <h3 class="sheet-title">Nota do Produto</h3>
+        </div>
+        <button class="sheet-close-btn" id="btn-close-product-note-modal" type="button">✕</button>
+      </div>
+
+      <form id="product-note-form" class="purchase-form">
+        <input type="hidden" id="product-note-target-id" value="">
+
+        <!-- Mini Card do Produto Selecionado -->
+        <div class="product-note-target-card">
+          <img id="product-note-target-img" src="" alt="Produto" class="product-note-target-thumb">
+          <div style="flex: 1; min-width: 0;">
+            <h4 id="product-note-target-name" class="product-note-target-title">Nome do Produto</h4>
+            <p id="product-note-target-prop" class="product-note-target-sub">Imóvel: JB</p>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label for="product-note-textarea" class="form-label">Anotação / Observação Operacional</label>
+          <textarea id="product-note-textarea" class="form-input" rows="3" placeholder="Ex: Priorizar compra sem perfume, guardar no armário alto..." required style="resize: none; font-size: 0.86rem; line-height: 1.4;"></textarea>
+        </div>
+
+        <div id="product-note-meta-info" style="display: none; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 12px;">
+          <span id="product-note-meta-text">Registrado por Maria</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 6px;">
+          <button type="submit" class="btn-submit-primary" style="flex: 2;">
+            Salvar Nota
+          </button>
+          <button type="button" id="btn-remove-product-note" class="btn-remove-note" style="display: none;">
+            Remover
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL: ADICIONAR NOVO PRODUTO AO ESTOQUE
+       ==================================================================== -->
+  <div id="modal-add-product" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title">Cadastrar Novo Produto</h3>
+        <button class="sheet-close-btn" id="btn-close-add-product-modal" type="button">✕</button>
+      </div>
+
+      <form id="add-product-form" class="purchase-form">
+        <!-- Nome do Produto -->
+        <div class="form-group">
+          <label for="new-product-name" class="form-label">Nome do Produto</label>
+          <input type="text" id="new-product-name" class="form-input" placeholder="Ex: Papel Toalha Jumbo (2 rolos)" required>
+        </div>
+
+        <!-- Marca e Categoria (Grid) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="new-product-brand" class="form-label">Marca</label>
+            <input type="text" id="new-product-brand" class="form-input" placeholder="Ex: Bosque Verde">
+          </div>
+
+          <div class="form-group">
+            <label for="new-product-category" class="form-label">Categoria</label>
+            <select id="new-product-category" class="form-input" required>
+              <option value="limpeza">Limpeza</option>
+              <option value="amenities">Amenities</option>
+              <option value="comida">Alimentos & Bebidas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Imóvel e Unidade (Grid) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="new-product-property" class="form-label">Cadastrar no Imóvel</label>
+            <select id="new-product-property" class="form-input" required>
+              <option value="CURRENT">Imóvel Atual</option>
+              <option value="ALL">Todos os Imóveis (JB, VN, HN)</option>
+              <option value="JB">Apenas JB</option>
+              <option value="VN">Apenas VN</option>
+              <option value="HN">Apenas HN</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="new-product-unit" class="form-label">Unidade</label>
+            <input type="text" id="new-product-unit" class="form-input" placeholder="Ex: un, pct, frasco...">
+          </div>
+        </div>
+
+        <!-- Quantidade e Status Inicial (Grid) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="new-product-quantity" class="form-label">Qtd Inicial</label>
+            <input type="number" id="new-product-quantity" class="form-input" min="0" step="1" placeholder="Ex: 2">
+          </div>
+
+          <div class="form-group">
+            <label for="new-product-status" class="form-label">Status Inicial</label>
+            <select id="new-product-status" class="form-input" required>
+              <option value="suficiente">Suficiente</option>
+              <option value="acabando">Atenção</option>
+              <option value="falta">Falta</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Regras do Semáforo no Estoque -->
+        <div class="form-group" style="background: rgba(15, 39, 68, 0.035); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px;">
+          <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <span>Regras do Semáforo</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">Quantidades para mudar cor</span>
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="text-align: center;">
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #DC2626; margin-bottom: 4px;">🔴 Falta (até)</span>
+              <input type="number" id="new-product-falta" class="form-input" min="0" placeholder="Ex: 0" style="text-align: center; font-weight: 700;">
+            </div>
+            <div style="text-align: center;">
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #D97706; margin-bottom: 4px;">🟡 Atenção (até)</span>
+              <input type="number" id="new-product-atencao" class="form-input" min="0" placeholder="Ex: 1" style="text-align: center; font-weight: 700;">
+            </div>
+            <div style="text-align: center;">
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #16A34A; margin-bottom: 4px;">🟢 Suficiente (≥)</span>
+              <input type="number" id="new-product-suficiente" class="form-input" min="0" placeholder="Ex: 2" style="text-align: center; font-weight: 700;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto do Produto (Upload ou Câmera) -->
+        <div class="form-group">
+          <label class="form-label">Foto do Produto (Opcional)</label>
+          <div class="receipt-upload-box" id="new-product-photo-box">
+            <div style="display: flex; justify-content: center; margin-bottom: 4px; color: var(--text-muted);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+            </div>
+            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;">Tirar Foto ou Escolher Imagem</p>
+            <input type="file" id="new-product-photo-file" accept="image/*" style="display: none;">
+            <img id="new-product-photo-preview" class="receipt-preview-img" style="display: none;" alt="Preview Foto">
+          </div>
+        </div>
+
+        <!-- Anotação Inicial Opcional -->
+        <div class="form-group">
+          <label for="new-product-note" class="form-label">Nota Operacional Inicial (Opcional)</label>
+          <input type="text" id="new-product-note" class="form-input" placeholder="Ex: Local onde fica guardado, aviso...">
+        </div>
+
+        <button type="submit" class="btn-submit-primary">
+          <span>Cadastrar Produto no Estoque</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: EDITAR INFORMAÇÕES DO PRODUTO (SEM MUDAR QUANTIDADE DO ESTOQUE)
+       ==================================================================== -->
+  <div id="modal-edit-product" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title">Editar Produto</h3>
+        <button class="sheet-close-btn" id="btn-close-edit-product-modal" type="button">✕</button>
+      </div>
+
+      <form id="edit-product-form" class="purchase-form">
+        <input type="hidden" id="edit-product-catalog-id" value="">
+
+        <!-- Nome do Produto -->
+        <div class="form-group">
+          <label for="edit-product-name" class="form-label">Nome do Produto</label>
+          <input type="text" id="edit-product-name" class="form-input" placeholder="Ex: Amaciante Concentrado Violets" required>
+        </div>
+
+        <!-- Marca e Categoria (Grid) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="edit-product-brand" class="form-label">Marca</label>
+            <input type="text" id="edit-product-brand" class="form-input" placeholder="Ex: Bosque Verde">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-product-category" class="form-label">Categoria</label>
+            <select id="edit-product-category" class="form-input" required>
+              <option value="limpeza">Limpeza</option>
+              <option value="amenities">Amenities</option>
+              <option value="comida">Alimentos & Bebidas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Unidade de Medida -->
+        <div class="form-group">
+          <label for="edit-product-unit" class="form-label">Unidade</label>
+          <input type="text" id="edit-product-unit" class="form-input" placeholder="un, frasco, pct, cx..." value="un" required>
+        </div>
+
+        <!-- Regras do Semáforo no Estoque -->
+        <div class="form-group" style="background: rgba(15, 39, 68, 0.035); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px;">
+          <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <span>Regras do Semáforo</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">Quantidades para mudar cor</span>
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="text-align: center;">
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #DC2626; margin-bottom: 4px;">🔴 Falta (até)</span>
+              <input type="number" id="edit-product-falta" class="form-input" min="0" placeholder="Ex: 0" style="text-align: center; font-weight: 700;">
+            </div>
+            <div style="text-align: center;">
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #D97706; margin-bottom: 4px;">🟡 Atenção (até)</span>
+              <input type="number" id="edit-product-atencao" class="form-input" min="0" placeholder="Ex: 1" style="text-align: center; font-weight: 700;">
+            </div>
+            <div style="text-align: center;">
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #16A34A; margin-bottom: 4px;">🟢 Suficiente (≥)</span>
+              <input type="number" id="edit-product-suficiente" class="form-input" min="0" placeholder="Ex: 2" style="text-align: center; font-weight: 700;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto do Produto (Upload ou Câmera) -->
+        <div class="form-group">
+          <label class="form-label">Foto do Produto</label>
+          <div class="receipt-upload-box" id="edit-product-photo-box">
+            <div style="display: flex; justify-content: center; margin-bottom: 4px; color: var(--text-muted);">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+            </div>
+            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;">Alterar Foto do Produto</p>
+            <input type="file" id="edit-product-photo-file" accept="image/*" style="display: none;">
+            <img id="edit-product-photo-preview" class="receipt-preview-img" style="display: none;" alt="Preview Foto">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit-primary">
+          <span>Salvar Alterações do Produto</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: CONFIGURAR LIMITES DO SEMÁFORO (FALTA, ATENÇÃO, SUFICIENTE)
+       ==================================================================== -->
+  <div id="modal-product-thresholds" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <div>
+          <h3 class="sheet-title">Regras do Semáforo</h3>
+          <p id="thresholds-product-subtitle" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
+            Defina as quantidades para cada status
+          </p>
+        </div>
+        <button class="sheet-close-btn" id="btn-close-thresholds-modal" type="button">✕</button>
+      </div>
+
+      <form id="product-thresholds-form" class="purchase-form">
+        <input type="hidden" id="thresholds-product-id" value="">
+
+        <!-- Produto Info Preview -->
+        <div style="display: flex; align-items: center; gap: 12px; background: rgba(11, 13, 17, 0.035); padding: 10px 12px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid var(--border-light);">
+          <img id="thresholds-product-img" src="" style="width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: #fff; border: 1px solid var(--border-subtle);" alt="">
+          <div style="flex: 1; min-width: 0;">
+            <h4 id="thresholds-product-name" style="font-size: 0.86rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Produto</h4>
+            <span id="thresholds-current-qty-badge" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Estoque Atual: 0</span>
+          </div>
+        </div>
+
+        <!-- 3 Colunas dos Limites -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+          <!-- Falta -->
+          <div style="background: rgba(239, 68, 68, 0.06); border: 1.5px solid rgba(239, 68, 68, 0.25); border-radius: 14px; padding: 10px; text-align: center;">
+            <span style="font-size: 0.70rem; font-weight: 800; color: #DC2626; display: block; margin-bottom: 4px;">🔴 FALTA</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Até</span>
+            <input type="number" id="threshold-input-falta" class="form-input" min="0" step="1" placeholder="Ex: 0" style="text-align: center; font-weight: 800; font-size: 1.15rem; padding: 8px 4px;">
+            <span style="font-size: 0.62rem; color: var(--text-muted); display: block; margin-top: 4px;">unidades</span>
+          </div>
+
+          <!-- Atenção -->
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1.5px solid rgba(245, 158, 11, 0.28); border-radius: 14px; padding: 10px; text-align: center;">
+            <span style="font-size: 0.70rem; font-weight: 800; color: #D97706; display: block; margin-bottom: 4px;">🟡 ATENÇÃO</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Até</span>
+            <input type="number" id="threshold-input-atencao" class="form-input" min="0" step="1" placeholder="Ex: 1" style="text-align: center; font-weight: 800; font-size: 1.15rem; padding: 8px 4px;">
+            <span style="font-size: 0.62rem; color: var(--text-muted); display: block; margin-top: 4px;">unidades</span>
+          </div>
+
+          <!-- Suficiente -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid rgba(16, 185, 129, 0.28); border-radius: 14px; padding: 10px; text-align: center;">
+            <span style="font-size: 0.70rem; font-weight: 800; color: #059669; display: block; margin-bottom: 4px;">🟢 SUFICIENTE</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-top: 4px;">A partir de</span>
+            <input type="number" id="threshold-input-suficiente" class="form-input" min="0" step="1" placeholder="Ex: 2" style="text-align: center; font-weight: 800; font-size: 1.15rem; padding: 8px 4px;">
+            <span style="font-size: 0.62rem; color: var(--text-muted); display: block; margin-top: 4px;">unidades</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px; padding: 10px 12px; background: rgba(15, 39, 68, 0.035); border-radius: 10px; border: 1px solid var(--border-light);">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.76rem; color: var(--text-main); cursor: pointer;">
+            <input type="checkbox" id="thresholds-apply-all" checked style="width: 16px; height: 16px; accent-color: var(--primary-dark);">
+            <span>Aplicar estas regras para <strong>todos os imóveis</strong> (JB, VN, HN)</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit-primary">
+          <span>Salvar Regras de Quantidade</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL 5: CADASTRAR NOVA COLABORADORA (DONO)
+       ==================================================================== -->
+  <div id="modal-new-staff" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title">Nova Colaboradora</h3>
+        <button class="sheet-close-btn" id="btn-close-staff-form" type="button">✕</button>
+      </div>
+
+      <form id="new-staff-form" class="purchase-form">
+        <div class="form-group">
+          <label for="new-staff-name" class="form-label">Nome da Colaboradora</label>
+          <input type="text" id="new-staff-name" class="form-input" placeholder="Ex: Ana Silva" required>
+        </div>
+
+        <div class="form-group">
+          <label for="new-staff-email" class="form-label">E-mail Google da Colaboradora</label>
+          <input type="email" id="new-staff-email" class="form-input" placeholder="exemplo@gmail.com" required autocomplete="email">
+          <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;">
+            A colaboradora usará este e-mail para fazer login seguro com o Google.
+          </small>
+        </div>
+
+        <button type="submit" class="btn-submit-primary">
+          Salvar e Autorizar Acesso
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL 6: AGENDAR EVENTO / LIMPEZA NO CALENDÁRIO
+       ==================================================================== -->
+  <div id="modal-new-event" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title">Agendar Escala ou Limpeza</h3>
+        <button class="sheet-close-btn" id="btn-close-event-modal" type="button">✕</button>
+      </div>
+
+      <form id="new-event-form" class="purchase-form">
+        <div class="form-group">
+          <label for="event-property-select" class="form-label">Imóvel</label>
+          <select id="event-property-select" class="form-input" required>
+            <option value="JB">JB</option>
+            <option value="VN">VN</option>
+            <option value="HN">HN</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="event-title-input" class="form-label">Título da Atividade</label>
+          <input type="text" id="event-title-input" class="form-input" placeholder="Ex: Faxina Pós Check-out Família Rossi" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="event-date-input" class="form-label">Data</label>
+            <input type="date" id="event-date-input" class="form-input" required>
+          </div>
+
+          <div class="form-group">
+            <label for="event-type-select" class="form-label">Tipo de Tarefa</label>
+            <select id="event-type-select" class="form-input" required>
+              <option value="limpeza">Limpeza</option>
+              <option value="checking">Checking</option>
+              <option value="checkout">Checkout</option>
+              <option value="manutencao">Manutenção</option>
+              <option value="compras">Compras</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="event-staff-select" class="form-label">Responsável Designada</label>
+          <select id="event-staff-select" class="form-input" required>
+            <!-- Preenchido via JS com colaboradoras -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="event-notes-input" class="form-label">Orientações Especiais</label>
+          <input type="text" id="event-notes-input" class="form-input" placeholder="Ex: Troca de enxoval e deixar chave na caixa secreta">
+        </div>
+
+        <button type="submit" class="btn-submit-primary">
+          Confirmar Agendamento
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ====================================================================
+       MODAL 6B: REGISTRO DE HORAS TRABALHADAS (EQUIPE)
+       ==================================================================== -->
+  <div id="modal-timesheet" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title" id="timesheet-modal-title">Registrar Horas do Dia</h3>
+        <button class="sheet-close-btn" id="btn-close-timesheet-modal" type="button">✕</button>
+      </div>
+
+      <form id="timesheet-form" class="purchase-form">
+        <input type="hidden" id="timesheet-edit-id" value="">
+
+        <div class="form-group">
+          <label for="timesheet-date-input" class="form-label">Dia trabalhado</label>
+          <input type="date" id="timesheet-date-input" class="form-input" required>
+        </div>
+
+        <span class="form-label">Horários</span>
+        <div class="ts-field-list">
+          <button type="button" class="ts-time-field" data-field="start" id="ts-field-start">
+            <span class="ts-field-dot ts-dot-start"></span>
+            <span class="ts-field-text">
+              <span class="ts-field-label">Início do trabalho</span>
+              <span class="ts-field-hint">Obrigatório</span>
+            </span>
+            <span class="ts-field-value">--:--</span>
+          </button>
+          <button type="button" class="ts-time-field" data-field="breakStart" id="ts-field-breakStart">
+            <span class="ts-field-dot ts-dot-break"></span>
+            <span class="ts-field-text">
+              <span class="ts-field-label">Início da pausa</span>
+              <span class="ts-field-hint">Opcional</span>
+            </span>
+            <span class="ts-field-value">--:--</span>
+          </button>
+          <button type="button" class="ts-time-field" data-field="breakEnd" id="ts-field-breakEnd">
+            <span class="ts-field-dot ts-dot-break"></span>
+            <span class="ts-field-text">
+              <span class="ts-field-label">Fim da pausa</span>
+              <span class="ts-field-hint">Opcional</span>
+            </span>
+            <span class="ts-field-value">--:--</span>
+          </button>
+          <button type="button" class="ts-time-field" data-field="end" id="ts-field-end">
+            <span class="ts-field-dot ts-dot-end"></span>
+            <span class="ts-field-text">
+              <span class="ts-field-label">Fim do trabalho</span>
+              <span class="ts-field-hint">Pode preencher depois</span>
+            </span>
+            <span class="ts-field-value">--:--</span>
+          </button>
+        </div>
+
+        <div class="ts-total-preview">
+          <span>Total trabalhado</span>
+          <strong id="timesheet-total-preview">--</strong>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
+          <label class="form-label">Status de Pagamento das Horas</label>
+          <div class="ts-payment-toggle-wrap">
+            <button type="button" class="ts-payment-opt-btn active opt-unpaid" id="ts-modal-btn-unpaid" data-status="unpaid">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Não Pagas</span>
+            </button>
+            <button type="button" class="ts-payment-opt-btn opt-paid" id="ts-modal-btn-paid" data-status="paid">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Horas Pagas</span>
+            </button>
+          </div>
+          <input type="hidden" id="timesheet-is-paid-input" value="false">
+        </div>
+
+        <button type="submit" class="btn-submit-primary">Salvar Registro</button>
+        <button type="button" id="btn-delete-timesheet" class="ts-delete-btn" style="display: none;">Excluir este registro</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 6C: SELETOR DE HORÁRIO EXCLUSIVO (RODA DE HORAS E MINUTOS)
+       ==================================================================== -->
+  <div id="modal-time-picker" class="modal-overlay time-picker-overlay">
+    <div class="bottom-sheet time-picker-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title" id="time-picker-title">Início do trabalho</h3>
+        <button class="sheet-close-btn" id="btn-close-time-picker" type="button">✕</button>
+      </div>
+
+      <div class="time-picker-display" id="time-picker-display">08:00</div>
+
+      <div class="time-wheel-wrap">
+        <div class="time-wheel-highlight"></div>
+        <div class="time-wheel-col">
+          <span class="time-wheel-caption">Hora</span>
+          <div class="time-wheel" id="time-wheel-hours" aria-label="Horas"></div>
+        </div>
+        <span class="time-wheel-sep">:</span>
+        <div class="time-wheel-col">
+          <span class="time-wheel-caption">Min</span>
+          <div class="time-wheel" id="time-wheel-minutes" aria-label="Minutos"></div>
+        </div>
+      </div>
+
+      <div class="time-picker-chips">
+        <button type="button" class="time-chip" id="btn-time-now">Agora</button>
+        <button type="button" class="time-chip time-chip-muted" id="btn-time-clear">Limpar horário</button>
+      </div>
+
+      <button type="button" class="btn-submit-primary" id="btn-time-confirm">Confirmar Horário</button>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 6D: CONSULTA DE HORAS DO FUNCIONÁRIO POR DATA (GESTOR)
+       CALENDÁRIO EMBUTIDO DE TAMANHO COMPACTO (ZERO ROLAGEM)
+       ==================================================================== -->
+  <div id="modal-manager-timesheet" class="modal-overlay">
+    <div class="bottom-sheet mgr-ts-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header" style="margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="ts-user-avatar" id="mgr-ts-modal-avatar">MA</div>
+          <div>
+            <h3 class="sheet-title" id="mgr-ts-modal-title" style="margin: 0; line-height: 1.2;">Maria</h3>
+            <span class="mgr-ts-subtitle" id="mgr-ts-modal-subtitle">Toque no dia para consultar</span>
+          </div>
+        </div>
+        <button class="sheet-close-btn" id="btn-close-mgr-ts-modal" type="button">✕</button>
+      </div>
+
+      <!-- PASSO 1: CALENDÁRIO EMBUTIDO DIRETO (SEM ROLAGEM) -->
+      <div id="mgr-ts-step-date" class="mgr-ts-step">
+        <div class="mgr-ts-calendar-card">
+          <div class="mgr-ts-cal-nav-bar">
+            <button type="button" class="mgr-ts-cal-arrow-btn" id="btn-mgr-ts-cal-prev" aria-label="Mês Anterior">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <span class="mgr-ts-cal-month-title" id="mgr-ts-cal-month-title">Outubro 2026</span>
+            <button type="button" class="mgr-ts-cal-arrow-btn" id="btn-mgr-ts-cal-next" aria-label="Próximo Mês">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          <div class="mgr-ts-cal-weekdays">
+            <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+          </div>
+
+          <div class="mgr-ts-cal-grid" id="mgr-ts-cal-grid">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+
+          <div class="mgr-ts-cal-quick-actions">
+            <button type="button" class="mgr-ts-cal-quick-btn" data-action="today">Hoje</button>
+            <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday">Ontem</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASSO 2: HORAS TRABALHADAS NA DATA ESCOLHIDA (SEM ROLAGEM) -->
+      <div id="mgr-ts-step-hours" class="mgr-ts-step" style="display: none;">
+        <div class="mgr-ts-top-bar">
+          <button type="button" class="mgr-ts-back-btn" id="btn-mgr-ts-back-date">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Trocar data</span>
+          </button>
+          <span class="mgr-ts-active-date-badge" id="mgr-ts-active-date-txt">12/10/2026</span>
+        </div>
+
+        <div id="mgr-ts-hours-card-container">
+          <!-- Injetado dinamicamente: Início, Pausa se houver, Fim, Total e Exportar WhatsApp -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: EDITAR PERFIL (FOTO E NOME)
+       ==================================================================== -->
+  <div id="modal-edit-profile" class="modal-overlay">
+    <div class="bottom-sheet" style="max-width: 440px;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <button class="sheet-close-btn" id="btn-close-edit-profile-modal" type="button" title="Fechar">✕</button>
+        <h3 class="sheet-title">Editar Meu Perfil</h3>
+      </div>
+      <form id="edit-profile-form" class="sheet-form">
+        <div class="profile-photo-picker-wrap">
+          <div class="profile-photo-preview-circle" id="profile-photo-preview-box" role="button" tabindex="0" title="Toque para escolher foto">
+            <img id="profile-photo-preview-img" src="" alt="Foto de perfil" style="display: none;">
+            <div id="profile-photo-preview-placeholder" class="profile-photo-placeholder">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <div class="profile-photo-overlay-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+          </div>
+          <input type="file" id="profile-photo-input" accept="image/*" style="display: none;">
+          <div class="profile-photo-actions-row">
+            <button type="button" class="btn-choose-profile-photo" id="btn-choose-profile-photo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>Escolher Foto</span>
+            </button>
+            <button type="button" class="btn-remove-profile-photo" id="btn-remove-profile-photo" style="display: none;">
+              Remover Foto
+            </button>
+          </div>
+          <small style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; text-align: center;">
+            Sua foto aparecerá nos seus recados, registros de horas e compras.
+          </small>
+        </div>
+
+        <div class="form-group" style="margin-top: 14px;">
+          <label for="edit-profile-name" class="form-label">Nome Completo</label>
+          <input type="text" id="edit-profile-name" class="form-input" placeholder="Seu nome" required maxlength="40">
+        </div>
+
+        <div class="modal-form-actions" style="margin-top: 18px;">
+          <button type="button" class="modal-btn-cancel" id="btn-cancel-edit-profile">Cancelar</button>
+          <button type="submit" class="modal-btn-save">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 7: DIÁLOGO DE CONFIRMAÇÃO EXCLUSIVO (SEM NADA DO NAVEGADOR)
+       ==================================================================== -->
+  <div id="modal-confirm-dialog" class="modal-overlay">
+    <div class="bottom-sheet confirm-dialog-sheet">
+      <div class="sheet-handle"></div>
+      <div id="confirm-dialog-icon-wrap"></div>
+      <h3 class="confirm-dialog-title" id="confirm-dialog-title">Confirmar Ação</h3>
+      <p class="confirm-dialog-desc" id="confirm-dialog-message"></p>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" class="confirm-dialog-btn-confirm" id="btn-confirm-dialog-ok">
+          Confirmar
+        </button>
+        <button type="button" class="confirm-dialog-btn-cancel" id="btn-confirm-dialog-cancel">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL 8: DIÁLOGO DE ENTRADA / PROMPT EXCLUSIVO (SEM NADA DO NAVEGADOR)
+       ==================================================================== -->
+  <div id="modal-prompt-dialog" class="modal-overlay">
+    <div class="bottom-sheet" style="max-width: 380px;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header" style="margin-bottom: 12px;">
+        <h3 class="sheet-title" id="prompt-dialog-title">Alterar PIN</h3>
+        <button class="sheet-close-btn" id="btn-prompt-dialog-close" type="button">✕</button>
+      </div>
+      <p id="prompt-dialog-message" style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;"></p>
+      <form id="prompt-dialog-form">
+        <div class="form-group">
+          <input type="text" id="prompt-dialog-input" class="form-input" style="font-size: 1.05rem; font-weight: 700; text-align: center; letter-spacing: 0.1em;" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
+          <button type="button" class="confirm-dialog-btn-cancel" id="btn-prompt-dialog-cancel">
+            Cancelar
+          </button>
+          <button type="submit" class="confirm-dialog-btn-confirm" id="btn-prompt-dialog-ok" style="margin-bottom: 0; background: var(--accent-navy);">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Container de Toasts para Feedback Móvel -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="firebase-config.js?v=61"></script>
+  <script src="auth.js?v=61"></script>
+  <script src="cloud-sync.js?v=61"></script>
+  <script src="touch-scroll.js?v=61"></script>
+  <script src="initialData.js?v=61"></script>
+  <script src="app.js?v=61"></script>
+</body>
+</html>
