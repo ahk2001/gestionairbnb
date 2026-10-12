@@ -119,6 +119,7 @@
           name: 'Gestor dos Imóveis',
           isRoot: true
         };
+      }
       // Se o usuário não estiver na allowlist ou as regras bloquearem a leitura, trata como acesso negado
       return null;
     }
