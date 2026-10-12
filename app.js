@@ -1017,7 +1017,24 @@ async function performGoogleLogin() {
   } catch (err) {
     console.error('Erro ao efetuar login com o Google:', err);
     setGateLoading(false);
-    showToast('Não foi possível concluir o login com o Google.');
+
+    let errMsg = 'Não foi possível concluir o login com o Google.';
+    if (err && err.code) {
+      if (err.code === 'auth/operation-not-allowed') {
+        errMsg = 'Atenção: O login com Google ainda não foi ativado no Firebase Console (Aba "Método de login").';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errMsg = 'O Google ainda está propagando o domínio autorizado. Aguarde 1 minuto e tente novamente.';
+      } else if (err.code === 'auth/popup-blocked') {
+        errMsg = 'A janela pop-up foi bloqueada pelo navegador. Permita pop-ups neste site.';
+      } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        return;
+      } else {
+        errMsg = `Erro (${err.code}): ${err.message || 'Falha de autenticação'}`;
+      }
+    } else if (err && err.message) {
+      errMsg = `Erro: ${err.message}`;
+    }
+    showToast(errMsg, 7000);
   }
 }
 
