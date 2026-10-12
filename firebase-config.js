@@ -8,12 +8,13 @@
 // Mais detalhes no arquivo CONFIGURAR_FIREBASE.md
 
 window.AIRBNB_FIREBASE_CONFIG = window.AIRBNB_FIREBASE_CONFIG || {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "seu-projeto.firebaseapp.com",
-  projectId: "seu-projeto",
-  storageBucket: "seu-projeto.firebasestorage.app",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:000000000000"
+  apiKey: "AIzaSyDAM3AX2xjrkprBf553MNgbb1mqvcSPdjo",
+  authDomain: "airbnbcontrolvalencia.firebaseapp.com",
+  projectId: "airbnbcontrolvalencia",
+  storageBucket: "airbnbcontrolvalencia.firebasestorage.app",
+  messagingSenderId: "536915891786",
+  appId: "1:536915891786:web:6085775c0066c69f68b8b3",
+  measurementId: "G-69MLQXF1L9"
 };
 
 // E-mails que possuem perfil de Dono / Administrador Raiz pré-autorizado
