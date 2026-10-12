@@ -135,7 +135,6 @@ function initApp() {
       } else if (error) {
         if (error.code === 'ACCESS_DENIED' || error.code === 'ACCOUNT_INACTIVE') {
           setGateDenied(error.message, error.email);
-          showGateScreen();
         } else if (error.code === 'NOT_CONFIGURED') {
           loadSession();
           if (state.currentUser) {
@@ -709,6 +708,8 @@ function setGateLoading(isLoading, text = 'Conectando e verificando permissões.
 }
 
 function setGateDenied(message, email = '') {
+  const gate = document.getElementById('gate-screen');
+  if (gate) gate.style.display = 'flex';
   const idle = document.getElementById('gate-auth-idle');
   const loading = document.getElementById('gate-auth-loading');
   const denied = document.getElementById('gate-auth-denied');
@@ -722,6 +723,11 @@ function setGateDenied(message, email = '') {
   if (emailEl) {
     emailEl.textContent = email;
     emailEl.style.display = email ? 'inline-block' : 'none';
+  }
+
+  // Desconecta a conta não autorizada no Firebase para evitar loop de sessão presa
+  if (window.AirbnbAuth && typeof AirbnbAuth.logout === 'function') {
+    AirbnbAuth.logout().catch(() => {});
   }
 }
 
@@ -5703,8 +5709,12 @@ function setupEventListeners() {
 
   const btnGateTryAnother = document.getElementById('btn-gate-try-another');
   if (btnGateTryAnother) {
-    btnGateTryAnother.onclick = (e) => {
+    btnGateTryAnother.onclick = async (e) => {
       e.preventDefault();
+      setGateLoading(true, 'Abrindo login com o Google...');
+      if (window.AirbnbAuth && typeof AirbnbAuth.logout === 'function') {
+        await AirbnbAuth.logout().catch(() => {});
+      }
       showGateScreen();
       performGoogleLogin();
     };
