@@ -3781,7 +3781,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
   }
 
   if (activeDateTxt) {
-    activeDateTxt.textContent = formatTimesheetDate(dateStr);
+    activeDateTxt.textContent = formatTimesheetDateNoYear(dateStr);
   }
 
   if (!hoursContainer) return;
@@ -3809,7 +3809,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
           </svg>
         </div>
         <div class="mgr-ts-empty-title">Nenhum horário registrado</div>
-        <div class="mgr-ts-empty-sub">${escapeHtml(staff.name)} não registrou horas em ${formatTimesheetDate(dateStr)}.</div>
+        <div class="mgr-ts-empty-sub">${escapeHtml(staff.name)} não registrou horas em ${formatTimesheetDateNoYear(dateStr)}.</div>
         <button type="button" class="mgr-ts-btn-other-date" id="btn-mgr-ts-retry-date">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
@@ -3853,8 +3853,8 @@ function showManagerTimesheetHours(staffId, dateStr) {
         const dateFormatted = formatTimesheetDateNoYear(t.date || dateStr);
         const isPaid = Boolean(t.isPaid);
         const paidBadgeHtml = isPaid
-          ? `<span class="mgr-ts-status-dot is-paid" title="Horas Pagas"></span>`
-          : `<span class="mgr-ts-status-dot is-unpaid" title="Não Pago (Pendente)"></span>`;
+          ? `<span class="ts-status-dot is-paid" title="Horas Pagas"></span>`
+          : `<span class="ts-status-dot is-unpaid" title="Não Pago (Pendente)"></span>`;
 
         const managerStatusHtml = isPaid
           ? `<div class="mgr-ts-payment-status is-paid">
