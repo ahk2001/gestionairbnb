@@ -1435,7 +1435,7 @@ function renderProducts() {
     const { faltaMax, atencaoMax, suficienteMin } = getProductThresholds(item);
 
     const propBadgeHtml = state.selectedProperty === 'ALL'
-      ? `<span class="prop-badge-small" style="background: rgba(11,13,17,0.06); color: var(--text-main);">${item.propertyId}</span>`
+      ? `<span class="prop-badge-small prop-badge-${(item.propertyId || '').toLowerCase()}" data-prop="${item.propertyId}">${item.propertyId}</span>`
       : '';
 
     return `
@@ -2075,7 +2075,7 @@ function renderUrgentItems() {
             <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">
               Estoque: ${item.quantity} ${item.unit}
             </span>
-            <span class="prop-badge-small" style="background: rgba(11,13,17,0.06); color: var(--text-main);">${item.propertyId}</span>
+            <span class="prop-badge-small prop-badge-${(item.propertyId || '').toLowerCase()}" data-prop="${item.propertyId}">${item.propertyId}</span>
           </div>
         </div>
         <button type="button" class="urgent-buy-btn" data-id="${item.id}" data-prop="${item.propertyId}">
@@ -2139,7 +2139,7 @@ function renderNotes() {
             }
             <span class="note-author-tag ${isOwner ? 'is-owner' : 'is-staff'}">
               <span>${escapeHtml(note.authorName || (isOwner ? 'Gestor' : 'Equipe'))}</span>
-              <span class="prop-badge-small" style="margin-left: 4px; background: rgba(11,13,17,0.06); color: var(--text-main);">${note.propertyId}</span>
+              <span class="prop-badge-small prop-badge-${(note.propertyId || '').toLowerCase()}" data-prop="${note.propertyId}">${note.propertyId}</span>
             </span>
           </div>
           <span class="note-time">${formatDateTime(note.createdAt)}</span>
@@ -2612,7 +2612,7 @@ function renderCalendar() {
           <span class="cal-staff" style="display: flex; align-items: center; gap: 4px;">
             ${staffPhoto ? `<img src="${staffPhoto}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">` : ''}
             <span>${escapeHtml(ev.assignedStaffName || 'Equipe')}</span>
-            <span class="prop-badge-small" style="background: rgba(11,13,17,0.06); color: var(--text-main); margin-left: 4px;">${ev.propertyId}</span>
+            <span class="prop-badge-small prop-badge-${(ev.propertyId || '').toLowerCase()}" data-prop="${ev.propertyId}" style="margin-left: 4px;">${ev.propertyId}</span>
           </span>
           <div style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="topbar-btn btn-toggle-cal-status" data-id="${ev.id}" style="${isDone ? 'background: rgba(16,185,129,0.12); color: #047857; font-weight: 700;' : ''}">
@@ -4147,7 +4147,11 @@ function openViewPurchaseModal(purchaseId) {
 
   // Imóvel Badge
   const propBadge = document.getElementById('view-purchase-prop-badge');
-  if (propBadge) propBadge.textContent = purchase.propertyId;
+  if (propBadge) {
+    propBadge.textContent = purchase.propertyId;
+    propBadge.setAttribute('data-prop', purchase.propertyId);
+    propBadge.className = `prop-badge-small prop-badge-${(purchase.propertyId || '').toLowerCase()}`;
+  }
 
   // Valor Total
   const costEl = document.getElementById('view-purchase-total-val');
