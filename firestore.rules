@@ -107,12 +107,19 @@ service cloud.firestore {
     // ========================================================================
     match /staff/{staffId} {
       allow read: if isAuthorizedUser();
-      allow create, delete: if isOwner();
+      allow delete: if isOwner();
+      // Colaboradora pode registrar seu próprio perfil de equipe
+      allow create: if isOwner() || (
+        isStaff() &&
+        request.resource.data.email != null &&
+        request.resource.data.email.lower() == request.auth.token.email.lower()
+      );
       // Colaboradora pode atualizar seu próprio perfil (nome/foto); Dono pode editar todos
       allow update: if isOwner() || (
-        isStaff() &&
-        resource.data.email != null &&
-        resource.data.email == request.auth.token.email.lower()
+        isStaff() && (
+          (resource.data.email != null && resource.data.email.lower() == request.auth.token.email.lower()) ||
+          (request.resource.data.email != null && request.resource.data.email.lower() == request.auth.token.email.lower())
+        )
       );
     }
 

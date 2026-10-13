@@ -116,9 +116,13 @@ function initApp() {
         state.currentUser = user;
         saveSession(user);
         hideGateScreen();
-        updateTopbarUser();
         updateTabElementsVisibility(state.activeTab);
         renderAll();
+
+        // Vincula automaticamente perfil e foto do Google com o registro da equipe
+        syncStaffWithCurrentUser(user).then(() => {
+          renderAll();
+        }).catch(err => console.warn('[Auth] Erro ao sincronizar equipe:', err));
 
         // Inicia sincronização em tempo real na nuvem
         if (window.AirbnbCloudSync) {
@@ -945,7 +949,95 @@ function closeEditProfileModal() {
   if (photoInput) photoInput.value = '';
 }
 
-function saveUserProfile(newName, newPhoto) {
+// ==========================================================================
+// Vinculação e Sincronização de Perfil de Funcionário com a Equipe
+// ==========================================================================
+async function syncStaffWithCurrentUser(user) {
+  if (!user) return;
+  const isOwner = user.type === 'owner';
+  const userEmail = (user.email || '').trim().toLowerCase();
+  const userId = user.id ? String(user.id) : null;
+  const userName = (user.name || '').trim();
+  const userPhoto = user.photo || null;
+
+  if (isOwner) {
+    if (!state.data.ownerProfile) {
+      state.data.ownerProfile = { ...OWNER_PROFILE };
+    }
+    let changed = false;
+    if (userName && state.data.ownerProfile.name !== userName) {
+      state.data.ownerProfile.name = userName;
+      changed = true;
+    }
+    if (userPhoto && state.data.ownerProfile.photo !== userPhoto) {
+      state.data.ownerProfile.photo = userPhoto;
+      changed = true;
+    }
+    if (changed && window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+      try {
+        await AirbnbCloudSync.saveDocument('settings', 'ownerProfile', state.data.ownerProfile);
+      } catch (e) {
+        console.warn('[Sync] Falha ao sincronizar ownerProfile:', e);
+      }
+    }
+    return;
+  }
+
+  // Para Colaboradoras: procura ou cadastra na lista state.data.staff
+  if (!state.data.staff) state.data.staff = [];
+  let staff = state.data.staff.find(s => {
+    if (!s) return false;
+    if (userId && String(s.id) === userId) return true;
+    if (userEmail && s.email && s.email.trim().toLowerCase() === userEmail) return true;
+    if (userName && s.name && s.name.trim().toLowerCase() === userName.toLowerCase()) return true;
+    return false;
+  });
+
+  let needSave = false;
+  if (!staff) {
+    // Colaboradora ainda não estava na lista local: adiciona com dados reais do Google
+    staff = {
+      id: userId || `staff_${Date.now()}`,
+      name: userName || 'Colaboradora',
+      email: userEmail,
+      role: '',
+      isActive: true,
+      photo: userPhoto,
+      avatar: getInitials(userName || 'Colaboradora', 'EQ'),
+      createdAt: new Date().toISOString()
+    };
+    state.data.staff.push(staff);
+    needSave = true;
+  } else {
+    // Colaboradora existe: atualiza foto e dados caso estejam vazios ou desatualizados
+    if (userPhoto && staff.photo !== userPhoto) {
+      staff.photo = userPhoto;
+      needSave = true;
+    }
+    if (userName && userName !== 'Equipe' && staff.name !== userName) {
+      staff.name = userName;
+      staff.avatar = getInitials(userName, 'EQ');
+      needSave = true;
+    }
+    if (userEmail && (!staff.email || staff.email.trim().toLowerCase() !== userEmail)) {
+      staff.email = userEmail;
+      needSave = true;
+    }
+  }
+
+  if (needSave) {
+    saveData();
+    if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured() && staff.id) {
+      try {
+        await AirbnbCloudSync.saveDocument('staff', staff.id, staff);
+      } catch (err) {
+        console.warn('[Sync] Falha ao sincronizar membro de equipe na nuvem:', err);
+      }
+    }
+  }
+}
+
+async function saveUserProfile(newName, newPhoto) {
   if (!state.currentUser) return;
   const trimmed = (newName || '').trim();
   if (!trimmed) {
@@ -953,52 +1045,128 @@ function saveUserProfile(newName, newPhoto) {
     return;
   }
 
-  const oldName = state.currentUser.name;
+  const oldName = state.currentUser.name || '';
+  const userEmail = (state.currentUser.email || '').trim().toLowerCase();
+  const userId = state.currentUser.id ? String(state.currentUser.id) : null;
+
   state.currentUser.name = trimmed;
   state.currentUser.photo = newPhoto || null;
   state.currentUser.avatar = getInitials(trimmed, state.currentUser.type === 'owner' ? 'AD' : 'EQ');
 
+  let updatedStaffObj = null;
+
   if (state.currentUser.type === 'staff') {
-    const staff = (state.data.staff || []).find(s => s.id === state.currentUser.id);
+    if (!state.data.staff) state.data.staff = [];
+
+    // Busca flexível na lista de equipe
+    let staff = state.data.staff.find(s => {
+      if (!s) return false;
+      if (userId && String(s.id) === userId) return true;
+      if (userEmail && s.email && s.email.trim().toLowerCase() === userEmail) return true;
+      if (oldName && s.name && s.name.trim().toLowerCase() === oldName.trim().toLowerCase()) return true;
+      return false;
+    });
+
     if (staff) {
       staff.name = trimmed;
       staff.photo = newPhoto || null;
       staff.avatar = state.currentUser.avatar;
+      if (userEmail && !staff.email) staff.email = userEmail;
+      updatedStaffObj = staff;
+    } else {
+      updatedStaffObj = {
+        id: userId || `staff_${Date.now()}`,
+        name: trimmed,
+        email: userEmail,
+        role: '',
+        isActive: true,
+        photo: newPhoto || null,
+        avatar: state.currentUser.avatar,
+        createdAt: new Date().toISOString()
+      };
+      state.data.staff.push(updatedStaffObj);
     }
+
     // Sincroniza registros de horas com novo nome e foto
+    let timesheetsUpdated = false;
     (state.data.timesheets || []).forEach(t => {
-      if (t.staffId === state.currentUser.id || t.staffName === oldName) {
+      const match = (t.staffId && (String(t.staffId) === userId || (updatedStaffObj && String(t.staffId) === String(updatedStaffObj.id)))) ||
+                    (userEmail && t.staffEmail && t.staffEmail.toLowerCase() === userEmail) ||
+                    (oldName && t.staffName && t.staffName.trim().toLowerCase() === oldName.trim().toLowerCase());
+      if (match) {
         t.staffName = trimmed;
         if (newPhoto !== undefined) t.staffPhoto = newPhoto || null;
+        timesheetsUpdated = true;
       }
     });
+
     // Sincroniza notas/recados com novo nome e foto
+    let notesUpdated = false;
     (state.data.notes || []).forEach(n => {
-      if (n.authorId === state.currentUser.id || n.authorName === oldName) {
+      const match = (n.authorId && (String(n.authorId) === userId || (updatedStaffObj && String(n.authorId) === String(updatedStaffObj.id)))) ||
+                    (n.authorEmail && userEmail && n.authorEmail.toLowerCase() === userEmail) ||
+                    (oldName && n.authorName && n.authorName.trim().toLowerCase() === oldName.trim().toLowerCase());
+      if (match) {
         n.authorName = trimmed;
         if (newPhoto !== undefined) n.authorPhoto = newPhoto || null;
+        notesUpdated = true;
       }
     });
+
     // Sincroniza compras com novo nome e foto
+    let purchasesUpdated = false;
     (state.data.purchases || []).forEach(p => {
-      if (p.buyerStaffId === state.currentUser.id || p.buyerName === oldName) {
+      const match = (p.buyerStaffId && (String(p.buyerStaffId) === userId || (updatedStaffObj && String(p.buyerStaffId) === String(updatedStaffObj.id)))) ||
+                    (p.buyerEmail && userEmail && p.buyerEmail.toLowerCase() === userEmail) ||
+                    (oldName && p.buyerName && p.buyerName.trim().toLowerCase() === oldName.trim().toLowerCase());
+      if (match) {
         p.buyerName = trimmed;
         if (newPhoto !== undefined) p.buyerPhoto = newPhoto || null;
+        purchasesUpdated = true;
       }
     });
+
     // Sincroniza anotações de produtos
     (state.data.products || []).forEach(p => {
-      if (p.noteAuthor === oldName) {
+      if (oldName && p.noteAuthor && p.noteAuthor.trim().toLowerCase() === oldName.trim().toLowerCase()) {
         p.noteAuthor = trimmed;
         if (newPhoto !== undefined) p.noteAuthorPhoto = newPhoto || null;
       }
     });
+
     // Sincroniza escalas no calendário
+    let calendarUpdated = false;
     (state.data.calendar || []).forEach(c => {
-      if (c.assignedStaffId === state.currentUser.id || c.assignedStaffName === oldName) {
+      const match = (c.assignedStaffId && (String(c.assignedStaffId) === userId || (updatedStaffObj && String(c.assignedStaffId) === String(updatedStaffObj.id)))) ||
+                    (oldName && c.assignedStaffName && c.assignedStaffName.trim().toLowerCase() === oldName.trim().toLowerCase());
+      if (match) {
         c.assignedStaffName = trimmed;
+        calendarUpdated = true;
       }
     });
+
+    // Sincronização em tempo real na nuvem (Firestore)
+    if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+      try {
+        if (updatedStaffObj && updatedStaffObj.id) {
+          await AirbnbCloudSync.saveDocument('staff', updatedStaffObj.id, updatedStaffObj);
+        }
+        if (timesheetsUpdated && state.data.timesheets && state.data.timesheets.length > 0) {
+          await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets);
+        }
+        if (notesUpdated && state.data.notes && state.data.notes.length > 0) {
+          await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes);
+        }
+        if (purchasesUpdated && state.data.purchases && state.data.purchases.length > 0) {
+          await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases);
+        }
+        if (calendarUpdated && state.data.calendar && state.data.calendar.length > 0) {
+          await AirbnbCloudSync.syncCollectionBatch('calendar', state.data.calendar);
+        }
+      } catch (cloudErr) {
+        console.warn('[CloudSync] Falha ao sincronizar perfil do colaborador na nuvem:', cloudErr);
+      }
+    }
   } else if (state.currentUser.type === 'owner') {
     if (!state.data.ownerProfile) {
       state.data.ownerProfile = { ...OWNER_PROFILE };
@@ -1008,20 +1176,37 @@ function saveUserProfile(newName, newPhoto) {
     OWNER_PROFILE.name = trimmed;
     OWNER_PROFILE.photo = newPhoto || null;
 
-    // Sincroniza notas/recados do Gestor
+    let notesUpdated = false;
     (state.data.notes || []).forEach(n => {
       if (n.authorType === 'owner' || n.authorName === oldName) {
         n.authorName = trimmed;
         if (newPhoto !== undefined) n.authorPhoto = newPhoto || null;
+        notesUpdated = true;
       }
     });
-    // Sincroniza compras do Gestor
+
+    let purchasesUpdated = false;
     (state.data.purchases || []).forEach(p => {
       if (p.buyerType === 'owner' || p.buyerName === 'Gestor' || p.buyerName === oldName) {
         p.buyerName = trimmed;
         if (newPhoto !== undefined) p.buyerPhoto = newPhoto || null;
+        purchasesUpdated = true;
       }
     });
+
+    if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+      try {
+        await AirbnbCloudSync.saveDocument('settings', 'ownerProfile', state.data.ownerProfile);
+        if (notesUpdated && state.data.notes && state.data.notes.length > 0) {
+          await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes);
+        }
+        if (purchasesUpdated && state.data.purchases && state.data.purchases.length > 0) {
+          await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases);
+        }
+      } catch (cloudErr) {
+        console.warn('[CloudSync] Falha ao salvar perfil do gestor na nuvem:', cloudErr);
+      }
+    }
   }
 
   saveData();
@@ -3075,8 +3260,8 @@ function renderTimesheets() {
   // AO CLICAR EM UM FUNCIONÁRIO, ABRE O POPUP APENAS COM SELETOR DE DATA
   // =========================================================================
   if (isOwner) {
-    const staffList = state.data.staff || [];
-    if (staffList.length === 0) {
+    const rawStaffList = state.data.staff || [];
+    if (rawStaffList.length === 0) {
       listContainer.innerHTML = `
         <div class="ts-empty-state">
           <div class="ts-empty-icon">
@@ -3092,13 +3277,37 @@ function renderTimesheets() {
       return;
     }
 
+    // Enriquecimento e recuperação inteligente de foto/perfil caso ainda não gravado no objeto direto
+    const staffList = rawStaffList.map(st => {
+      let photo = st.photo || '';
+      if (!photo) {
+        const tsMatch = (state.data.timesheets || []).find(t =>
+          (String(t.staffId) === String(st.id) || (st.email && t.staffEmail && t.staffEmail.toLowerCase() === st.email.toLowerCase())) && t.staffPhoto
+        );
+        if (tsMatch && tsMatch.staffPhoto) photo = tsMatch.staffPhoto;
+      }
+      if (!photo) {
+        const noteMatch = (state.data.notes || []).find(n =>
+          (String(n.authorId) === String(st.id) || (st.email && n.authorEmail && n.authorEmail.toLowerCase() === st.email.toLowerCase())) && n.authorPhoto
+        );
+        if (noteMatch && noteMatch.authorPhoto) photo = noteMatch.authorPhoto;
+      }
+      return { ...st, photo };
+    });
+
     listContainer.innerHTML = `
       <div class="ts-staff-picker-group">
-        ${staffList.map(staff => `
+        ${staffList.map(staff => {
+          const photoUrl = staff.photo || '';
+          const initials = staff.avatar || getInitials(staff.name, 'EQ');
+          return `
           <div class="ts-staff-picker-card" data-staff-id="${staff.id}" role="button" tabindex="0">
             <div class="ts-staff-picker-left">
-              <div class="ts-user-avatar" title="${escapeHtml(staff.name)}" style="overflow: hidden; padding: 0;">
-                ${staff.photo ? `<img src="${staff.photo}" class="ts-staff-picker-avatar-img" alt="">` : (staff.avatar || getInitials(staff.name, 'EQ'))}
+              <div class="ts-user-avatar ${photoUrl ? 'has-photo' : ''}" title="${escapeHtml(staff.name)}" style="overflow: hidden; padding: 0; background: ${photoUrl ? 'transparent' : '#0B0D11'};">
+                ${photoUrl
+                  ? `<img src="${escapeHtml(photoUrl)}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" onerror="this.onerror=null; this.parentElement.style.background='#0B0D11'; this.parentElement.innerHTML='${escapeHtml(initials)}';">`
+                  : initials
+                }
               </div>
               <div class="ts-staff-picker-name">${escapeHtml(staff.name)}</div>
             </div>
@@ -3108,7 +3317,7 @@ function renderTimesheets() {
               </svg>
             </div>
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
     `;
 
@@ -3487,10 +3696,13 @@ function renderManagerInlineCalendar(year, month) {
 }
 
 function openManagerStaffTimesheetModal(staffId) {
-  const staff = (state.data.staff || []).find(s => s.id === staffId);
+  let staff = (state.data.staff || []).find(s => String(s.id) === String(staffId));
+  if (!staff) {
+    staff = (state.data.staff || []).find(s => s.name === staffId || s.email === staffId);
+  }
   if (!staff) return;
 
-  state.activeManagerStaffId = staffId;
+  state.activeManagerStaffId = staff.id;
   state.activeManagerStaffDate = '';
 
   const modal = document.getElementById('modal-manager-timesheet');
@@ -3503,14 +3715,24 @@ function openManagerStaffTimesheetModal(staffId) {
   if (titleEl) titleEl.textContent = staff.name;
   if (subtitleEl) subtitleEl.textContent = 'Toque no dia para consultar';
   if (avatarEl) {
-    if (staff.photo) {
-      avatarEl.innerHTML = `<img src="${staff.photo}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    let photoUrl = staff.photo || '';
+    if (!photoUrl) {
+      const tsMatch = (state.data.timesheets || []).find(t =>
+        (String(t.staffId) === String(staff.id) || (staff.email && t.staffEmail && t.staffEmail.toLowerCase() === staff.email.toLowerCase())) && t.staffPhoto
+      );
+      if (tsMatch && tsMatch.staffPhoto) photoUrl = tsMatch.staffPhoto;
+    }
+    const initials = staff.avatar || getInitials(staff.name, 'EQ');
+    if (photoUrl) {
+      avatarEl.innerHTML = `<img src="${escapeHtml(photoUrl)}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.style.background='#0B0D11'; this.parentElement.innerHTML='${escapeHtml(initials)}';">`;
       avatarEl.style.overflow = 'hidden';
       avatarEl.style.padding = '0';
+      avatarEl.style.background = 'transparent';
     } else {
       avatarEl.style.overflow = '';
       avatarEl.style.padding = '';
-      avatarEl.textContent = staff.avatar || getInitials(staff.name, 'EQ');
+      avatarEl.style.background = '#0B0D11';
+      avatarEl.textContent = initials;
     }
   }
 
@@ -6072,11 +6294,20 @@ async function handleNewStaffSubmit(e) {
     }
   }
 
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    try {
+      await AirbnbCloudSync.saveDocument('staff', staffId, newStaff);
+    } catch (e) {
+      console.warn('Erro ao salvar colaboradora na nuvem:', e);
+    }
+  }
+
   saveData();
   closeNewStaffModal();
   if (nameInput) nameInput.value = '';
   if (emailInput) emailInput.value = '';
   renderOwnerDashboard();
+  renderTimesheets();
   showToast(`Colaboradora "${name}" autorizada com o e-mail ${email}.`);
 }
 
@@ -6186,9 +6417,22 @@ async function handleEditStaffSubmit(e) {
     }
   }
 
+  // Sincroniza com a coleção staff no Firestore
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    try {
+      await AirbnbCloudSync.saveDocument('staff', staffId, staff);
+      if (oldName !== name && state.data.timesheets) {
+        await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets);
+      }
+    } catch (e) {
+      console.warn('Erro ao atualizar colaboradora na nuvem:', e);
+    }
+  }
+
   saveData();
   closeEditStaffModal();
   renderOwnerDashboard();
+  renderTimesheets();
   showToast(`Colaboradora "${name}" atualizada com sucesso!`);
 }
 
@@ -6220,10 +6464,18 @@ async function handleEditStaffDelete() {
         console.warn('Erro ao remover permissão da allowlist do Firebase:', err);
       }
     }
+    if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+      try {
+        await AirbnbCloudSync.deleteDocument('staff', staffId);
+      } catch (e) {
+        console.warn('Erro ao excluir colaboradora da nuvem:', e);
+      }
+    }
     state.data.staff = state.data.staff.filter(s => s.id !== staffId);
     saveData();
     closeEditStaffModal();
     renderOwnerDashboard();
+    renderTimesheets();
     showToast(`Colaboradora "${staff.name}" excluída.`);
   }
 }

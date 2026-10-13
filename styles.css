@@ -7131,6 +7131,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: block;
 }
 
+.ts-user-avatar.has-photo,
+.staff-avatar-circle.has-photo {
+  background: transparent !important;
+}
+
 .view-purchase-buyer-img {
   width: 20px;
   height: 20px;

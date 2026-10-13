@@ -113,6 +113,35 @@
                 return (b.startTime || '').localeCompare(a.startTime || '');
               });
               appState.data.timesheets = combined;
+            } else if (colName === 'staff') {
+              // Sincronização inteligente de equipe: atualiza nomes e fotos da nuvem em tempo real
+              const currentList = Array.isArray(appState.data.staff) ? appState.data.staff : [];
+              const merged = [];
+              const seenKeys = new Set();
+
+              // Prioridade para os documentos mais recentes do Firestore
+              items.forEach(remItem => {
+                const sId = remItem.id ? String(remItem.id) : null;
+                const sEmail = remItem.email ? String(remItem.email).trim().toLowerCase() : null;
+                merged.push(remItem);
+                if (sId) seenKeys.add('id:' + sId);
+                if (sEmail) seenKeys.add('email:' + sEmail);
+              });
+
+              // Preserva colaboradores locais que ainda não tenham sido descarregados na nuvem
+              currentList.forEach(locItem => {
+                const sId = locItem.id ? String(locItem.id) : null;
+                const sEmail = locItem.email ? String(locItem.email).trim().toLowerCase() : null;
+                const hasId = sId && seenKeys.has('id:' + sId);
+                const hasEmail = sEmail && seenKeys.has('email:' + sEmail);
+                if (!hasId && !hasEmail) {
+                  merged.push(locItem);
+                  if (sId) seenKeys.add('id:' + sId);
+                  if (sEmail) seenKeys.add('email:' + sEmail);
+                }
+              });
+
+              appState.data.staff = merged;
             } else {
               // Se o Firestore retornou dados para essa coleção, substitui no estado
               if (items.length > 0) {
