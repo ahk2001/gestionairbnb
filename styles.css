@@ -2647,6 +2647,13 @@ html, body {
   overflow: hidden;
 }
 
+.staff-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .staff-name-title {
   font-size: 0.86rem;
   font-weight: 700;
@@ -2655,6 +2662,24 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.25;
+}
+
+.staff-suspended-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+  line-height: 1.25;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.staff-member-card.is-suspended {
+  background: #F9FAFB;
+  opacity: 0.85;
 }
 
 .staff-pin-code {
@@ -2693,73 +2718,72 @@ html, body {
   flex-shrink: 0;
 }
 
-.btn-toggle-staff-active {
-  padding: 5px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  line-height: 1.3;
-  transition: all 0.18s ease;
-}
-
-.btn-toggle-staff-active.is-active {
-  background: #DCFCE7;
-  color: #15803D;
-  border: 1px solid #86EFAC;
-}
-
-.btn-toggle-staff-active.is-active:hover {
-  background: #BBF7D0;
-}
-
-.btn-toggle-staff-active.is-inactive {
-  background: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FCA5A5;
-}
-
-.btn-toggle-staff-active.is-inactive:hover {
-  background: #FECACA;
-}
-
-.btn-delete-staff {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.22);
-  color: #DC2626;
-  border-radius: var(--radius-full);
-  padding: 5px 10px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  display: inline-flex;
+/* Botão de Lápis para Editar Colaboradora */
+.btn-edit-staff {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   cursor: pointer;
-  white-space: nowrap;
   flex-shrink: 0;
-  line-height: 1.3;
   transition: all 0.2s var(--ease-spring);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   outline: none;
 }
 
-.btn-delete-staff:hover {
+.btn-edit-staff:hover {
+  background: var(--primary-dark);
+  color: #FFFFFF;
+  border-color: var(--primary-dark);
+  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(11, 13, 17, 0.12);
+}
+
+.btn-edit-staff:active {
+  transform: scale(0.92);
+}
+
+/* Modal de Edição de Colaboradora */
+.edit-staff-status-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #F8F9FA;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  margin-top: 6px;
+}
+
+.btn-delete-staff-full {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: #DC2626;
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-spring);
+  width: 100%;
+  outline: none;
+}
+
+.btn-delete-staff-full:hover {
   background: #DC2626;
   color: #FFFFFF;
   border-color: #DC2626;
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.22);
-}
-
-@media (max-width: 360px) {
-  .btn-delete-staff span {
-    display: none;
-  }
-  .btn-delete-staff {
-    padding: 5px 8px;
-  }
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
 /* Switch Liga/Desliga */

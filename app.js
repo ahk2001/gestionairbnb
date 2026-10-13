@@ -2668,7 +2668,7 @@ function renderOwnerDashboard() {
       staffContainer.innerHTML = '';
     } else {
       staffContainer.innerHTML = state.data.staff.map(staff => `
-        <div class="staff-member-card">
+        <div class="staff-member-card ${staff.isActive === false ? 'is-suspended' : ''}">
           <div class="staff-info-col">
             <div class="staff-avatar-circle" title="${escapeHtml(staff.name)}">
               ${staff.photo
@@ -2680,7 +2680,10 @@ function renderOwnerDashboard() {
               }
             </div>
             <div class="staff-text-col">
-              <div class="staff-name-title" title="${escapeHtml(staff.name)}">${escapeHtml(staff.name)}</div>
+              <div class="staff-name-row">
+                <div class="staff-name-title" title="${escapeHtml(staff.name)}">${escapeHtml(staff.name)}</div>
+                ${staff.isActive === false ? `<span class="staff-suspended-badge">Suspensa</span>` : ''}
+              </div>
               <div class="staff-email-badge" title="${escapeHtml(staff.email || 'Sem e-mail Google')}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 <span>${escapeHtml(staff.email || 'Sem e-mail Google')}</span>
@@ -2689,76 +2692,21 @@ function renderOwnerDashboard() {
           </div>
 
           <div class="staff-actions-col">
-            <button type="button" class="btn-toggle-staff-active ${staff.isActive !== false ? 'is-active' : 'is-inactive'}" data-id="${staff.id}" title="${staff.isActive !== false ? 'Clique para suspender o acesso desta colaboradora' : 'Clique para reativar o acesso'}">
-              ${staff.isActive !== false ? 'Ativa' : 'Suspensa'}
-            </button>
-
-            <button type="button" class="btn-delete-staff" data-id="${staff.id}" title="Excluir Colaboradora" aria-label="Excluir Colaboradora">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <button type="button" class="btn-edit-staff" data-id="${staff.id}" title="Editar colaboradora (${escapeHtml(staff.name)})" aria-label="Editar colaboradora">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                <path d="m15 5 4 4"/>
               </svg>
-              <span>Excluir</span>
             </button>
           </div>
         </div>
       `).join('');
 
-      // Ação de Ativar / Suspender Acesso da Colaboradora
-      staffContainer.querySelectorAll('.btn-toggle-staff-active').forEach(btn => {
-        btn.addEventListener('click', async () => {
+      // Ação de Abrir Modal de Edição da Colaboradora
+      staffContainer.querySelectorAll('.btn-edit-staff').forEach(btn => {
+        btn.addEventListener('click', () => {
           const staffId = btn.dataset.id;
-          const staff = state.data.staff.find(s => s.id === staffId);
-          if (!staff) return;
-
-          staff.isActive = (staff.isActive === false) ? true : false;
-          if (window.AirbnbAuth && staff.email) {
-            try {
-              await AirbnbAuth.setStaffActiveInAllowlist(staff.email, staff.isActive);
-            } catch (err) {
-              console.warn('Erro ao atualizar permissão na allowlist do Firebase:', err);
-            }
-          }
-          saveData();
-          renderOwnerDashboard();
-          showToast(`Acesso de ${staff.name} ${staff.isActive ? 'ativado' : 'suspenso'}.`);
-        });
-      });
-
-      // Ação de Excluir Colaboradora
-      staffContainer.querySelectorAll('.btn-delete-staff').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const staffId = btn.dataset.id;
-          const staff = state.data.staff.find(s => s.id === staffId);
-          if (!staff) return;
-
-          if (state.data.staff.length <= 1) {
-            showToast('É necessário manter pelo menos uma colaboradora cadastrada.');
-            return;
-          }
-
-          const confirmed = await showConfirmDialog({
-            title: 'Excluir Colaboradora',
-            message: `Tem certeza que deseja excluir ${staff.name} e revogar seu acesso Google ao sistema?`,
-            confirmText: 'Excluir Colaboradora',
-            cancelText: 'Cancelar',
-            confirmDanger: true,
-            icon: 'trash'
-          });
-
-          if (confirmed) {
-            if (window.AirbnbAuth && staff.email) {
-              try {
-                await AirbnbAuth.removeStaffFromAllowlist(staff.email);
-              } catch (err) {
-                console.warn('Erro ao remover permissão da allowlist do Firebase:', err);
-              }
-            }
-            state.data.staff = state.data.staff.filter(s => s.id !== staffId);
-            saveData();
-            renderOwnerDashboard();
-            showToast(`Colaboradora "${staff.name}" excluída.`);
-          }
+          openEditStaffModal(staffId);
         });
       });
     }
@@ -5617,6 +5565,154 @@ async function handleNewStaffSubmit(e) {
 }
 
 // ==========================================================================
+// Modal de Edição de Colaboradora
+// ==========================================================================
+function openEditStaffModal(staffId) {
+  const staff = (state.data.staff || []).find(s => s.id === staffId);
+  if (!staff) return;
+
+  const idInput = document.getElementById('edit-staff-id');
+  const nameInput = document.getElementById('edit-staff-name');
+  const emailInput = document.getElementById('edit-staff-email');
+  const toggle = document.getElementById('edit-staff-active-toggle');
+  const label = document.getElementById('edit-staff-status-label');
+
+  if (idInput) idInput.value = staff.id;
+  if (nameInput) nameInput.value = staff.name || '';
+  if (emailInput) emailInput.value = staff.email || '';
+  const isActive = staff.isActive !== false;
+  if (toggle) toggle.checked = isActive;
+  if (label) {
+    label.textContent = isActive ? 'Acesso Ativo' : 'Acesso Suspenso';
+    label.style.color = isActive ? '#15803D' : '#991B1B';
+  }
+
+  document.getElementById('modal-edit-staff')?.classList.add('active');
+}
+
+function closeEditStaffModal() {
+  document.getElementById('modal-edit-staff')?.classList.remove('active');
+}
+
+async function handleEditStaffSubmit(e) {
+  e.preventDefault();
+  const idInput = document.getElementById('edit-staff-id');
+  const nameInput = document.getElementById('edit-staff-name');
+  const emailInput = document.getElementById('edit-staff-email');
+  const toggle = document.getElementById('edit-staff-active-toggle');
+
+  const staffId = idInput ? idInput.value : '';
+  const name = nameInput ? nameInput.value.trim() : '';
+  const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  const isActive = toggle ? toggle.checked : true;
+
+  if (!staffId) return;
+
+  if (!name || !email) {
+    showToast('Informe o nome e o e-mail Google da colaboradora.');
+    return;
+  }
+
+  if (!email.includes('@') || !email.includes('.')) {
+    showToast('Informe um endereço de e-mail válido.');
+    return;
+  }
+
+  // Verifica duplicidade de e-mail com outra colaboradora
+  const emailConflict = (state.data.staff || []).some(s => s.id !== staffId && (s.email || '').toLowerCase() === email);
+  if (emailConflict) {
+    showToast('Este e-mail já está sendo utilizado por outra colaboradora.');
+    return;
+  }
+
+  const staff = (state.data.staff || []).find(s => s.id === staffId);
+  if (!staff) return;
+
+  const oldEmail = (staff.email || '').toLowerCase();
+  const oldName = staff.name;
+
+  staff.name = name;
+  staff.email = email;
+  staff.isActive = isActive;
+  staff.avatar = getInitials(name, 'EQ');
+
+  // Atualiza referências de nome nos registros existentes (se alterado)
+  if (oldName !== name) {
+    (state.data.timesheets || []).forEach(t => {
+      if (t.staffId === staffId) t.staffName = name;
+    });
+    (state.data.notes || []).forEach(n => {
+      if (n.authorId === staffId) n.authorName = name;
+    });
+    (state.data.purchases || []).forEach(p => {
+      if (p.buyerStaffId === staffId) p.buyerName = name;
+    });
+    (state.data.cleaningSchedule || []).forEach(c => {
+      if (c.assignedStaffId === staffId) c.assignedStaffName = name;
+    });
+  }
+
+  // Sincroniza com o Firebase Allowlist
+  if (window.AirbnbAuth) {
+    try {
+      if (oldEmail && oldEmail !== email) {
+        await AirbnbAuth.removeStaffFromAllowlist(oldEmail);
+        await AirbnbAuth.addStaffToAllowlist({
+          email: email,
+          name: name,
+          role: 'staff',
+          staffId: staffId
+        });
+      }
+      await AirbnbAuth.setStaffActiveInAllowlist(email, isActive);
+    } catch (err) {
+      console.warn('Erro ao atualizar permissão na allowlist do Firebase:', err);
+    }
+  }
+
+  saveData();
+  closeEditStaffModal();
+  renderOwnerDashboard();
+  showToast(`Colaboradora "${name}" atualizada com sucesso!`);
+}
+
+async function handleEditStaffDelete() {
+  const idInput = document.getElementById('edit-staff-id');
+  const staffId = idInput ? idInput.value : '';
+  const staff = (state.data.staff || []).find(s => s.id === staffId);
+  if (!staff) return;
+
+  if (state.data.staff.length <= 1) {
+    showToast('É necessário manter pelo menos uma colaboradora cadastrada.');
+    return;
+  }
+
+  const confirmed = await showConfirmDialog({
+    title: 'Excluir Colaboradora',
+    message: `Tem certeza que deseja excluir ${staff.name} e revogar seu acesso Google ao sistema?`,
+    confirmText: 'Excluir Colaboradora',
+    cancelText: 'Cancelar',
+    confirmDanger: true,
+    icon: 'trash'
+  });
+
+  if (confirmed) {
+    if (window.AirbnbAuth && staff.email) {
+      try {
+        await AirbnbAuth.removeStaffFromAllowlist(staff.email);
+      } catch (err) {
+        console.warn('Erro ao remover permissão da allowlist do Firebase:', err);
+      }
+    }
+    state.data.staff = state.data.staff.filter(s => s.id !== staffId);
+    saveData();
+    closeEditStaffModal();
+    renderOwnerDashboard();
+    showToast(`Colaboradora "${staff.name}" excluída.`);
+  }
+}
+
+// ==========================================================================
 // Modal de Agendamento de Limpeza / Escala
 // ==========================================================================
 function openNewEventModal(prefilledDate) {
@@ -5995,6 +6091,23 @@ function setupEventListeners() {
   document.getElementById('btn-open-new-staff-modal')?.addEventListener('click', openNewStaffModal);
   document.getElementById('btn-close-staff-form')?.addEventListener('click', closeNewStaffModal);
   document.getElementById('new-staff-form')?.addEventListener('submit', handleNewStaffSubmit);
+
+  // Modal Editar Staff
+  document.getElementById('btn-close-edit-staff-form')?.addEventListener('click', closeEditStaffModal);
+  document.getElementById('edit-staff-form')?.addEventListener('submit', handleEditStaffSubmit);
+  document.getElementById('btn-delete-staff-modal')?.addEventListener('click', handleEditStaffDelete);
+  document.getElementById('edit-staff-active-toggle')?.addEventListener('change', (e) => {
+    const lbl = document.getElementById('edit-staff-status-label');
+    if (lbl) {
+      if (e.target.checked) {
+        lbl.textContent = 'Acesso Ativo';
+        lbl.style.color = '#15803D';
+      } else {
+        lbl.textContent = 'Acesso Suspenso';
+        lbl.style.color = '#991B1B';
+      }
+    }
+  });
 
   // Modal Novo Evento de Calendário
   document.getElementById('btn-open-new-event-modal')?.addEventListener('click', openNewEventModal);

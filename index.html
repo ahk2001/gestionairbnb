@@ -1160,6 +1160,65 @@
     </div>
   </div>
 
+  <!-- ====================================================================
+       MODAL 5.1: EDITAR COLABORADORA (DONO)
+       ==================================================================== -->
+  <div id="modal-edit-staff" class="modal-overlay">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <h3 class="sheet-title">Editar Colaboradora</h3>
+        <button class="sheet-close-btn" id="btn-close-edit-staff-form" type="button">✕</button>
+      </div>
+
+      <form id="edit-staff-form" class="purchase-form">
+        <input type="hidden" id="edit-staff-id">
+
+        <div class="form-group">
+          <label for="edit-staff-name" class="form-label">Nome da Colaboradora</label>
+          <input type="text" id="edit-staff-name" class="form-input" placeholder="Ex: Ana Silva" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-staff-email" class="form-label">E-mail Google da Colaboradora</label>
+          <input type="email" id="edit-staff-email" class="form-input" placeholder="exemplo@gmail.com" required autocomplete="email">
+          <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;">
+            Este e-mail é utilizado para liberação de acesso seguro com o Google.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status de Acesso ao Sistema</label>
+          <div class="edit-staff-status-toggle-row">
+            <div>
+              <div id="edit-staff-status-label" style="font-size: 0.84rem; font-weight: 700; color: #15803D;">Acesso Ativo</div>
+              <small style="font-size: 0.70rem; color: var(--text-muted);">Quando suspenso, o acesso ao app é bloqueado.</small>
+            </div>
+            <label class="toggle-switch" style="margin: 0;">
+              <input type="checkbox" id="edit-staff-active-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+          <button type="submit" class="btn-submit-primary">
+            Salvar Alterações
+          </button>
+
+          <button type="button" id="btn-delete-staff-modal" class="btn-delete-staff-full">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Excluir Colaboradora</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 
   <!-- ====================================================================
        MODAL 6: AGENDAR EVENTO / LIMPEZA NO CALENDÁRIO
