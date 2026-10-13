@@ -2546,6 +2546,25 @@ html, body {
   border-color: rgba(139, 92, 246, 0.25);
 }
 
+.cal-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  font-size: 0.70rem;
+  font-weight: 800;
+  padding: 2.5px 8px;
+  border-radius: var(--radius-full);
+  background: #0F2744;
+  color: #FFFFFF !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+  flex-shrink: 0;
+}
+
+.cal-time-badge svg {
+  stroke: #FFFFFF;
+}
+
 .cal-date {
   font-size: 0.74rem;
   font-weight: 700;
@@ -4493,6 +4512,58 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 2px 7px;
   border-radius: 6px;
   letter-spacing: 0.02em;
+}
+
+/* Seletor Customizado de Horário de Início */
+.custom-time-input-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.custom-time-input {
+  width: 100%;
+  min-height: 48px;
+  height: 48px;
+  padding: 10px 14px 10px 48px !important;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: rgba(249, 250, 251, 0.92);
+  border: 1.5px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.22s var(--ease-spring);
+  box-sizing: border-box;
+}
+
+.custom-time-input:hover {
+  background: #FFFFFF;
+  border-color: rgba(15, 39, 68, 0.35);
+  box-shadow: 0 3px 10px rgba(15, 39, 68, 0.05);
+}
+
+.custom-time-input:focus {
+  border-color: var(--accent-navy);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(15, 39, 68, 0.08), 0 4px 14px rgba(11, 13, 17, 0.05);
+}
+
+.custom-time-icon-box {
+  position: absolute;
+  left: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(15, 39, 68, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-navy);
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 .custom-date-popover {

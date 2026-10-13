@@ -250,6 +250,13 @@ function loadData() {
           if (ev.eventType === 'reserva') {
             ev.eventType = 'checking';
           }
+          if (!ev.startTime) {
+            if (ev.eventType === 'checkout' || ev.eventType === 'limpeza') ev.startTime = '11:00';
+            else if (ev.eventType === 'checking') ev.startTime = '15:00';
+            else if (ev.eventType === 'manutencao') ev.startTime = '10:00';
+            else if (ev.eventType === 'compras') ev.startTime = '09:30';
+            else ev.startTime = '10:00';
+          }
         });
       }
       state.data.staff.forEach(s => {
@@ -2539,7 +2546,13 @@ function renderCalendar() {
     list = list.filter(e => e.eventDate && e.eventDate.startsWith(`${year}-${monthPad}`) && e.eventDate >= todayIso);
   }
 
-  list.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+  list.sort((a, b) => {
+    const dateDiff = new Date(a.eventDate) - new Date(b.eventDate);
+    if (dateDiff !== 0) return dateDiff;
+    const timeA = a.startTime || '00:00';
+    const timeB = b.startTime || '00:00';
+    return timeA.localeCompare(timeB);
+  });
 
   if (list.length === 0) {
     if (selectedDate) {
@@ -2603,7 +2616,18 @@ function renderCalendar() {
     return `
       <div class="calendar-card" style="border-left: 4px solid ${borderLeftColor}; ${isDone ? 'opacity: 0.58;' : ''}">
         <div class="cal-top">
-          <span class="cal-type-badge ${ev.eventType || 'checking'}">${ev.eventType || 'checking'}</span>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span class="cal-type-badge ${ev.eventType || 'checking'}">${ev.eventType || 'checking'}</span>
+            ${ev.startTime ? `
+              <span class="cal-time-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>${ev.startTime}</span>
+              </span>
+            ` : ''}
+          </div>
           <span class="cal-date">${formatDate(ev.eventDate)}</span>
         </div>
         <h4 class="cal-title">${escapeHtml(ev.title)}</h4>
@@ -6025,6 +6049,22 @@ function openNewEventModal(prefilledDate) {
     }
   }
 
+  const typeSelect = document.getElementById('event-type-select');
+  const timeInput = document.getElementById('event-time-input');
+  if (timeInput) {
+    const currentType = typeSelect ? typeSelect.value : 'limpeza';
+    if (currentType === 'checking') timeInput.value = '15:00';
+    else if (currentType === 'manutencao') timeInput.value = '10:00';
+    else if (currentType === 'compras') timeInput.value = '09:30';
+    else timeInput.value = '11:00';
+  }
+
+  const titleInput = document.getElementById('event-title-input');
+  if (titleInput) titleInput.value = '';
+
+  const notesInput = document.getElementById('event-notes-input');
+  if (notesInput) notesInput.value = '';
+
   syncAllCustomControls();
   document.getElementById('modal-new-event').classList.add('active');
 }
@@ -6039,6 +6079,7 @@ function handleNewEventSubmit(e) {
   const propId = document.getElementById('event-property-select').value;
   const title = document.getElementById('event-title-input').value.trim();
   const date = document.getElementById('event-date-input').value;
+  const time = document.getElementById('event-time-input')?.value || '11:00';
   const type = document.getElementById('event-type-select').value;
   const staffId = document.getElementById('event-staff-select').value;
   const notes = document.getElementById('event-notes-input').value.trim();
@@ -6050,6 +6091,7 @@ function handleNewEventSubmit(e) {
     propertyId: propId,
     title: title,
     eventDate: date,
+    startTime: time,
     eventType: type,
     assignedStaffId: staffId,
     assignedStaffName: staff ? staff.name : 'Equipe',
@@ -6404,6 +6446,18 @@ function setupEventListeners() {
   document.getElementById('btn-open-new-event-modal')?.addEventListener('click', openNewEventModal);
   document.getElementById('btn-close-event-modal')?.addEventListener('click', closeNewEventModal);
   document.getElementById('new-event-form')?.addEventListener('submit', handleNewEventSubmit);
+
+  // Sugestão de horário ao trocar o tipo de tarefa da escala
+  document.getElementById('event-type-select')?.addEventListener('change', (e) => {
+    const timeInput = document.getElementById('event-time-input');
+    if (!timeInput) return;
+    const type = e.target.value;
+    if (type === 'limpeza') timeInput.value = '11:00';
+    else if (type === 'checking') timeInput.value = '15:00';
+    else if (type === 'checkout') timeInput.value = '11:00';
+    else if (type === 'manutencao') timeInput.value = '10:00';
+    else if (type === 'compras') timeInput.value = '09:30';
+  });
 
   // Compartilhar WhatsApp
   document.getElementById('btn-share-report')?.addEventListener('click', copyFinancialReportToWhatsApp);
