@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=85">
-  <script src="i18n.js?v=85"></script>
+  <link rel="stylesheet" href="styles.css?v=86">
+  <script src="i18n.js?v=86"></script>
 </head>
 <body>
 
@@ -57,15 +57,11 @@
           </div>
         </div>
 
-        <!-- SELETOR DE IDIOMA NO PORTÃO DE ENTRADA -->
+        <!-- SELETOR DE IDIOMA NO PORTÃO DE ENTRADA (MINIMALISTA) -->
         <div class="gate-lang-wrapper">
           <div class="gate-lang-switch" role="group" aria-label="Selección de Idioma">
-            <button type="button" class="gate-lang-btn active" data-lang-btn="es" title="Español">
-              <span>🇪🇸 Español</span>
-            </button>
-            <button type="button" class="gate-lang-btn" data-lang-btn="pt" title="Português">
-              <span>🇧🇷 Português</span>
-            </button>
+            <button type="button" class="gate-lang-btn active" data-lang-btn="es" title="Español">ES</button>
+            <button type="button" class="gate-lang-btn" data-lang-btn="pt" title="Português">PT</button>
           </div>
         </div>
 
@@ -142,16 +138,10 @@
       </div>
 
       <div class="topbar-actions">
-        <!-- SELETOR DE IDIOMA ULTRA COMPACTO E ELEGANTE (ES | PT) -->
+        <!-- SELETOR DE IDIOMA ULTRA MINIMALISTA (ES | PT) -->
         <div class="topbar-lang-picker" role="group" aria-label="Selector de Idioma">
-          <button type="button" class="topbar-lang-btn active" data-lang-btn="es" title="Español" aria-pressed="true">
-            <span class="lang-flag">🇪🇸</span>
-            <span class="lang-text">ES</span>
-          </button>
-          <button type="button" class="topbar-lang-btn" data-lang-btn="pt" title="Português" aria-pressed="false">
-            <span class="lang-flag">🇧🇷</span>
-            <span class="lang-text">PT</span>
-          </button>
+          <button type="button" class="topbar-lang-btn active" data-lang-btn="es" title="Español" aria-pressed="true">ES</button>
+          <button type="button" class="topbar-lang-btn" data-lang-btn="pt" title="Português" aria-pressed="false">PT</button>
         </div>
 
         <button id="btn-switch-user" class="topbar-btn" type="button">
@@ -442,7 +432,7 @@
           </div>
           <div class="lang-options-grid">
             <button type="button" class="lang-option-card active" data-lang-btn="es">
-              <div class="lang-option-flag">🇪🇸</div>
+              <div class="lang-option-code">ES</div>
               <div class="lang-option-info">
                 <span class="lang-option-name" data-i18n="owner.langEs">Español</span>
                 <span class="lang-option-badge" data-i18n="owner.langDefault">Predeterminado</span>
@@ -453,7 +443,7 @@
             </button>
 
             <button type="button" class="lang-option-card" data-lang-btn="pt">
-              <div class="lang-option-flag">🇧🇷</div>
+              <div class="lang-option-code">PT</div>
               <div class="lang-option-info">
                 <span class="lang-option-name" data-i18n="owner.langPt">Português</span>
               </div>
@@ -1642,6 +1632,6 @@
   <script src="cloud-sync.js?v=83"></script>
   <script src="touch-scroll.js?v=83"></script>
   <script src="initialData.js?v=83"></script>
-  <script src="app.js?v=85"></script>
+  <script src="app.js?v=86"></script>
 </body>
 </html>
