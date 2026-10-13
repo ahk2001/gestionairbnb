@@ -5486,6 +5486,147 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   transform: translateX(2px);
 }
 
+/* Botão "Ver Mais Compras" */
+.btn-view-all-purchases {
+  width: 100%;
+  height: 44px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-light);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--accent-navy);
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(11, 13, 17, 0.03);
+}
+
+.btn-view-all-purchases:hover {
+  background: #F8FAFC;
+  border-color: rgba(15, 39, 68, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(11, 13, 17, 0.06);
+}
+
+.btn-view-all-purchases:active {
+  transform: scale(0.99);
+}
+
+.btn-view-all-purchases .btn-view-all-chevron {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.btn-view-all-purchases:hover .btn-view-all-chevron {
+  transform: translateX(2px);
+  color: var(--accent-navy);
+}
+
+/* Modal de Todas as Compras */
+#modal-all-purchases {
+  z-index: 3050;
+}
+
+#modal-view-purchase {
+  z-index: 3150;
+}
+
+.all-purchases-sheet {
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.all-purchases-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.all-purchases-date-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0 10px;
+  height: 40px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.all-purchases-date-wrap:focus-within {
+  border-color: var(--accent-navy);
+  box-shadow: 0 0 0 3px rgba(15, 39, 68, 0.08);
+}
+
+.all-purchases-cal-icon {
+  color: var(--text-muted);
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.all-purchases-date-input {
+  border: none;
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+}
+
+.all-purchases-clear-btn {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #F1F5F9;
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.all-purchases-clear-btn:hover {
+  background: #E2E8F0;
+  color: var(--accent-navy);
+}
+
+.all-purchases-summary-strip {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 2px 2px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.all-purchases-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  min-height: 180px;
+  max-height: calc(88vh - 220px);
+}
+
 /* Modal de Detalhes da Compra (Bottom Sheet) */
 .view-purchase-sheet {
   max-height: 88vh;

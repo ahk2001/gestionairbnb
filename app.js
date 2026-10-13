@@ -158,8 +158,14 @@ function initApp() {
         }
       } else if (error) {
         if (error.code === 'ACCESS_DENIED' || error.code === 'ACCOUNT_INACTIVE') {
-          const deniedMsg = error.code === 'ACCOUNT_INACTIVE' ? t('gate.accountInactive') : t('gate.deniedDesc');
+          const isInactive = error.code === 'ACCOUNT_INACTIVE';
+          const deniedMsg = isInactive
+            ? t('gate.accountInactive')
+            : (error.email
+                ? t('gate.deniedEmail', { email: error.email })
+                : t('gate.deniedDesc'));
           setGateDenied(deniedMsg, error.email);
+          showToast(deniedMsg, 8000);
         } else if (error.code === 'NOT_CONFIGURED') {
           loadSession();
           if (state.currentUser) {
@@ -180,6 +186,10 @@ function initApp() {
           renderAll();
         } else {
           state.currentUser = null;
+          const denied = document.getElementById('gate-auth-denied');
+          if (denied && denied.style.display === 'block') {
+            return;
+          }
           showGateScreen();
         }
       }
@@ -760,6 +770,10 @@ function showGateScreen() {
   const denied = document.getElementById('gate-auth-denied');
   const hint = document.getElementById('gate-config-hint');
 
+  if (denied && denied.style.display === 'block') {
+    return;
+  }
+
   if (idle) idle.style.display = 'block';
   if (loading) loading.style.display = 'none';
   if (denied) denied.style.display = 'none';
@@ -806,7 +820,7 @@ function setGateDenied(message, email = '') {
 
   // Desconecta a conta não autorizada no Firebase para evitar loop de sessão presa
   if (window.AirbnbAuth && typeof AirbnbAuth.logout === 'function') {
-    AirbnbAuth.logout().catch(() => {});
+    // Logout gerenciado silenciosamente por auth.js
   }
 }
 
@@ -1283,7 +1297,9 @@ async function performGoogleLogin() {
     return;
   }
 
-  setGateLoading(true, 'Abrindo login com o Google...');
+  const deniedEl = document.getElementById('gate-auth-denied');
+  if (deniedEl) deniedEl.style.display = 'none';
+  setGateLoading(true, t('gate.connecting'));
 
   try {
     const user = await window.AirbnbAuth.loginWithGoogle();
@@ -3232,50 +3248,32 @@ function renderOwnerDashboard() {
         </div>
       `;
     } else {
-      const sortedPurchases = [...filteredPurchases].sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+      const sortedPurchases = [...filteredPurchases].sort((a, b) => {
+        const timeA = new Date(a.purchaseDate || a.createdAt || 0).getTime();
+        const timeB = new Date(b.purchaseDate || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+      const MAX_RECENT = 5;
+      const visiblePurchases = sortedPurchases.slice(0, MAX_RECENT);
+      const hasMore = sortedPurchases.length > MAX_RECENT;
       const receiptTagTxt = window.I18N ? window.I18N.t('purchases.receiptTag') : 'Nota Fiscal';
-      purchasesContainer.innerHTML = sortedPurchases.map(p => {
-        const hasReceipt = Boolean(p.receiptPhoto);
-        const buyerObj = (state.data.staff || []).find(s => s.id === p.buyerStaffId || s.name === p.buyerName);
-        const buyerPhoto = p.buyerPhoto || buyerObj?.photo || (p.buyerName === 'Gestor' ? (state.data.ownerProfile?.photo || OWNER_PROFILE.photo) : null);
-        return `
-          <div class="clickable-purchase-card" data-purchase-id="${p.id}" role="button" tabindex="0" title="Clique para visualizar detalhes e nota fiscal">
-            <div class="purchase-card-left">
-              ${p.productPhoto
-                ? `<img src="${p.productPhoto}" class="purchase-card-thumb" alt="${p.productName}">`
-                : `<div class="purchase-card-thumb-placeholder">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>
-                  </div>`
-              }
-              <div style="min-width: 0; flex: 1;">
-                <h5 class="purchase-card-title">${p.productName}</h5>
-                <div class="purchase-card-meta">
-                  <span class="purchase-meta-prop-badge">${p.propertyId}</span>
-                  <span style="display: inline-flex; align-items: center; gap: 4px;">
-                    ${buyerPhoto ? `<img src="${buyerPhoto}" class="purchase-buyer-img" alt="">` : ''}
-                    <span>${p.buyerName}</span>
-                  </span>
-                  <span>•</span>
-                  <span>${formatDate(p.purchaseDate)}</span>
-                  ${hasReceipt ? `
-                    <span class="purchase-card-receipt-tag">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>
-                      ${receiptTagTxt}
-                    </span>
-                  ` : ''}
-                </div>
-              </div>
-            </div>
-            <div class="purchase-card-right">
-              <div>
-                <div class="purchase-card-cost">${formatMoney(p.totalCost)}</div>
-                <div class="purchase-card-qty">+${p.quantityBought} un</div>
-              </div>
-              <span class="purchase-card-arrow">›</span>
-            </div>
-          </div>
+
+      let purchasesHtml = visiblePurchases.map(p => renderPurchaseCardHtml(p, receiptTagTxt)).join('');
+
+      if (hasMore) {
+        const totalCount = sortedPurchases.length;
+        const btnMoreLabel = window.I18N
+          ? window.I18N.t('purchases.btnViewMore', { count: totalCount })
+          : `Ver mais comprovantes (${totalCount})`;
+        purchasesHtml += `
+          <button type="button" class="btn-view-all-purchases" id="btn-open-all-purchases">
+            <span>${btnMoreLabel}</span>
+            <span class="btn-view-all-chevron">›</span>
+          </button>
         `;
-      }).join('');
+      }
+
+      purchasesContainer.innerHTML = purchasesHtml;
 
       // Adiciona listener de clique para abrir o modal de detalhes e comprovante
       purchasesContainer.querySelectorAll('.clickable-purchase-card').forEach(card => {
@@ -3284,6 +3282,14 @@ function renderOwnerDashboard() {
           openViewPurchaseModal(purchaseId);
         });
       });
+
+      const btnOpenAll = purchasesContainer.querySelector('#btn-open-all-purchases');
+      if (btnOpenAll) {
+        btnOpenAll.addEventListener('click', (e) => {
+          e.preventDefault();
+          openAllPurchasesModal();
+        });
+      }
     }
   }
 
@@ -4912,6 +4918,159 @@ function closeViewPurchaseModal() {
 
 window.openViewPurchaseModal = openViewPurchaseModal;
 window.closeViewPurchaseModal = closeViewPurchaseModal;
+
+// ==========================================================================
+// RENDERIZAÇÃO E MODAL DE COMPROVANTES / HISTÓRICO COMPLETO DE COMPRAS
+// ==========================================================================
+
+function renderPurchaseCardHtml(p, receiptTagTxt) {
+  const hasReceipt = Boolean(p.receiptPhoto);
+  const buyerObj = (state.data.staff || []).find(s => s.id === p.buyerStaffId || s.name === p.buyerName);
+  const buyerPhoto = p.buyerPhoto || buyerObj?.photo || (p.buyerName === 'Gestor' ? (state.data.ownerProfile?.photo || OWNER_PROFILE.photo) : null);
+  const tagTxt = receiptTagTxt || (window.I18N ? window.I18N.t('purchases.receiptTag') : 'Nota Fiscal');
+  const dateFormatted = typeof formatDate === 'function' ? formatDate(p.purchaseDate) : (p.purchaseDate || '');
+  const costFormatted = typeof formatMoney === 'function' ? formatMoney(p.totalCost) : `€ ${(Number(p.totalCost) || 0).toFixed(2)}`;
+
+  return `
+    <div class="clickable-purchase-card" data-purchase-id="${p.id}" role="button" tabindex="0" title="Clique para visualizar detalhes e nota fiscal">
+      <div class="purchase-card-left">
+        ${p.productPhoto
+          ? `<img src="${p.productPhoto}" class="purchase-card-thumb" alt="${escapeHtml(p.productName || '')}">`
+          : `<div class="purchase-card-thumb-placeholder">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>
+            </div>`
+        }
+        <div style="min-width: 0; flex: 1;">
+          <h5 class="purchase-card-title">${escapeHtml(p.productName || '')}</h5>
+          <div class="purchase-card-meta">
+            <span class="purchase-meta-prop-badge">${escapeHtml(p.propertyId || '')}</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              ${buyerPhoto ? `<img src="${buyerPhoto}" class="purchase-buyer-img" alt="">` : ''}
+              <span>${escapeHtml(p.buyerName || '')}</span>
+            </span>
+            <span>•</span>
+            <span>${dateFormatted}</span>
+            ${hasReceipt ? `
+              <span class="purchase-card-receipt-tag">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>
+                ${tagTxt}
+              </span>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="purchase-card-right">
+        <div>
+          <div class="purchase-card-cost">${costFormatted}</div>
+          <div class="purchase-card-qty">+${p.quantityBought || 1} un</div>
+        </div>
+        <span class="purchase-card-arrow">›</span>
+      </div>
+    </div>
+  `;
+}
+
+let _allPurchasesFilterDate = '';
+
+function openAllPurchasesModal(selectedDate = '') {
+  const modal = document.getElementById('modal-all-purchases');
+  if (!modal) return;
+
+  _allPurchasesFilterDate = selectedDate || '';
+  const dateInput = document.getElementById('all-purchases-date-input');
+  if (dateInput) {
+    dateInput.value = _allPurchasesFilterDate;
+  }
+
+  renderAllPurchasesModalContent();
+
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+}
+
+function closeAllPurchasesModal() {
+  const modal = document.getElementById('modal-all-purchases');
+  if (modal) {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      if (!modal.classList.contains('active')) {
+        modal.style.display = 'none';
+      }
+    }, 320);
+  }
+}
+
+function renderAllPurchasesModalContent() {
+  // Ordena sempre as compras mais recentes primeiro
+  const allPurchases = [...(state.data.purchases || [])].sort((a, b) => {
+    const timeA = new Date(a.purchaseDate || a.createdAt || 0).getTime();
+    const timeB = new Date(b.purchaseDate || b.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
+
+  let filteredList = allPurchases;
+  if (_allPurchasesFilterDate && _allPurchasesFilterDate.trim() !== '') {
+    filteredList = allPurchases.filter(p => {
+      if (!p.purchaseDate) return false;
+      const pDateStr = String(p.purchaseDate).slice(0, 10);
+      return pDateStr === _allPurchasesFilterDate;
+    });
+  }
+
+  const totalSum = filteredList.reduce((acc, p) => acc + (Number(p.totalCost) || 0), 0);
+  const sumFormatted = typeof formatMoney === 'function' ? formatMoney(totalSum) : `€ ${totalSum.toFixed(2)}`;
+
+  // Badge no topo do modal
+  const countBadge = document.getElementById('modal-all-purchases-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${filteredList.length} ${filteredList.length === 1 ? 'compra' : 'compras'}`;
+  }
+
+  // Barra de resumo (total de compras e soma em dinheiro)
+  const summaryTxt = document.getElementById('all-purchases-summary-text');
+  if (summaryTxt) {
+    const summaryStr = window.I18N
+      ? window.I18N.t('purchases.filteredSummary', { count: filteredList.length, sum: sumFormatted })
+      : `${filteredList.length} compras • Total: ${sumFormatted}`;
+    summaryTxt.textContent = summaryStr;
+  }
+
+  // Lista scrollável de compras
+  const listEl = document.getElementById('all-purchases-modal-list');
+  if (listEl) {
+    if (filteredList.length === 0) {
+      const emptyMsg = _allPurchasesFilterDate
+        ? (window.I18N ? window.I18N.t('purchases.noPurchasesDate') : 'Nenhum comprovante encontrado para esta data.')
+        : (window.I18N ? window.I18N.t('purchases.emptyPeriod') : 'Nenhuma compra registrada.');
+      listEl.innerHTML = `
+        <div style="text-align: center; padding: 36px 16px; font-size: 0.84rem; color: var(--text-muted); background: #F8FAFC; border: 1.5px dashed var(--border-light); border-radius: 14px; margin: 8px 0;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin: 0 auto 8px; display: block; opacity: 0.5;">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+            <line x1="16" x2="16" y1="2" y2="6"/>
+            <line x1="8" x2="8" y1="2" y2="6"/>
+            <line x1="3" x2="21" y1="10" y2="10"/>
+          </svg>
+          ${emptyMsg}
+        </div>
+      `;
+    } else {
+      const receiptTagTxt = window.I18N ? window.I18N.t('purchases.receiptTag') : 'Nota Fiscal';
+      listEl.innerHTML = filteredList.map(p => renderPurchaseCardHtml(p, receiptTagTxt)).join('');
+
+      listEl.querySelectorAll('.clickable-purchase-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const purchaseId = card.dataset.purchaseId;
+          openViewPurchaseModal(purchaseId);
+        });
+      });
+    }
+  }
+}
+
+window.renderPurchaseCardHtml = renderPurchaseCardHtml;
+window.openAllPurchasesModal = openAllPurchasesModal;
+window.closeAllPurchasesModal = closeAllPurchasesModal;
+window.renderAllPurchasesModalContent = renderAllPurchasesModalContent;
 
 // Compartilhar Resumo Financeiro no WhatsApp (respeita o filtro de período selecionado)
 function copyFinancialReportToWhatsApp() {
@@ -7059,7 +7218,8 @@ function setupEventListeners() {
   if (btnGateTryAnother) {
     btnGateTryAnother.onclick = async (e) => {
       e.preventDefault();
-      setGateLoading(true, 'Abrindo login com o Google...');
+      const denied = document.getElementById('gate-auth-denied');
+      if (denied) denied.style.display = 'none';
       if (window.AirbnbAuth && typeof AirbnbAuth.logout === 'function') {
         await AirbnbAuth.logout().catch(() => {});
       }
@@ -7433,6 +7593,35 @@ function setupEventListeners() {
   document.getElementById('btn-close-view-purchase')?.addEventListener('click', closeViewPurchaseModal);
   document.getElementById('btn-close-view-purchase-bottom')?.addEventListener('click', closeViewPurchaseModal);
 
+  // Modal Histórico Completo de Compras & Filtro de Data
+  document.getElementById('btn-close-all-purchases')?.addEventListener('click', closeAllPurchasesModal);
+  document.getElementById('btn-close-all-purchases-bottom')?.addEventListener('click', closeAllPurchasesModal);
+
+  const allPurchasesDateInput = document.getElementById('all-purchases-date-input');
+  if (allPurchasesDateInput) {
+    const handleDateFilterChange = (e) => {
+      _allPurchasesFilterDate = e.target.value || '';
+      renderAllPurchasesModalContent();
+    };
+    allPurchasesDateInput.addEventListener('change', handleDateFilterChange);
+    allPurchasesDateInput.addEventListener('input', handleDateFilterChange);
+  }
+
+  document.getElementById('btn-all-purchases-clear-date')?.addEventListener('click', () => {
+    _allPurchasesFilterDate = '';
+    const dateInput = document.getElementById('all-purchases-date-input');
+    if (dateInput) dateInput.value = '';
+    renderAllPurchasesModalContent();
+  });
+
+  // Delegação de cliques para cards de compra dentro do modal de histórico completo
+  document.getElementById('all-purchases-modal-list')?.addEventListener('click', (e) => {
+    const card = e.target.closest('.clickable-purchase-card, [data-purchase-id]');
+    if (card && card.dataset.purchaseId) {
+      openViewPurchaseModal(card.dataset.purchaseId);
+    }
+  });
+
   // Delegação de cliques para cards de compra (funciona em qualquer clique no card ou filhos)
   document.getElementById('recent-purchases-container')?.addEventListener('click', (e) => {
     const card = e.target.closest('.clickable-purchase-card, [data-purchase-id]');
@@ -7467,6 +7656,8 @@ function setupEventListeners() {
           _confirmDialogResolver(false);
         } else if (overlay.id === 'modal-prompt-dialog' && _promptDialogResolver) {
           _promptDialogResolver(null);
+        } else if (overlay.id === 'modal-all-purchases') {
+          closeAllPurchasesModal();
         } else {
           overlay.classList.remove('active');
         }

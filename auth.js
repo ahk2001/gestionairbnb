@@ -13,6 +13,7 @@
   let authListeners = [];
   let currentUserState = null;
   let lastAuthError = null;
+  let isSuppressingNullAuth = false;
 
   let cachedModules = null;
 
@@ -159,6 +160,9 @@
 
       authMod.onAuthStateChanged(firebaseAuth, async (fbUser) => {
         if (!fbUser) {
+          if (isSuppressingNullAuth) {
+            return;
+          }
           notifyListeners(null, null);
           return;
         }
@@ -174,6 +178,19 @@
               email: userEmail,
               message: `O e-mail ${userEmail} não possui autorização de acesso ao sistema.`
             };
+
+            // Desconecta silenciosamente a conta não autorizada no Firebase
+            try {
+              isSuppressingNullAuth = true;
+              await authMod.signOut(firebaseAuth);
+            } catch (signOutErr) {
+              console.warn('[AirbnbAuth] Aviso ao desconectar conta não permitida:', signOutErr);
+            } finally {
+              setTimeout(() => {
+                isSuppressingNullAuth = false;
+              }, 800);
+            }
+
             notifyListeners(null, deniedErr);
             return;
           }
@@ -185,6 +202,18 @@
               email: userEmail,
               message: `O acesso para o e-mail ${userEmail} está suspenso temporariamente.`
             };
+
+            try {
+              isSuppressingNullAuth = true;
+              await authMod.signOut(firebaseAuth);
+            } catch (signOutErr) {
+              console.warn('[AirbnbAuth] Aviso ao desconectar conta suspensa:', signOutErr);
+            } finally {
+              setTimeout(() => {
+                isSuppressingNullAuth = false;
+              }, 800);
+            }
+
             notifyListeners(null, inactiveErr);
             return;
           }
