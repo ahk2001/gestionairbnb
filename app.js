@@ -3203,6 +3203,18 @@ function formatTimesheetDate(dateStr) {
   return `${dayName}, ${parts[2]} de ${monthName} de ${parts[0]}`;
 }
 
+function formatTimesheetDateNoYear(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const dayName = days[d.getDay()] || '';
+  const monthName = months[d.getMonth()] || '';
+  return `${dayName}, ${parts[2]} de ${monthName}`;
+}
+
 function getTodayDateString() {
   const now = new Date();
   const y = now.getFullYear();
@@ -3381,7 +3393,7 @@ function renderTimesheets() {
   listContainer.innerHTML = `
     <div class="timesheet-list-wrap">
       ${timesheets.map(t => {
-        const dateFormatted = formatTimesheetDate(t.date);
+        const dateFormatted = formatTimesheetDateNoYear(t.date);
         const hasEnd = Boolean(t.endTime);
         const totalText = (hasEnd && t.totalMinutes !== null && t.totalMinutes !== undefined)
           ? minutesToFormatted(t.totalMinutes)
@@ -3854,22 +3866,11 @@ function showManagerTimesheetHours(staffId, dateStr) {
           breakDisplay = `Pausa: ${t.breakStartTime}`;
         }
 
-        const dateFormatted = formatTimesheetDate(t.date || dateStr);
+        const dateFormatted = formatTimesheetDateNoYear(t.date || dateStr);
         const isPaid = Boolean(t.isPaid);
         const paidBadgeHtml = isPaid
-          ? `<span class="mgr-ts-mini-status is-paid" title="Horas confirmadas como pagas">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Pago</span>
-            </span>`
-          : `<span class="mgr-ts-mini-status is-unpaid" title="Horas pendentes de pagamento">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span>Não Pago</span>
-            </span>`;
+          ? `<span class="mgr-ts-status-dot is-paid" title="Horas Pagas"></span>`
+          : `<span class="mgr-ts-status-dot is-unpaid" title="Não Pago (Pendente)"></span>`;
 
         const managerStatusHtml = isPaid
           ? `<div class="mgr-ts-payment-status is-paid">

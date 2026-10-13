@@ -6871,6 +6871,26 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
+.mgr-ts-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.mgr-ts-status-dot.is-paid {
+  background: #10B981;
+  box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.25);
+}
+
+.mgr-ts-status-dot.is-unpaid {
+  background: #F59E0B;
+  box-shadow: 0 0 0 2.5px rgba(245, 158, 11, 0.25);
+}
+
 .mgr-ts-day-label {
   font-size: 0.80rem;
   font-weight: 700;
