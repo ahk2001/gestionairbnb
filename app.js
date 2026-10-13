@@ -4581,11 +4581,6 @@ function getCustomOptionMeta(select, opt) {
     return { thumb: '', badge, badgeClass, title, sub: '' };
   }
 
-  // Status
-  if (select.id === 'new-product-status') {
-    let badgeClass = `badge-status-${val.toLowerCase()}`;
-    return { thumb: '', badge: label, badgeClass, title: label, sub: '' };
-  }
 
   // Tipo de Evento
   if (select.id === 'event-type-select') {
@@ -5680,7 +5675,6 @@ function handleNewProductSubmit(e) {
   const propInput = document.getElementById('new-product-property');
   const unitInput = document.getElementById('new-product-unit');
   const qtyInput = document.getElementById('new-product-quantity');
-  const statusInput = document.getElementById('new-product-status');
   const noteInput = document.getElementById('new-product-note');
 
   const faltaInput = document.getElementById('new-product-falta');
