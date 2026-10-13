@@ -23,6 +23,19 @@ const STORAGE_DATA_KEY = 'AIRBNB_CONTROL_DATA_V5';
 const STORAGE_SESSION_KEY = 'AIRBNB_CONTROL_SESSION_V3';
 const STORAGE_CURRENCY_KEY = 'AIRBNB_CONTROL_CURRENCY_V2';
 
+// Internacionalização rápida (I18N Helpers)
+function t(key, params = {}) {
+  if (typeof window !== 'undefined' && window.I18N && typeof window.I18N.t === 'function') {
+    return window.I18N.t(key, params);
+  }
+  return key;
+}
+
+function isSpanish() {
+  return (typeof window !== 'undefined' && window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+}
+
+
 // Estado da Aplicação
 const state = {
   data: {
@@ -145,7 +158,8 @@ function initApp() {
         }
       } else if (error) {
         if (error.code === 'ACCESS_DENIED' || error.code === 'ACCOUNT_INACTIVE') {
-          setGateDenied(error.message, error.email);
+          const deniedMsg = error.code === 'ACCOUNT_INACTIVE' ? t('gate.accountInactive') : t('gate.deniedDesc');
+          setGateDenied(deniedMsg, error.email);
         } else if (error.code === 'NOT_CONFIGURED') {
           loadSession();
           if (state.currentUser) {
@@ -156,7 +170,7 @@ function initApp() {
           }
         } else {
           showGateScreen();
-          showToast(error.message || 'Erro na autenticação.');
+          showToast(error.message || t('toast.authError'));
         }
       } else {
         // Usuário deslogado
@@ -479,7 +493,7 @@ function formatDate(isoDate) {
   if (!isoDate) return '';
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return isoDate;
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return d.toLocaleDateString(isSpanish() ? 'es-ES' : 'pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
 function formatDateTime(isoDate) {
@@ -525,10 +539,10 @@ let _promptDialogResolver = null;
 
 function showConfirmDialog(options = {}) {
   const {
-    title = 'Confirmar Ação',
+    title = t('dialog.confirmTitle'),
     message = '',
-    confirmText = 'Confirmar',
-    cancelText = 'Cancelar',
+    confirmText = t('dialog.confirmBtn'),
+    cancelText = t('dialog.cancelBtn'),
     confirmDanger = false,
     icon = 'question'
   } = (typeof options === 'string' ? { message: options } : options);
@@ -639,13 +653,13 @@ function showConfirmDialog(options = {}) {
 
 function showPromptDialog(options = {}) {
   const {
-    title = 'Informação',
+    title = t('dialog.promptTitle'),
     message = '',
     defaultValue = '',
     placeholder = '',
     inputType = 'text',
     maxLength = null,
-    confirmText = 'Salvar'
+    confirmText = t('dialog.saveBtn')
   } = (typeof options === 'string' ? { message: options } : options);
 
   const modal = document.getElementById('modal-prompt-dialog');
@@ -1062,7 +1076,7 @@ async function saveUserProfile(newName, newPhoto) {
   if (!state.currentUser) return;
   const trimmed = (newName || '').trim();
   if (!trimmed) {
-    showToast('O nome não pode ficar em branco.');
+    showToast(t('toast.nameNotEmpty'));
     return;
   }
 
@@ -1233,17 +1247,17 @@ async function saveUserProfile(newName, newPhoto) {
   saveData();
   saveSession(state.currentUser);
   renderAll();
-  showToast('Perfil atualizado com sucesso!');
+  showToast(t('toast.profileSaved'));
 }
 
 async function performGoogleLogin() {
   // Se o Firebase ainda não foi configurado com credenciais reais
   if (!window.isFirebaseConfigured || !window.isFirebaseConfigured()) {
     const useDemo = await showConfirmDialog({
-      title: 'Configuração do Firebase',
-      message: 'O Firebase ainda não está configurado em firebase-config.js. Deseja acessar em Modo de Demonstração (Gestor)?',
-      confirmText: 'Entrar como Gestor (Demo)',
-      cancelText: 'Cancelar',
+      title: t('dialog.demoTitle'),
+      message: t('dialog.demoMsg'),
+      confirmText: t('dialog.demoConfirm'),
+      cancelText: t('dialog.cancelBtn'),
       confirmDanger: false,
       icon: 'sync'
     });
@@ -1264,7 +1278,7 @@ async function performGoogleLogin() {
       updateTopbarUser();
       updateTabElementsVisibility(state.activeTab);
       renderAll();
-      showToast('Acesso em Modo de Demonstração liberado.');
+      showToast(t('toast.demoAccess'));
     }
     return;
   }
@@ -1282,18 +1296,18 @@ async function performGoogleLogin() {
     console.error('Erro ao efetuar login com o Google:', err);
     setGateLoading(false);
 
-    let errMsg = 'Não foi possível concluir o login com o Google.';
+    let errMsg = t('auth.loginFailed');
     if (err && err.code) {
       if (err.code === 'auth/operation-not-allowed') {
-        errMsg = 'Atenção: O login com Google ainda não foi ativado no Firebase Console (Aba "Método de login").';
+        errMsg = t('auth.operationNotAllowed');
       } else if (err.code === 'auth/unauthorized-domain') {
-        errMsg = 'O Google ainda está propagando o domínio autorizado. Aguarde 1 minuto e tente novamente.';
+        errMsg = t('auth.unauthorizedDomain');
       } else if (err.code === 'auth/popup-blocked') {
-        errMsg = 'A janela pop-up foi bloqueada pelo navegador. Permita pop-ups neste site.';
+        errMsg = t('auth.popupBlocked');
       } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         return;
       } else {
-        errMsg = `Erro (${err.code}): ${err.message || 'Falha de autenticação'}`;
+        errMsg = `Erro (${err.code}): ${err.message || t('auth.authFailed')}`;
       }
     } else if (err && err.message) {
       errMsg = `Erro: ${err.message}`;
@@ -1334,7 +1348,7 @@ async function logout() {
   state.currentUser = null;
   saveSession(null);
   showGateScreen();
-  showToast('Sessão encerrada com sucesso.');
+  showToast(t('toast.sessionClosed'));
 }
 
 // Stubs para compatibilidade com chamadas legadas
@@ -1516,8 +1530,8 @@ function openThresholdsModal(productId) {
   if (idInput) idInput.value = product.id;
   if (imgEl) imgEl.src = product.photo || 'https://placehold.co/100x100?text=Produto';
   if (nameEl) nameEl.textContent = product.name;
-  if (subEl) subEl.textContent = `Regras de quantidade para ${product.name} (${product.propertyId})`;
-  if (qtyEl) qtyEl.textContent = `Estoque Atual: ${product.quantity} ${product.unit || 'un'}`;
+  if (subEl) subEl.textContent = t('thresholds.rulesForProduct', { name: product.name, prop: product.propertyId });
+  if (qtyEl) qtyEl.textContent = t('thresholds.currentStock', { qty: `${product.quantity} ${product.unit || (isSpanish() ? 'ud' : 'un')}` });
 
   if (faltaInput) faltaInput.value = faltaMax;
   if (atencaoInput) atencaoInput.value = atencaoMax;
@@ -1585,7 +1599,7 @@ function handleThresholdsSubmit(e) {
   saveData();
   closeThresholdsModal();
   renderAll();
-  showToast(`Regras de semáforo salvas para "${product.name}"!`);
+  showToast(t('toast.rulesSavedForProduct', { name: product.name }));
 }
 
 function renderProducts() {
@@ -1724,7 +1738,7 @@ function renderProducts() {
         <div class="product-card-footer">
           <div class="card-footer-left">
             ${!hasNote ? `
-              <button type="button" class="btn-card-note btn-trigger-note" data-id="${item.id}" title="Adicionar nota a este produto" aria-label="Adicionar nota">
+              <button type="button" class="btn-card-note btn-trigger-note" data-id="${item.id}" title="${t('inventory.cardNoteTooltip')}" aria-label="${t('inventory.cardNoteAria')}">
                 <span class="btn-note-dot"></span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
@@ -1733,13 +1747,13 @@ function renderProducts() {
               </button>
             ` : ''}
 
-            <button type="button" class="btn-card-edit btn-trigger-edit-product" data-id="${item.id}" data-catalog-id="${item.catalogId || ''}" title="Editar informações e regras de quantidade do produto" aria-label="Editar produto">
+            <button type="button" class="btn-card-edit btn-trigger-edit-product" data-id="${item.id}" data-catalog-id="${item.catalogId || ''}" title="${t('inventory.cardEditTooltip')}" aria-label="${t('inventory.cardEditAria')}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
               </svg>
             </button>
 
-            <button type="button" class="btn-card-delete btn-trigger-delete" data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" data-prop="${item.propertyId}" title="Apagar este produto do estoque" aria-label="Apagar produto">
+            <button type="button" class="btn-card-delete btn-trigger-delete" data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" data-prop="${item.propertyId}" title="${t('inventory.cardDeleteTooltip')}" aria-label="${t('inventory.cardDeleteAria')}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
               </svg>
@@ -1836,7 +1850,7 @@ function setProductStatus(productId, status) {
   renderProducts();
   renderUrgentItems();
 
-  const labels = { suficiente: 'Suficiente', acabando: 'Atenção', falta: 'Falta' };
+  const labels = { suficiente: t('status.suficiente'), acabando: t('status.acabando'), falta: t('status.falta') };
   showToast(`${product.name}: ${labels[status]}`);
 }
 
@@ -2018,10 +2032,10 @@ function renderProductsTab() {
     btn.onclick = async () => {
       const name = decodeURIComponent(btn.dataset.name || 'Produto');
       const confirmed = await showConfirmDialog({
-        title: 'Mover para a Lixeira',
-        message: `Deseja mover "${name}" para a lixeira?\n\nEle será retirado dos estoques, mas ficará guardado por 30 dias na aba Lixeira caso queira restaurá-lo com 1 clique.`,
-        confirmText: 'Mover para Lixeira',
-        cancelText: 'Cancelar',
+        title: t('dialog.moveToTrashTitle'),
+        message: t('dialog.moveToTrashMsg', { name }),
+        confirmText: t('dialog.moveToTrashConfirm'),
+        cancelText: t('dialog.cancelBtn'),
         confirmDanger: true,
         icon: 'trash'
       });
@@ -2038,10 +2052,10 @@ function renderProductsTab() {
   trashContainer?.querySelectorAll('.btn-trash-purge').forEach(btn => {
     btn.onclick = async () => {
       const confirmed = await showConfirmDialog({
-        title: 'Excluir Definitivamente',
-        message: 'Deseja excluir este produto definitivamente da lixeira? Esta ação não pode ser desfeita.',
-        confirmText: 'Excluir Definitivamente',
-        cancelText: 'Cancelar',
+        title: t('dialog.deleteTrashTitle'),
+        message: t('dialog.deleteTrashConfirm', { name: decodeURIComponent(btn.dataset.name || '') }),
+        confirmText: t('dialog.deleteTrashConfirmBtn'),
+        cancelText: t('dialog.cancelBtn'),
         confirmDanger: true,
         icon: 'trash'
       });
@@ -2082,7 +2096,7 @@ function moveProductToTrash(catalogId) {
 
   saveData();
   renderAll();
-  showToast(`"${catItem.name}" movido para a lixeira (guardado por 30 dias).`);
+  showToast(t('toast.productMovedTrash'));
 }
 
 function restoreTrashProduct(trashId) {
@@ -2132,7 +2146,7 @@ function restoreTrashProduct(trashId) {
 
   saveData();
   renderAll();
-  showToast(`"${item.name}" restaurado com sucesso para o estoque!`);
+  showToast(t('toast.productRestored'));
 }
 
 function purgeTrashProduct(trashId) {
@@ -2141,7 +2155,7 @@ function purgeTrashProduct(trashId) {
   state.data.trashProducts = state.data.trashProducts.filter(t => t.id !== trashId);
   saveData();
   renderAll();
-  showToast(`Produto "${item ? item.name : ''}" excluído definitivamente.`);
+  showToast(t('toast.productDeletedPerm'));
 }
 
 function openEditProductModal(catalogId, productId) {
@@ -2268,7 +2282,7 @@ function handleEditProductSubmit(e) {
   saveData();
   closeEditProductModal();
   renderAll();
-  showToast(`Produto "${name}" atualizado com sucesso!`);
+  showToast(t('toast.productUpdated'));
 }
 
 function renderUrgentItems() {
@@ -2418,7 +2432,7 @@ function addNote() {
   const textarea = document.getElementById('new-note-textarea');
   const text = textarea.value.trim();
   if (!text) {
-    showToast('Digite uma mensagem antes de publicar.');
+    showToast(t('notes.alertEmpty'));
     return;
   }
 
@@ -2447,7 +2461,7 @@ function addNote() {
 
   textarea.value = '';
   renderNotes();
-  showToast('Recado publicado com sucesso.');
+  showToast(t('toast.noteSaved'));
 }
 
 function toggleNoteDone(noteId) {
@@ -2478,7 +2492,7 @@ function deleteNote(noteId) {
   }
 
   renderNotes();
-  showToast('Recado excluído.');
+  showToast(t('toast.noteDeleted'));
 }
 
 // ==========================================================================
@@ -2972,7 +2986,7 @@ function renderCalendar() {
         }
 
         renderCalendar();
-        showToast(ev.status === 'concluido' ? 'Escala marcada como concluída.' : 'Escala reaberta.');
+        showToast(ev.status === 'concluido' ? t('toast.eventCompleted') : t('toast.eventReopened'));
       }
     });
   });
@@ -2982,10 +2996,10 @@ function renderCalendar() {
       const ev = state.data.calendar.find(e => e.id === btn.dataset.id);
       if (!ev) return;
       const confirmed = await showConfirmDialog({
-        title: 'Excluir Escala',
-        message: `Deseja realmente excluir a escala "${ev.title}"?`,
-        confirmText: 'Excluir Escala',
-        cancelText: 'Cancelar',
+        title: t('dialog.deleteEventTitle'),
+        message: t('dialog.deleteEventMsg', { title: ev.title }),
+        confirmText: t('dialog.deleteEventConfirmBtn'),
+        cancelText: t('dialog.cancelBtn'),
         confirmDanger: true,
         icon: 'trash'
       });
@@ -3000,7 +3014,7 @@ function renderCalendar() {
         }
 
         renderCalendar();
-        showToast('Escala removida.');
+        showToast(t('toast.eventDeleted'));
       }
     });
   });
@@ -3130,7 +3144,7 @@ function renderOwnerDashboard() {
           </div>
 
           <div class="staff-actions-col">
-            <button type="button" class="btn-edit-staff" data-id="${staff.id}" title="${escapeHtml(staff.name)}" aria-label="Editar colaboradora">
+            <button type="button" class="btn-edit-staff" data-id="${staff.id}" title="${escapeHtml(staff.name)}" aria-label="${t('staff.btnEditAria')}">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                 <path d="m15 5 4 4"/>
@@ -3786,9 +3800,9 @@ function toggleTimesheetPaidStatus(tsId) {
   saveData();
 
   if (record.isPaid) {
-    showToast('Horas marcadas como PAGAS! 💵');
+    showToast(t('toast.timesheetPaid'));
   } else {
-    showToast('Horas marcadas como NÃO PAGAS (pendente).');
+    showToast(t('toast.timesheetUnpaid'));
   }
 
   renderTimesheets();
@@ -3872,10 +3886,7 @@ function exportTimesheetToWhatsApp(recordId) {
 // 2. Ao clicar em um dia, o popup muda mostrando as horas daquele dia
 // ==========================================================================
 function renderManagerInlineCalendar(year, month) {
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
+  const monthNames = getI18nMonths();
 
   state.managerCalendarYear = year;
   state.managerCalendarMonth = month;
@@ -4049,7 +4060,7 @@ function renderManagerStaffSummaryBanner(staff) {
       </div>
       <div class="ts-unpaid-banner-right">
         <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${stats.unpaidFormatted}</span>
-        ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="Ver todos os expedientes pendentes da colaboradora">${viewPendingBtnTxt}</button>` : ''}
+        ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="${t('timesheet.viewAllUnpaidTooltip')}">${viewPendingBtnTxt}</button>` : ''}
       </div>
     </div>
   `;
@@ -4074,7 +4085,7 @@ function closeManagerStaffTimesheetModal() {
 function showManagerTimesheetHours(staffId, dateStr) {
   if (!staffId) staffId = state.activeManagerStaffId;
   if (!dateStr) {
-    showToast('Por favor, selecione uma data.');
+    showToast(t('toast.selectDateRequired'));
     return;
   }
 
@@ -4325,7 +4336,7 @@ function openTimesheetModal(editId = null) {
     dateInput.max = getTodayDateString();
     dateInput.onchange = () => {
       if (dateInput.value > getTodayDateString()) {
-        showToast('Não é possível registrar horas em uma data futura.');
+        showToast(t('toast.futureDateNotAllowed'));
         dateInput.value = getTodayDateString();
       }
     };
@@ -4457,7 +4468,7 @@ function initTimePicker() {
       const isToday = !dateInput || dateInput.value === todayStr;
       const now = new Date();
       if (isToday && val > now.getHours()) {
-        showToast(`Horário futuro não permitido (hora máxima atual: ${String(now.getHours()).padStart(2, '0')}:00).`);
+        showToast(t('toast.futureHourNotAllowed', { time: `${String(now.getHours()).padStart(2, '0')}:00` }));
         return;
       }
       scrollToTimeWheel(hoursWheel, val);
@@ -4473,7 +4484,7 @@ function initTimePicker() {
       const isToday = !dateInput || dateInput.value === todayStr;
       const now = new Date();
       if (isToday && _timePickerHour === now.getHours() && val > now.getMinutes()) {
-        showToast(`Minuto futuro não permitido (horário atual: ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}).`);
+        showToast(t('toast.futureMinuteNotAllowed', { time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` }));
         return;
       }
       scrollToTimeWheel(minutesWheel, val);
@@ -4496,7 +4507,7 @@ function initTimePicker() {
         if (isToday && val > nowH) {
           _timePickerHour = nowH;
           scrollToTimeWheel(hoursWheel, nowH);
-          showToast(`Horário futuro não permitido (máximo: ${String(nowH).padStart(2, '0')}:00).`);
+          showToast(t('toast.futureHourNotAllowed', { time: `${String(nowH).padStart(2, '0')}:00` }));
         } else {
           _timePickerHour = val;
         }
@@ -4523,7 +4534,7 @@ function initTimePicker() {
         if (isToday && _timePickerHour === nowH && val > nowM) {
           _timePickerMinute = nowM;
           scrollToTimeWheel(minutesWheel, nowM);
-          showToast(`Minuto futuro não permitido (máximo: ${String(nowH).padStart(2, '0')}:${String(nowM).padStart(2, '0')}).`);
+          showToast(t('toast.futureMinuteNotAllowed', { time: `${String(nowH).padStart(2, '0')}:${String(nowM).padStart(2, '0')}` }));
         } else {
           _timePickerMinute = val;
         }
@@ -4571,7 +4582,7 @@ function initTimePicker() {
           if (pickedTotalMinutes > currentTotalMinutes) {
             const curHStr = String(now.getHours()).padStart(2, '0');
             const curMStr = String(now.getMinutes()).padStart(2, '0');
-            showToast(`Não é possível selecionar horário futuro (agora são ${curHStr}:${curMStr}).`);
+            showToast(t('toast.futureTimeNotAllowedNow', { time: `${curHStr}:${curMStr}` }));
             return;
           }
         }
@@ -4774,7 +4785,7 @@ function openViewPurchaseModal(purchaseId) {
   // Comprador
   const buyerEl = document.getElementById('view-purchase-buyer-txt');
   if (buyerEl) {
-    const roleLabel = purchase.buyerType === 'owner' ? 'Proprietário' : 'Equipe';
+    const roleLabel = purchase.buyerType === 'owner' ? t('modalViewPurchase.roleOwner') : t('modalViewPurchase.roleStaff');
     const buyerObj = (state.data.staff || []).find(s => s.id === purchase.buyerStaffId || s.name === purchase.buyerName);
     const buyerPhoto = purchase.buyerPhoto || buyerObj?.photo || (purchase.buyerName === 'Gestor' ? (state.data.ownerProfile?.photo || OWNER_PROFILE.photo) : null);
     buyerEl.innerHTML = `
@@ -4798,7 +4809,7 @@ function openViewPurchaseModal(purchaseId) {
 
   // Quantidade Total
   const unitsEl = document.getElementById('view-purchase-units-txt');
-  if (unitsEl) unitsEl.textContent = `+${purchase.quantityBought || 1} unidades`;
+  if (unitsEl) unitsEl.textContent = t('modalViewPurchase.unitsCount', { count: purchase.quantityBought || 1 });
 
   // Itens comprados
   const itemsContainer = document.getElementById('view-purchase-items-list');
@@ -4853,7 +4864,7 @@ function openViewPurchaseModal(purchaseId) {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>
             </svg>
-            <span>Ampliar Nota Fiscal (Tela Cheia)</span>
+            <span>${t('modalViewPurchase.zoomReceipt')}</span>
           </button>
         </div>
       `;
@@ -5255,7 +5266,7 @@ function getCustomOptionMeta(select, opt) {
   // Staff
   if (select.id === 'event-staff-select') {
     const initials = label.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    return { thumb: '', badge: initials, badgeClass: 'badge-vn', title: label, sub: 'Equipe Operacional' };
+    return { thumb: '', badge: initials, badgeClass: 'badge-vn', title: label, sub: t('customSelect.staffSub') };
   }
 
   // Categoria
@@ -5279,7 +5290,7 @@ function renderCustomSelectContent(select, wrapper) {
       <div class="custom-select-trigger-content">
         ${meta.thumb ? `<img src="${meta.thumb}" class="custom-select-trigger-thumb" alt="">` : ''}
         ${meta.badge ? `<span class="custom-select-trigger-badge ${meta.badgeClass || ''}">${meta.badge}</span>` : ''}
-        ${meta.title ? `<span class="custom-select-trigger-text">${meta.title}</span>` : (!meta.badge ? `<span class="custom-select-trigger-text">Selecione...</span>` : '')}
+        ${meta.title ? `<span class="custom-select-trigger-text">${meta.title}</span>` : (!meta.badge ? `<span class="custom-select-trigger-text">${t('customSelect.select')}</span>` : '')}
       </div>
       <span class="custom-select-chevron">${chevronSvgIcon}</span>
     </button>
@@ -5287,7 +5298,7 @@ function renderCustomSelectContent(select, wrapper) {
       ${hasSearch ? `
         <div class="custom-select-search-wrap">
           <span class="custom-select-search-icon">${searchSvgIcon}</span>
-          <input type="text" class="custom-select-search" placeholder="Buscar opção..." autocomplete="off">
+          <input type="text" class="custom-select-search" placeholder="${t('customSelect.searchPlaceholder')}" autocomplete="off">
         </div>
       ` : ''}
       <div class="custom-select-options-list">
@@ -5366,7 +5377,7 @@ function renderCustomSelectContent(select, wrapper) {
       if (!emptyEl) {
         emptyEl = document.createElement('div');
         emptyEl.className = 'custom-select-empty';
-        emptyEl.textContent = 'Nenhuma opção encontrada.';
+        emptyEl.textContent = t('customSelect.empty');
         optionsList.appendChild(emptyEl);
       }
     } else if (emptyEl) {
@@ -5471,22 +5482,23 @@ function getFormattedDateInfo(dateStr) {
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 
   let badge = '';
+  let dateType = '';
   if (targetDate.getTime() === todayDate.getTime()) {
-    badge = 'Hoje';
+    badge = t('datePicker.today');
+    dateType = 'today';
   } else if (targetDate.getTime() === yesterdayDate.getTime()) {
-    badge = 'Ontem';
+    badge = t('datePicker.yesterday');
+    dateType = 'yesterday';
   } else if (targetDate.getTime() === tomorrowDate.getTime()) {
-    badge = 'Amanhã';
+    badge = t('datePicker.tomorrow');
+    dateType = 'tomorrow';
   }
 
   const dPadded = String(d).padStart(2, '0');
   const mPadded = String(m + 1).padStart(2, '0');
   const formattedShort = `${dPadded}/${mPadded}/${y}`;
 
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
+  const monthNames = getI18nMonths();
 
   return {
     raw: dateStr,
@@ -5494,6 +5506,7 @@ function getFormattedDateInfo(dateStr) {
     month: m,
     day: d,
     badge,
+    dateType,
     formattedShort,
     monthName: monthNames[m],
     formattedLong: `${dPadded} de ${monthNames[m]} de ${y}`
@@ -5501,10 +5514,7 @@ function getFormattedDateInfo(dateStr) {
 }
 
 function renderDatePickerGrid(input, wrapper, year, month) {
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
+  const monthNames = getI18nMonths();
   const titleEl = wrapper.querySelector('.custom-date-month-title');
   if (titleEl) {
     titleEl.textContent = `${monthNames[month]} ${year}`;
@@ -5587,12 +5597,12 @@ function renderCustomDatePickerContent(input, wrapper) {
       </div>
       <span class="custom-select-chevron">${chevronSvgIcon}</span>
     </button>
-    <div class="custom-date-popover" role="dialog" aria-label="Seletor de Data">
+    <div class="custom-date-popover" role="dialog" aria-label="${t('datePicker.title')}">
       <div class="custom-date-chips">
-        <button type="button" class="custom-date-chip ${dateInfo.badge === 'Hoje' ? 'active' : ''}" data-action="today">Hoje</button>
-        <button type="button" class="custom-date-chip ${dateInfo.badge === 'Ontem' ? 'active' : ''}" data-action="yesterday">Ontem</button>
-        <button type="button" class="custom-date-chip ${dateInfo.badge === (isEventForm ? 'Amanhã' : '') ? 'active' : ''}" data-action="${isEventForm ? 'tomorrow' : 'day-before'}">
-          ${isEventForm ? 'Amanhã' : 'Anteontem'}
+        <button type="button" class="custom-date-chip ${dateInfo.dateType === 'today' ? 'active' : ''}" data-action="today">${t('datePicker.today')}</button>
+        <button type="button" class="custom-date-chip ${dateInfo.dateType === 'yesterday' ? 'active' : ''}" data-action="yesterday">${t('datePicker.yesterday')}</button>
+        <button type="button" class="custom-date-chip ${dateInfo.dateType === (isEventForm ? 'tomorrow' : '') ? 'active' : ''}" data-action="${isEventForm ? 'tomorrow' : 'day-before'}">
+          ${isEventForm ? t('datePicker.tomorrow') : t('datePicker.dayBefore')}
         </button>
       </div>
       <div class="custom-date-header">
@@ -5601,7 +5611,7 @@ function renderCustomDatePickerContent(input, wrapper) {
         <button type="button" class="custom-date-nav-btn" data-dir="next" aria-label="Próximo Mês">›</button>
       </div>
       <div class="custom-date-weekdays">
-        <span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span>
+        ${isSpanish() ? '<span>DOM</span><span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span>' : '<span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span>'}
       </div>
       <div class="custom-date-days-grid"></div>
     </div>
@@ -5734,9 +5744,9 @@ function syncCustomDatePicker(target) {
   const isEventForm = input.id === 'event-date-input';
   wrapper.querySelectorAll('.custom-date-chip').forEach(chip => {
     const act = chip.dataset.action;
-    const isActive = (act === 'today' && dateInfo.badge === 'Hoje') ||
-                     (act === 'yesterday' && dateInfo.badge === 'Ontem') ||
-                     (act === 'tomorrow' && dateInfo.badge === 'Amanhã');
+    const isActive = (act === 'today' && dateInfo.dateType === 'today') ||
+                     (act === 'yesterday' && dateInfo.dateType === 'yesterday') ||
+                     (act === 'tomorrow' && dateInfo.dateType === 'tomorrow');
     chip.classList.toggle('active', isActive);
   });
 
@@ -5751,9 +5761,9 @@ function getFormattedTimeInfo(timeStr) {
   if (isNaN(mm)) mm = 0;
   const padH = String(hh).padStart(2, '0');
   const padM = String(mm).padStart(2, '0');
-  let badge = 'Manhã';
-  if (hh >= 12 && hh < 18) badge = 'Tarde';
-  else if (hh >= 18 || hh < 6) badge = 'Noite';
+  let badge = t('timePicker.badgeMorning');
+  if (hh >= 12 && hh < 18) badge = t('timePicker.badgeAfternoon');
+  else if (hh >= 18 || hh < 6) badge = t('timePicker.badgeNight');
   return {
     time: `${padH}:${padM}`,
     hour: padH,
@@ -5796,20 +5806,20 @@ function renderCustomTimePickerContent(input, wrapper) {
       </div>
       <span class="custom-select-chevron">${chevronSvgIcon}</span>
     </button>
-    <div class="custom-time-popover" role="dialog" aria-label="Seletor de Horário">
+    <div class="custom-time-popover" role="dialog" aria-label="${t('timePicker.title')}">
       <div class="custom-time-chips">
         ${chipsHtml}
       </div>
       <div class="custom-time-selector-wrap">
         <div class="custom-time-col">
-          <span class="custom-time-col-header">Hora</span>
+          <span class="custom-time-col-header">${t('timePicker.hour')}</span>
           <div class="custom-time-col-list custom-time-hours">
             ${hoursHtml}
           </div>
         </div>
         <div class="custom-time-sep">:</div>
         <div class="custom-time-col">
-          <span class="custom-time-col-header">Minuto</span>
+          <span class="custom-time-col-header">${t('timePicker.minute')}</span>
           <div class="custom-time-col-list custom-time-minutes">
             ${minutesHtml}
           </div>
@@ -5817,10 +5827,10 @@ function renderCustomTimePickerContent(input, wrapper) {
       </div>
       <div class="custom-time-footer">
         <div class="custom-time-summary">
-          <span class="custom-time-summary-lbl">Início:</span>
+          <span class="custom-time-summary-lbl">${t('timePicker.hour')}:</span>
           <strong class="custom-time-summary-val">${timeInfo.time}</strong>
         </div>
-        <button type="button" class="custom-time-confirm-btn">Confirmar</button>
+        <button type="button" class="custom-time-confirm-btn">${t('timePicker.confirm')}</button>
       </div>
     </div>
   `;
@@ -6016,7 +6026,7 @@ function renderPurchaseItems() {
 
   if (countBadge) {
     const total = state.currentPurchaseItems.length;
-    countBadge.textContent = total === 1 ? '1 item' : `${total} itens`;
+    countBadge.textContent = total === 1 ? t('modalPurchase.itemsCountSingle') : t('modalPurchase.itemsCountPlural', { count: total });
   }
 
   container.innerHTML = state.currentPurchaseItems.map((item, idx) => {
@@ -6028,14 +6038,14 @@ function renderPurchaseItems() {
     return `
       <div class="purchase-item-card purchase-item-row" data-index="${idx}">
         <div class="purchase-item-card-header">
-          <span class="purchase-item-tag">Item ${idx + 1}</span>
+          <span class="purchase-item-tag">${t('modalPurchase.itemTagN', { n: idx + 1 })}</span>
           ${canRemove ? `
             <button type="button" class="btn-remove-purchase-item" data-remove-index="${idx}" title="Remover item">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-              <span>Remover</span>
+              <span>${t('modalPurchase.removeBtn')}</span>
             </button>
           ` : ''}
         </div>
@@ -6047,12 +6057,12 @@ function renderPurchaseItems() {
         </select>
 
         <div class="purchase-item-stepper-wrap">
-          <span class="purchase-stepper-label">Qtd Adicionada</span>
+          <span class="purchase-stepper-label">${t('modalPurchase.qtyLabel')}</span>
           <div class="purchase-stepper-controls">
             <button type="button" class="purchase-stepper-btn btn-step-minus" data-index="${idx}">–</button>
             <input type="number" id="${qtyId}" class="purchase-stepper-input purchase-item-qty-input" data-index="${idx}" min="1" step="1" value="${item.quantity}" required>
             <button type="button" class="purchase-stepper-btn btn-step-plus" data-index="${idx}">+</button>
-            <span class="purchase-stepper-unit">un</span>
+            <span class="purchase-stepper-unit">${isSpanish() ? 'ud' : 'un'}</span>
           </div>
         </div>
       </div>
@@ -6234,7 +6244,7 @@ function handlePurchaseSubmit(e) {
   });
 
   if (items.length === 0) {
-    showToast('Adicione pelo menos um produto à compra.');
+    showToast(t('toast.purchaseAddAtLeastOne'));
     return;
   }
 
@@ -6303,7 +6313,7 @@ function handlePurchaseSubmit(e) {
     ? `Compra de ${items[0].productName} (${items[0].quantity} un) adicionada ao imóvel ${propId}.`
     : `Compra coletiva de ${items.length} produtos (${totalUnits} un) registrada para o imóvel ${propId}.`;
 
-  showToast(msg);
+  showToast(t('toast.purchaseSaved'));
 }
 
 // ==========================================================================
@@ -6326,7 +6336,7 @@ function openProductNoteModal(productId) {
   if (inputId) inputId.value = product.id;
   if (imgTarget) imgTarget.src = product.photo || 'https://placehold.co/160x160?text=Produto';
   if (nameTarget) nameTarget.textContent = product.name;
-  if (propTarget) propTarget.textContent = `Imóvel: ${product.propertyId} • ${product.brand || 'BOSQUE VERDE'}`;
+  if (propTarget) propTarget.textContent = t('productNote.propLabel', { prop: product.propertyId, brand: product.brand || 'BOSQUE VERDE' });
   if (textarea) textarea.value = product.note || '';
 
   if (product.note && product.note.trim() !== '') {
@@ -6340,7 +6350,7 @@ function openProductNoteModal(productId) {
       metaText.innerHTML = `
         <span style="display: inline-flex; align-items: center; gap: 6px;">
           ${authorPhoto ? `<img src="${authorPhoto}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover; vertical-align: middle;">` : ''}
-          <span>Anotado por <strong>${escapeHtml(author)}</strong>${dateStr}</span>
+          <span>${t('productNote.notedBy', { name: escapeHtml(author), date: dateStr })}</span>
         </span>
       `;
     }
@@ -6375,13 +6385,13 @@ function handleProductNoteSubmit(e) {
     product.noteAuthor = state.currentUser ? state.currentUser.name : 'Equipe';
     product.noteAuthorPhoto = state.currentUser ? (state.currentUser.photo || null) : null;
     product.noteUpdatedAt = new Date().toISOString();
-    showToast(`Nota adicionada: ${product.name}`);
+    showToast(t('toast.noteSavedProduct', { name: product.name }));
   } else {
     product.note = null;
     product.noteAuthor = null;
     product.noteAuthorPhoto = null;
     product.noteUpdatedAt = null;
-    showToast(`Nota removida: ${product.name}`);
+    showToast(t('toast.noteRemovedProduct', { name: product.name }));
   }
 
   saveData();
@@ -6416,7 +6426,7 @@ function handleProductNoteDelete() {
 
   closeProductNoteModal();
   renderProducts();
-  showToast(`Nota removida: ${product.name}`);
+  showToast(t('toast.noteRemovedProduct', { name: product.name }));
 }
 
 // ==========================================================================
@@ -6431,10 +6441,10 @@ async function deleteProduct(productId, name, propId) {
 
   if (countInOtherProps > 0) {
     const deleteAll = await showConfirmDialog({
-      title: 'Excluir Produto',
-      message: `O item "${name}" também está cadastrado em outros imóveis.\n\nDeseja remover de TODOS os imóveis (JB, VN e HN)?`,
-      confirmText: 'Remover de Todos',
-      cancelText: `Apenas de ${propId}`,
+      title: t('dialog.deleteProductAllTitle'),
+      message: t('dialog.deleteProductAllMsg', { name }),
+      confirmText: t('dialog.deleteProductAllConfirm'),
+      cancelText: t('dialog.deleteProductAllCancel', { prop: propId }),
       confirmDanger: true,
       icon: 'trash'
     });
@@ -6445,17 +6455,17 @@ async function deleteProduct(productId, name, propId) {
       if (catIdx !== -1) PRODUCT_CATALOG.splice(catIdx, 1);
       saveData();
       renderAll();
-      showToast(`Produto "${name}" removido de todos os imóveis.`);
+      showToast(t('toast.productRemovedAll', { name }));
       return;
     }
   }
 
   // Confirma exclusão específica para este imóvel
   const confirmSingle = await showConfirmDialog({
-    title: 'Excluir Produto',
-    message: `Confirmar exclusão de "${name}" do imóvel ${propId}?`,
-    confirmText: 'Excluir deste Imóvel',
-    cancelText: 'Cancelar',
+    title: t('dialog.deleteProductSingleTitle'),
+    message: t('dialog.deleteProductSingleMsg', { name, prop: propId }),
+    confirmText: t('dialog.deleteProductSingleConfirm'),
+    cancelText: t('dialog.cancelBtn'),
     confirmDanger: true,
     icon: 'trash'
   });
@@ -6469,7 +6479,7 @@ async function deleteProduct(productId, name, propId) {
 
   saveData();
   renderAll();
-  showToast(`Produto "${name}" apagado de ${propId}.`);
+  showToast(t('toast.productRemovedSingle', { name, prop: propId }));
 }
 
 function generateProductPlaceholderSvg(name) {
@@ -6560,7 +6570,7 @@ function handleNewProductSubmit(e) {
 
   const name = nameInput?.value.trim();
   if (!name) {
-    showToast('Informe o nome do produto.');
+    showToast(t('toast.provideProductName'));
     return;
   }
 
@@ -6652,7 +6662,7 @@ function handleNewProductSubmit(e) {
   saveData();
   closeAddProductModal();
   renderAll();
-  showToast(`Produto "${name}" cadastrado com sucesso!`);
+  showToast(t('toast.productCreatedSuccess', { name }));
 }
 
 // ==========================================================================
@@ -6694,19 +6704,19 @@ async function handleNewStaffSubmit(e) {
   const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
 
   if (!name || !email) {
-    showToast('Informe o nome e o e-mail Google da colaboradora.');
+    showToast(t('toast.staffNameEmailRequired'));
     return;
   }
 
   if (!email.includes('@') || !email.includes('.')) {
-    showToast('Informe um endereço de e-mail válido.');
+    showToast(t('toast.staffEmailInvalid'));
     return;
   }
 
   // Verifica se o e-mail já existe na equipe
   const alreadyExists = (state.data.staff || []).some(s => (s.email || '').toLowerCase() === email);
   if (alreadyExists) {
-    showToast('Já existe uma colaboradora cadastrada com este e-mail.');
+    showToast(t('toast.staffEmailExists'));
     return;
   }
 
@@ -6750,7 +6760,7 @@ async function handleNewStaffSubmit(e) {
   if (emailInput) emailInput.value = '';
   renderOwnerDashboard();
   renderTimesheets();
-  showToast(`Colaboradora "${name}" autorizada com o e-mail ${email}.`);
+  showToast(t('toast.staffAuthorized', { name, email }));
 }
 
 // ==========================================================================
@@ -6798,19 +6808,19 @@ async function handleEditStaffSubmit(e) {
   if (!staffId) return;
 
   if (!name || !email) {
-    showToast('Informe o nome e o e-mail Google da colaboradora.');
+    showToast(t('toast.staffNameEmailRequired'));
     return;
   }
 
   if (!email.includes('@') || !email.includes('.')) {
-    showToast('Informe um endereço de e-mail válido.');
+    showToast(t('toast.staffEmailInvalid'));
     return;
   }
 
   // Verifica duplicidade de e-mail com outra colaboradora
   const emailConflict = (state.data.staff || []).some(s => s.id !== staffId && (s.email || '').toLowerCase() === email);
   if (emailConflict) {
-    showToast('Este e-mail já está sendo utilizado por outra colaboradora.');
+    showToast(t('toast.staffEmailExists'));
     return;
   }
 
@@ -6875,7 +6885,7 @@ async function handleEditStaffSubmit(e) {
   closeEditStaffModal();
   renderOwnerDashboard();
   renderTimesheets();
-  showToast(`Colaboradora "${name}" atualizada com sucesso!`);
+  showToast(t('toast.staffSaved'));
 }
 
 async function handleEditStaffDelete() {
@@ -6885,15 +6895,15 @@ async function handleEditStaffDelete() {
   if (!staff) return;
 
   if (state.data.staff.length <= 1) {
-    showToast('É necessário manter pelo menos uma colaboradora cadastrada.');
+    showToast(t('toast.staffMinRequired'));
     return;
   }
 
   const confirmed = await showConfirmDialog({
-    title: 'Excluir Colaboradora',
-    message: `Tem certeza que deseja excluir ${staff.name} e revogar seu acesso Google ao sistema?`,
-    confirmText: 'Excluir Colaboradora',
-    cancelText: 'Cancelar',
+    title: t('dialog.deleteStaffTitle'),
+    message: t('dialog.deleteStaffMsg', { name: staff.name }),
+    confirmText: t('dialog.deleteStaffConfirmBtn'),
+    cancelText: t('dialog.cancelBtn'),
     confirmDanger: true,
     icon: 'trash'
   });
@@ -6918,7 +6928,7 @@ async function handleEditStaffDelete() {
     closeEditStaffModal();
     renderOwnerDashboard();
     renderTimesheets();
-    showToast(`Colaboradora "${staff.name}" excluída.`);
+    showToast(t('toast.staffDeleted', { name: staff.name }));
   }
 }
 
@@ -7029,7 +7039,7 @@ function handleNewEventSubmit(e) {
 
   closeNewEventModal();
   renderCalendar();
-  showToast('Escala agendada com sucesso.');
+  showToast(t('toast.eventSaved'));
 }
 
 // ==========================================================================
@@ -7130,13 +7140,13 @@ function setupEventListeners() {
       if (state.selectedStatus === filterStatus) {
         state.selectedStatus = 'all';
         chip.classList.remove('active-filter');
-        showToast('Filtro limpo: exibindo todo o estoque');
+        showToast(t('toast.filterCleared'));
       } else {
         document.querySelectorAll('.stat-chip').forEach(c => c.classList.remove('active-filter'));
         state.selectedStatus = filterStatus;
         chip.classList.add('active-filter');
-        const labels = { falta: 'Falta', acabando: 'Atenção', suficiente: 'Suficiente' };
-        showToast(`Exibindo estoque: ${labels[filterStatus] || filterStatus}`);
+        const labels = { falta: t('status.falta'), acabando: t('status.acabando'), suficiente: t('status.suficiente') };
+        showToast(t('toast.filterApplied', { status: labels[filterStatus] || filterStatus }));
       }
 
       // Se não estiver na aba de estoque, muda automaticamente para ela
@@ -7249,7 +7259,7 @@ function setupEventListeners() {
           receiptPreview.src = state.tempReceiptBase64;
           receiptPreview.style.display = 'block';
         }
-        showToast('Foto do comprovante anexada e otimizada.');
+        showToast(t('toast.receiptPhotoAttached'));
       });
     }
   });
@@ -7277,7 +7287,7 @@ function setupEventListeners() {
           newProdPreview.src = state.tempNewProductPhotoBase64;
           newProdPreview.style.display = 'block';
         }
-        showToast('Foto do produto anexada e otimizada.');
+        showToast(t('toast.productPhotoAttached'));
       });
     }
   });
@@ -7335,7 +7345,7 @@ function setupEventListeners() {
           editProdPreview.src = state.tempEditProductPhotoBase64;
           editProdPreview.style.display = 'block';
         }
-        showToast('Foto do produto atualizada e otimizada.');
+        showToast(t('toast.productPhotoUpdated'));
       });
     }
   });
@@ -7434,17 +7444,17 @@ function setupEventListeners() {
   // Restaurar Padrões de Fábrica
   document.getElementById('btn-reset-demo')?.addEventListener('click', async () => {
     const confirmed = await showConfirmDialog({
-      title: 'Restaurar Dados de Fábrica',
-      message: 'Tem certeza que deseja restaurar os dados iniciais dos produtos e imóveis?\n\nTodas as informações e alterações manuais serão redefinidas para o padrão inicial.',
-      confirmText: 'Restaurar Padrão',
-      cancelText: 'Cancelar',
+      title: t('dialog.resetFactoryTitle'),
+      message: t('dialog.resetFactoryMsg'),
+      confirmText: t('dialog.resetFactoryConfirm'),
+      cancelText: t('dialog.cancelBtn'),
       confirmDanger: true,
       icon: 'reset'
     });
     if (confirmed) {
       loadFactoryDefaults();
       renderAll();
-      showToast('Dados restaurados para o padrão original.');
+      showToast(t('toast.dataFactoryReset'));
     }
   });
 
@@ -7547,10 +7557,10 @@ function setupEventListeners() {
     if (!editId) return;
 
     const confirmed = await showConfirmDialog({
-      title: 'Excluir Registro de Horas',
-      message: 'Tem certeza que deseja excluir este registro de horas trabalhadas?',
-      confirmText: 'Excluir Registro',
-      cancelText: 'Cancelar',
+      title: t('dialog.deleteTimesheetTitle'),
+      message: t('dialog.deleteTimesheetMsg'),
+      confirmText: t('dialog.deleteTimesheetConfirmBtn'),
+      cancelText: t('dialog.cancelBtn'),
       confirmDanger: true,
       icon: 'trash'
     });
@@ -7567,7 +7577,7 @@ function setupEventListeners() {
 
       document.getElementById('modal-timesheet')?.classList.remove('active');
       renderTimesheets();
-      showToast('Registro de horas excluído.');
+      showToast(t('toast.timesheetDeleted'));
     }
   });
 
@@ -7578,20 +7588,20 @@ function setupEventListeners() {
     const dateVal = dateInput?.value;
 
     if (!dateVal) {
-      showToast('Por favor, informe a data trabalhada.');
+      showToast(t('toast.selectDateRequired'));
       return;
     }
 
     const todayStr = getTodayDateString();
     if (dateVal > todayStr) {
-      showToast('Não é possível registrar horas para uma data futura.');
+      showToast(t('toast.futureDateNotAllowed'));
       return;
     }
 
     const { start, breakStart, breakEnd, end } = state.tempTimesheetTimes;
 
     if (!start) {
-      showToast('Por favor, selecione pelo menos o horário de início.');
+      showToast(t('toast.selectStartTimeRequired'));
       return;
     }
 
@@ -7604,25 +7614,25 @@ function setupEventListeners() {
       const nowFormatted = `${curHStr}:${curMStr}`;
 
       if (start && timeToMinutes(start) > currentMinutes) {
-        showToast(`O horário de início (${start}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        showToast(t('toast.startFutureNotAllowed', { time: start, now: nowFormatted }));
         return;
       }
       if (breakStart && timeToMinutes(breakStart) > currentMinutes) {
-        showToast(`O início da pausa (${breakStart}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        showToast(t('toast.breakStartFutureNotAllowed', { time: breakStart, now: nowFormatted }));
         return;
       }
       if (breakEnd && timeToMinutes(breakEnd) > currentMinutes) {
-        showToast(`O término da pausa (${breakEnd}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        showToast(t('toast.breakEndFutureNotAllowed', { time: breakEnd, now: nowFormatted }));
         return;
       }
       if (end && timeToMinutes(end) > currentMinutes) {
-        showToast(`O horário de término (${end}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        showToast(t('toast.endFutureNotAllowed', { time: end, now: nowFormatted }));
         return;
       }
     }
 
     if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
-      showToast('Para registrar pausa, preencha o início e o fim da pausa.');
+      showToast(t('toast.breakFillBoth'));
       return;
     }
 
@@ -7630,7 +7640,7 @@ function setupEventListeners() {
       const sM = timeToMinutes(start);
       const bsM = timeToMinutes(breakStart);
       if (bsM < sM) {
-        showToast('O início da pausa não pode ser anterior ao início do trabalho.');
+        showToast(t('toast.breakBeforeStart'));
         return;
       }
     }
@@ -7639,7 +7649,7 @@ function setupEventListeners() {
       const bsM = timeToMinutes(breakStart);
       const beM = timeToMinutes(breakEnd);
       if (beM <= bsM) {
-        showToast('O fim da pausa deve ser posterior ao início da pausa.');
+        showToast(t('toast.breakEndAfterStart'));
         return;
       }
     }
@@ -7648,7 +7658,7 @@ function setupEventListeners() {
       const beM = timeToMinutes(breakEnd);
       const eM = timeToMinutes(end);
       if (eM < beM) {
-        showToast('O término do trabalho deve ser posterior ao fim da pausa.');
+        showToast(t('toast.workEndAfterBreak'));
         return;
       }
     }
@@ -7657,7 +7667,7 @@ function setupEventListeners() {
       const sM = timeToMinutes(start);
       const eM = timeToMinutes(end);
       if (eM <= sM) {
-        showToast('O horário de fim do trabalho deve ser posterior ao início.');
+        showToast(t('toast.workEndAfterStart'));
         return;
       }
     }
@@ -7706,7 +7716,7 @@ function setupEventListeners() {
           });
         }
 
-        showToast('Registro de horas atualizado com sucesso!');
+        showToast(t('toast.timesheetUpdated'));
       }
     } else {
       const newRecord = {
@@ -7736,7 +7746,7 @@ function setupEventListeners() {
         });
       }
 
-      showToast('Horas registradas com sucesso!');
+      showToast(t('toast.timesheetSaved'));
     }
 
     document.getElementById('modal-timesheet')?.classList.remove('active');
@@ -7775,7 +7785,7 @@ function setupEventListeners() {
         }
         if (placeholder) placeholder.style.display = 'none';
         if (btnRemoveProfilePhoto) btnRemoveProfilePhoto.style.display = 'inline-block';
-        showToast('Foto carregada! Clique em Salvar Alterações para confirmar.');
+        showToast(t('toast.photoLoadedSave'));
       });
     }
   });
@@ -7791,7 +7801,7 @@ function setupEventListeners() {
     if (placeholder) placeholder.style.display = 'flex';
     if (btnRemoveProfilePhoto) btnRemoveProfilePhoto.style.display = 'none';
     if (profilePhotoInput) profilePhotoInput.value = '';
-    showToast('Foto removida. Clique em Salvar Alterações para confirmar.');
+    showToast(t('toast.photoRemovedSave'));
   });
 
   document.getElementById('edit-profile-form')?.addEventListener('submit', (e) => {
