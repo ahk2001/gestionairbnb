@@ -4083,11 +4083,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .custom-select-wrapper {
   position: relative;
   width: 100%;
+  min-width: 0;
   user-select: none;
 }
 
 .custom-select-trigger {
   width: 100%;
+  min-width: 0;
   padding: 10px 14px;
   min-height: 48px;
   border-radius: 14px;
@@ -4166,6 +4168,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
 .custom-select-chevron {

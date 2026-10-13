@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=70">
+  <link rel="stylesheet" href="styles.css?v=71">
 </head>
 <body>
 
@@ -877,40 +877,39 @@
           </div>
         </div>
 
-        <!-- Imóvel e Unidade (Grid) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
-            <label for="new-product-property" class="form-label">Cadastrar no Imóvel</label>
-            <select id="new-product-property" class="form-input" required>
-              <option value="CURRENT">Imóvel Atual</option>
-              <option value="ALL">Todos os Imóveis (JB, VN, HN)</option>
-              <option value="JB">Apenas JB</option>
-              <option value="VN">Apenas VN</option>
-              <option value="HN">Apenas HN</option>
-            </select>
-          </div>
+        <!-- Imóvel Destino (Linha Inteira - sem comprimir outros campos) -->
+        <div class="form-group">
+          <label for="new-product-property" class="form-label">Cadastrar no Imóvel</label>
+          <select id="new-product-property" class="form-input" required>
+            <option value="CURRENT">Imóvel Atual</option>
+            <option value="ALL">Todos os Imóveis (JB, VN, HN)</option>
+            <option value="JB">Apenas JB</option>
+            <option value="VN">Apenas VN</option>
+            <option value="HN">Apenas HN</option>
+          </select>
+        </div>
 
-          <div class="form-group">
+        <!-- Unidade e Quantidade Inicial (Grid Equilibrado) -->
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+          <div class="form-group" style="min-width: 0;">
             <label for="new-product-unit" class="form-label">Unidade</label>
             <input type="text" id="new-product-unit" class="form-input" placeholder="Ex: un, pct, frasco...">
           </div>
-        </div>
 
-        <!-- Quantidade e Status Inicial (Grid) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <div class="form-group">
+          <div class="form-group" style="min-width: 0;">
             <label for="new-product-quantity" class="form-label">Qtd Inicial</label>
             <input type="number" id="new-product-quantity" class="form-input" min="0" step="1" placeholder="Ex: 2">
           </div>
+        </div>
 
-          <div class="form-group">
-            <label for="new-product-status" class="form-label">Status Inicial</label>
-            <select id="new-product-status" class="form-input" required>
-              <option value="suficiente">Suficiente</option>
-              <option value="acabando">Atenção</option>
-              <option value="falta">Falta</option>
-            </select>
-          </div>
+        <!-- Status Inicial -->
+        <div class="form-group">
+          <label for="new-product-status" class="form-label">Status Inicial</label>
+          <select id="new-product-status" class="form-input" required>
+            <option value="suficiente">Suficiente</option>
+            <option value="acabando">Atenção</option>
+            <option value="falta">Falta</option>
+          </select>
         </div>
 
         <!-- Regras do Semáforo no Estoque -->
@@ -1584,11 +1583,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=70"></script>
-  <script src="auth.js?v=70"></script>
-  <script src="cloud-sync.js?v=70"></script>
-  <script src="touch-scroll.js?v=70"></script>
-  <script src="initialData.js?v=70"></script>
-  <script src="app.js?v=70"></script>
+  <script src="firebase-config.js?v=71"></script>
+  <script src="auth.js?v=71"></script>
+  <script src="cloud-sync.js?v=71"></script>
+  <script src="touch-scroll.js?v=71"></script>
+  <script src="initialData.js?v=71"></script>
+  <script src="app.js?v=71"></script>
 </body>
 </html>
