@@ -18,8 +18,8 @@ const INITIAL_PURCHASES = initialData.INITIAL_PURCHASES || [];
 const INITIAL_TRASH_PRODUCTS = initialData.INITIAL_TRASH_PRODUCTS || [];
 const INITIAL_TIMESHEETS = initialData.INITIAL_TIMESHEETS || [];
 
-// Chaves de armazenamento LocalStorage (V5 com novos dados fictícios completos)
-const STORAGE_DATA_KEY = 'AIRBNB_CONTROL_DATA_V5';
+// Chaves de armazenamento LocalStorage (V6 Oficial Limpo)
+const STORAGE_DATA_KEY = 'AIRBNB_CONTROL_DATA_V6';
 const STORAGE_SESSION_KEY = 'AIRBNB_CONTROL_SESSION_V3';
 const STORAGE_CURRENCY_KEY = 'AIRBNB_CONTROL_CURRENCY_V2';
 
@@ -154,6 +154,19 @@ function initApp() {
           // Se for gestor/dono e a nuvem estiver vazia, faz o seed inicial
           if (user.type === 'owner') {
             AirbnbCloudSync.seedCloudIfEmpty(state.data);
+
+            // Limpeza oficial da nuvem para o primeiro acesso oficial do gestor na V6
+            const CLOUD_WIPED_V6_KEY = 'AIRBNB_CLOUD_CLEAN_SLATE_V6_DONE';
+            if (!localStorage.getItem(CLOUD_WIPED_V6_KEY)) {
+              AirbnbCloudSync.wipeCloudDataForCleanSlate(generateInitialProducts()).then(() => {
+                localStorage.setItem(CLOUD_WIPED_V6_KEY, 'true');
+                loadFactoryDefaults();
+                renderAll();
+                console.log('[CloudSync] Limpeza oficial da nuvem concluída com sucesso.');
+              }).catch(e => {
+                console.warn('[CloudSync] Falha na limpeza oficial da nuvem:', e);
+              });
+            }
           }
         }
       } else if (error) {
@@ -221,6 +234,16 @@ function getInitials(name, fallback = 'EQ') {
 }
 
 function loadData() {
+  // Limpeza automática de chaves de versões anteriores ao iniciar a V6 limpa oficial
+  if (!localStorage.getItem(STORAGE_DATA_KEY)) {
+    ['AIRBNB_CONTROL_DATA_V1', 'AIRBNB_CONTROL_DATA_V2', 'AIRBNB_CONTROL_DATA_V3', 'AIRBNB_CONTROL_DATA_V4', 'AIRBNB_CONTROL_DATA_V5'].forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+    loadFactoryDefaults();
+    state.currency = 'EUR';
+    return;
+  }
+
   let saved = localStorage.getItem(STORAGE_DATA_KEY);
 
   const sampleReceipts = [
@@ -239,11 +262,11 @@ function loadData() {
       state.data = {
         properties: [...DEFAULT_PROPERTIES],
         products: (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) ? parsed.products : generateInitialProducts(),
-        trashProducts: (parsed && Array.isArray(parsed.trashProducts) && parsed.trashProducts.length > 0) ? parsed.trashProducts : JSON.parse(JSON.stringify(INITIAL_TRASH_PRODUCTS)),
-        staff: (parsed && Array.isArray(parsed.staff) && parsed.staff.length > 0) ? parsed.staff : [...INITIAL_STAFF],
-        notes: (parsed && Array.isArray(parsed.notes) && parsed.notes.length > 0) ? parsed.notes : [...INITIAL_NOTES],
-        calendar: (parsed && Array.isArray(parsed.calendar) && parsed.calendar.length > 0) ? parsed.calendar : [...INITIAL_CALENDAR_EVENTS],
-        purchases: (parsed && Array.isArray(parsed.purchases) && parsed.purchases.length > 0)
+        trashProducts: (parsed && Array.isArray(parsed.trashProducts)) ? parsed.trashProducts : [],
+        staff: (parsed && Array.isArray(parsed.staff)) ? parsed.staff : [],
+        notes: (parsed && Array.isArray(parsed.notes)) ? parsed.notes : [],
+        calendar: (parsed && Array.isArray(parsed.calendar)) ? parsed.calendar : [],
+        purchases: (parsed && Array.isArray(parsed.purchases))
           ? parsed.purchases.map((p, idx) => {
               if (!p.items || !Array.isArray(p.items) || p.items.length === 0) {
                 p.items = [{
@@ -259,10 +282,8 @@ function loadData() {
               }
               return p;
             })
-          : [...INITIAL_PURCHASES],
-        timesheets: (parsed && Array.isArray(parsed.timesheets) && parsed.timesheets.length > 0)
-          ? parsed.timesheets
-          : (INITIAL_TIMESHEETS && INITIAL_TIMESHEETS.length > 0 ? [...INITIAL_TIMESHEETS] : []),
+          : [],
+        timesheets: (parsed && Array.isArray(parsed.timesheets)) ? parsed.timesheets : [],
         ownerProfile: (parsed && parsed.ownerProfile) ? parsed.ownerProfile : null
       };
 
@@ -321,14 +342,6 @@ function loadData() {
           });
         }
       });
-      if (!state.data.products.some(p => p.note)) {
-        const sampleProd = state.data.products.find(p => p.id === 'JB_p01');
-        if (sampleProd) {
-          sampleProd.note = 'Priorizar versão concentrada sem perfume';
-          sampleProd.noteAuthor = 'Maria';
-          sampleProd.noteUpdatedAt = new Date().toISOString();
-        }
-      }
 
       // Expurgar apenas registros com datas estritamente no futuro (ex: amanhã ou depois)
       if (state.data && Array.isArray(state.data.timesheets)) {
@@ -359,12 +372,12 @@ function loadFactoryDefaults() {
   state.data = {
     properties: [...DEFAULT_PROPERTIES],
     products: generateInitialProducts(),
-    trashProducts: (INITIAL_TRASH_PRODUCTS && INITIAL_TRASH_PRODUCTS.length > 0) ? JSON.parse(JSON.stringify(INITIAL_TRASH_PRODUCTS)) : [],
-    staff: [...INITIAL_STAFF],
-    notes: [...INITIAL_NOTES],
-    calendar: [...INITIAL_CALENDAR_EVENTS],
-    purchases: [...INITIAL_PURCHASES],
-    timesheets: (INITIAL_TIMESHEETS && INITIAL_TIMESHEETS.length > 0) ? JSON.parse(JSON.stringify(INITIAL_TIMESHEETS)) : [],
+    trashProducts: [],
+    staff: [],
+    notes: [],
+    calendar: [],
+    purchases: [],
+    timesheets: [],
     ownerProfile: null
   };
   saveData();
@@ -7990,22 +8003,39 @@ function setupEventListeners() {
     }
   });
 
-  // Restaurar Padrões de Fábrica
-  document.getElementById('btn-reset-demo')?.addEventListener('click', async () => {
+  // Zerar Sistema para Início Oficial (Gestor)
+  async function handleResetSystemOfficial() {
+    const isOwner = state.currentUser?.type === 'owner';
+    if (!isOwner) {
+      showToast(t('owner.onlyOwnerNotice') || 'Ação restrita ao Gestor.', 4000);
+      return;
+    }
+
     const confirmed = await showConfirmDialog({
-      title: t('dialog.resetFactoryTitle'),
-      message: t('dialog.resetFactoryMsg'),
-      confirmText: t('dialog.resetFactoryConfirm'),
+      title: t('dialog.resetOfficialTitle'),
+      message: t('dialog.resetOfficialMsg'),
+      confirmText: t('dialog.resetOfficialConfirm'),
       cancelText: t('dialog.cancelBtn'),
       confirmDanger: true,
       icon: 'reset'
     });
+
     if (confirmed) {
       loadFactoryDefaults();
+      if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+        try {
+          await AirbnbCloudSync.wipeCloudDataForCleanSlate(generateInitialProducts());
+        } catch (e) {
+          console.warn('[CloudSync] Falha ao zerar nuvem:', e);
+        }
+      }
       renderAll();
-      showToast(t('toast.dataFactoryReset'));
+      showToast(t('toast.systemResetOfficial'));
     }
-  });
+  }
+
+  document.getElementById('btn-reset-system-official')?.addEventListener('click', handleResetSystemOfficial);
+  document.getElementById('btn-reset-demo')?.addEventListener('click', handleResetSystemOfficial);
 
   // Fechar modais ao clicar no fundo
   document.querySelectorAll('.modal-overlay').forEach(overlay => {

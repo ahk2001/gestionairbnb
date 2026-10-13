@@ -303,50 +303,78 @@
         return true;
       }
 
-      // Se produtos já existirem mas a coleção de compras estiver vazia na nuvem, inicializa compras
-      if (initialData.purchases && initialData.purchases.length > 0) {
-        const purCol = firestoreMod.collection(firestoreDb, 'purchases');
-        const purSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(purCol) : null;
-        if (!purSnap || purSnap.empty) {
-          console.log('[CloudSync] Coleção de compras vazia no Firestore. Inicializando compras...');
-          await syncCollectionBatch('purchases', initialData.purchases);
-        }
-      }
-
-      // Se produtos já existirem mas a coleção de recados estiver vazia na nuvem, inicializa recados
-      if (initialData.notes && initialData.notes.length > 0) {
-        const notesCol = firestoreMod.collection(firestoreDb, 'notes');
-        const notesSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(notesCol) : null;
-        if (!notesSnap || notesSnap.empty) {
-          console.log('[CloudSync] Coleção de recados vazia no Firestore. Inicializando recados...');
-          await syncCollectionBatch('notes', initialData.notes);
-        }
-      }
-
-      // Se produtos já existirem mas a coleção de escalas estiver vazia na nuvem, inicializa escalas
-      if (initialData.calendar && initialData.calendar.length > 0) {
-        const calCol = firestoreMod.collection(firestoreDb, 'calendar');
-        const calSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(calCol) : null;
-        if (!calSnap || calSnap.empty) {
-          console.log('[CloudSync] Coleção de escalas vazia no Firestore. Inicializando escalas...');
-          await syncCollectionBatch('calendar', initialData.calendar);
-        }
-      }
-
-      // Se produtos já existirem mas a coleção de horas estiver vazia na nuvem, inicializa horas
-      if (initialData.timesheets && initialData.timesheets.length > 0) {
-        const tsCol = firestoreMod.collection(firestoreDb, 'timesheets');
-        const tsSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(tsCol) : null;
-        if (!tsSnap || tsSnap.empty) {
-          console.log('[CloudSync] Coleção de horas trabalhadas vazia no Firestore. Inicializando horas...');
-          await syncCollectionBatch('timesheets', initialData.timesheets);
-        }
-      }
-
       return false;
     } catch (err) {
       console.warn('[CloudSync] Não foi possível verificar necessidade de seed:', err);
       return false;
+    }
+  }
+
+  // Limpa completamente dados de teste do Firestore mantendo apenas acessos de gestores e os 24 produtos com quantidade zerada
+  async function wipeCloudDataForCleanSlate(cleanProducts) {
+    if (!root.isFirebaseConfigured || !root.isFirebaseConfigured()) return false;
+    try {
+      const { firestoreMod, firestoreDb } = await root.AirbnbAuth.loadFirebaseModules();
+      if (!firestoreDb) return false;
+
+      notifySyncStatus('syncing');
+
+      // 1. Coleções operacionais a serem limpas
+      const collectionsToWipe = [
+        'purchases',
+        'notes',
+        'calendar',
+        'timesheets',
+        'trashProducts',
+        'staff'
+      ];
+
+      for (const colName of collectionsToWipe) {
+        const colRef = firestoreMod.collection(firestoreDb, colName);
+        const snapshot = await firestoreMod.getDocs(colRef);
+        if (!snapshot.empty) {
+          const batch = firestoreMod.writeBatch(firestoreDb);
+          snapshot.forEach(docSnap => batch.delete(docSnap.ref));
+          await batch.commit();
+        }
+      }
+
+      // 2. Limpar allowlist de acesso mantendo estritamente os gestores/proprietários
+      try {
+        const accessRef = firestoreMod.collection(firestoreDb, 'access');
+        const accessSnap = await firestoreMod.getDocs(accessRef);
+        if (!accessSnap.empty) {
+          const batch = firestoreMod.writeBatch(firestoreDb);
+          let count = 0;
+          accessSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            const email = String(docSnap.id || '').toLowerCase().trim();
+            const isRoot = (root.AIRBNB_ROOT_OWNERS || []).some(e => String(e).toLowerCase().trim() === email);
+            const isOwner = data && data.role === 'owner';
+            if (!isRoot && !isOwner) {
+              batch.delete(docSnap.ref);
+              count++;
+            }
+          });
+          if (count > 0) {
+            await batch.commit();
+          }
+        }
+      } catch (e) {
+        console.warn('[CloudSync] Allowlist preservada ou erro ao limpar contas não gestoras:', e);
+      }
+
+      // 3. Atualizar produtos para os 24 produtos iniciais com quantidade 0
+      if (Array.isArray(cleanProducts) && cleanProducts.length > 0) {
+        await syncCollectionBatch('products', cleanProducts);
+      }
+
+      notifySyncStatus('synced');
+      return true;
+    } catch (err) {
+      console.error('[CloudSync] Erro ao zerar banco na nuvem:', err);
+      notifySyncStatus('error', err);
+      throw err;
     }
   }
 
@@ -374,6 +402,7 @@
     deleteDocument,
     syncCollectionBatch,
     seedCloudIfEmpty,
+    wipeCloudDataForCleanSlate,
     scheduleSave,
     onSyncStatusChange,
     getStatus: () => syncStatus

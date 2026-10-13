@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=93">
-  <script src="i18n.js?v=94"></script>
+  <script src="i18n.js?v=96"></script>
 </head>
 <body>
 
@@ -531,6 +531,29 @@
           <div id="recent-purchases-container" class="purchases-list-container">
             <!-- Injetado dinamicamente via JS -->
           </div>
+        </div>
+
+        <!-- Zona de Inicialização & Zeramento Oficial (Exclusivo do Gestor) -->
+        <div class="owner-section-box owner-only-section" id="owner-system-reset-section" style="border: 1px dashed var(--border-light); background: #FAF9F6; margin-top: 14px;">
+          <div class="owner-section-title" style="margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted);">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span data-i18n="owner.systemResetTitle">Inicio Oficial del Sistema</span>
+            </div>
+          </div>
+          <p style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;" data-i18n="owner.systemResetDesc">
+            Deja el sistema completamente limpio para comenzar a usarlo oficialmente.
+          </p>
+          <button id="btn-reset-system-official" class="topbar-btn" style="background: white; border: 1px solid var(--border-light); color: #B91C1C; font-weight: 600; padding: 10px 16px; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all var(--transition-fast);" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span data-i18n="owner.btnResetOfficial">Poner a Cero el Sistema</span>
+          </button>
         </div>
 
       </section>
@@ -1681,9 +1704,9 @@
   <!-- Scripts -->
   <script src="firebase-config.js?v=83"></script>
   <script src="auth.js?v=95"></script>
-  <script src="cloud-sync.js?v=95"></script>
+  <script src="cloud-sync.js?v=96"></script>
   <script src="touch-scroll.js?v=83"></script>
-  <script src="initialData.js?v=83"></script>
-  <script src="app.js?v=95"></script>
+  <script src="initialData.js?v=96"></script>
+  <script src="app.js?v=96"></script>
 </body>
 </html>
