@@ -4536,6 +4536,7 @@ const chevronRightSvgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fil
 const checkSvgIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 const searchSvgIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`;
 const calendarSvgIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`;
+const clockSvgIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 
 function getCustomOptionMeta(select, opt) {
   const val = opt.value;
@@ -5078,8 +5079,218 @@ function syncCustomDatePicker(target) {
   renderDatePickerGrid(input, wrapper, dateInfo.year, dateInfo.month);
 }
 
+function getFormattedTimeInfo(timeStr) {
+  let [hhStr, mmStr] = (timeStr || '11:00').split(':');
+  let hh = parseInt(hhStr, 10);
+  if (isNaN(hh)) hh = 11;
+  let mm = parseInt(mmStr, 10);
+  if (isNaN(mm)) mm = 0;
+  const padH = String(hh).padStart(2, '0');
+  const padM = String(mm).padStart(2, '0');
+  let badge = 'Manhã';
+  if (hh >= 12 && hh < 18) badge = 'Tarde';
+  else if (hh >= 18 || hh < 6) badge = 'Noite';
+  return {
+    time: `${padH}:${padM}`,
+    hour: padH,
+    minute: padM,
+    badge
+  };
+}
+
+const COMMON_TIME_CHIPS = ['09:00', '10:00', '11:00', '11:30', '14:00', '15:00', '16:00', '18:00'];
+const TIME_PICKER_HOURS = ['06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
+const TIME_PICKER_MINUTES = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+
+function renderCustomTimePickerContent(input, wrapper) {
+  if (!input.value) {
+    input.value = '11:00';
+  }
+
+  const timeInfo = getFormattedTimeInfo(input.value);
+
+  const chipsHtml = COMMON_TIME_CHIPS.map(t => `
+    <button type="button" class="custom-time-chip ${t === timeInfo.time ? 'active' : ''}" data-time="${t}">${t}</button>
+  `).join('');
+
+  const hoursHtml = TIME_PICKER_HOURS.map(h => `
+    <button type="button" class="custom-time-item ${h === timeInfo.hour ? 'active' : ''}" data-hour="${h}">${h}h</button>
+  `).join('');
+
+  const minutesHtml = TIME_PICKER_MINUTES.map(m => `
+    <button type="button" class="custom-time-item ${m === timeInfo.minute ? 'active' : ''}" data-minute="${m}">${m} min</button>
+  `).join('');
+
+  wrapper.innerHTML = `
+    <button type="button" class="custom-time-trigger" id="${input.id}-trigger" aria-haspopup="dialog" aria-expanded="false">
+      <div class="custom-time-trigger-content">
+        <span class="custom-time-icon-box">${clockSvgIcon}</span>
+        <div class="custom-time-text-wrap">
+          <span class="custom-time-val">${timeInfo.time}</span>
+          <span class="custom-time-badge">${timeInfo.badge}</span>
+        </div>
+      </div>
+      <span class="custom-select-chevron">${chevronSvgIcon}</span>
+    </button>
+    <div class="custom-time-popover" role="dialog" aria-label="Seletor de Horário">
+      <div class="custom-time-chips">
+        ${chipsHtml}
+      </div>
+      <div class="custom-time-selector-wrap">
+        <div class="custom-time-col">
+          <span class="custom-time-col-header">Hora</span>
+          <div class="custom-time-col-list custom-time-hours">
+            ${hoursHtml}
+          </div>
+        </div>
+        <div class="custom-time-sep">:</div>
+        <div class="custom-time-col">
+          <span class="custom-time-col-header">Minuto</span>
+          <div class="custom-time-col-list custom-time-minutes">
+            ${minutesHtml}
+          </div>
+        </div>
+      </div>
+      <div class="custom-time-footer">
+        <div class="custom-time-summary">
+          <span class="custom-time-summary-lbl">Início:</span>
+          <strong class="custom-time-summary-val">${timeInfo.time}</strong>
+        </div>
+        <button type="button" class="custom-time-confirm-btn">Confirmar</button>
+      </div>
+    </div>
+  `;
+
+  const trigger = wrapper.querySelector('.custom-time-trigger');
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = wrapper.classList.contains('open');
+    closeAllCustomControls();
+    if (!isOpen) {
+      wrapper.classList.add('open');
+      const formGroup = wrapper.closest('.form-group');
+      if (formGroup) formGroup.classList.add('has-open-dropdown');
+      trigger.setAttribute('aria-expanded', 'true');
+      setTimeout(() => {
+        const activeHour = wrapper.querySelector('.custom-time-hours .custom-time-item.active');
+        const activeMin = wrapper.querySelector('.custom-time-minutes .custom-time-item.active');
+        if (activeHour) activeHour.scrollIntoView({ block: 'center' });
+        if (activeMin) activeMin.scrollIntoView({ block: 'center' });
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    }
+  });
+
+  // Quick Chips
+  wrapper.querySelectorAll('.custom-time-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = chip.dataset.time;
+      input.value = val;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCustomTimePicker(input);
+      closeAllCustomControls();
+    });
+  });
+
+  // Horas
+  wrapper.querySelectorAll('.custom-time-hours .custom-time-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const current = getFormattedTimeInfo(input.value);
+      const newH = btn.dataset.hour;
+      input.value = `${newH}:${current.minute}`;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCustomTimePicker(input);
+    });
+  });
+
+  // Minutos
+  wrapper.querySelectorAll('.custom-time-minutes .custom-time-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const current = getFormattedTimeInfo(input.value);
+      const newM = btn.dataset.minute;
+      input.value = `${current.hour}:${newM}`;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCustomTimePicker(input);
+    });
+  });
+
+  // Botão Confirmar
+  wrapper.querySelector('.custom-time-confirm-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeAllCustomControls();
+  });
+}
+
+function initCustomTimePicker(input) {
+  if (!input) return;
+  input.classList.add('native-control-hidden');
+
+  let wrapper = input.nextElementSibling;
+  const isWrapperExisting = wrapper && wrapper.classList.contains('custom-time-wrapper');
+
+  if (!isWrapperExisting) {
+    wrapper = document.createElement('div');
+    wrapper.className = 'custom-time-wrapper';
+    wrapper.id = `${input.id}-custom-wrapper`;
+    wrapper.dataset.targetId = input.id;
+    input.parentNode.insertBefore(wrapper, input.nextSibling);
+  }
+
+  renderCustomTimePickerContent(input, wrapper);
+
+  input.addEventListener('change', () => {
+    syncCustomTimePicker(input);
+  });
+}
+
+function syncCustomTimePicker(target) {
+  const input = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!input) return;
+
+  const wrapper = input.nextElementSibling && input.nextElementSibling.classList.contains('custom-time-wrapper')
+    ? input.nextElementSibling
+    : null;
+
+  if (!wrapper) {
+    initCustomTimePicker(input);
+    return;
+  }
+
+  if (!input.value) {
+    input.value = '11:00';
+  }
+
+  const timeInfo = getFormattedTimeInfo(input.value);
+
+  const trigger = wrapper.querySelector('.custom-time-trigger');
+  if (trigger) {
+    const valEl = trigger.querySelector('.custom-time-val');
+    const badgeEl = trigger.querySelector('.custom-time-badge');
+    if (valEl) valEl.textContent = timeInfo.time;
+    if (badgeEl) badgeEl.textContent = timeInfo.badge;
+  }
+
+  const summaryVal = wrapper.querySelector('.custom-time-summary-val');
+  if (summaryVal) summaryVal.textContent = timeInfo.time;
+
+  wrapper.querySelectorAll('.custom-time-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.time === timeInfo.time);
+  });
+
+  wrapper.querySelectorAll('.custom-time-hours .custom-time-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.hour === timeInfo.hour);
+  });
+
+  wrapper.querySelectorAll('.custom-time-minutes .custom-time-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.minute === timeInfo.minute);
+  });
+}
+
 function closeAllCustomControls() {
-  document.querySelectorAll('.custom-select-wrapper.open, .custom-date-wrapper.open').forEach(w => {
+  document.querySelectorAll('.custom-select-wrapper.open, .custom-date-wrapper.open, .custom-time-wrapper.open').forEach(w => {
     w.classList.remove('open');
     const trigger = w.querySelector('button[aria-expanded]');
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
@@ -5092,14 +5303,16 @@ function closeAllCustomControls() {
 function syncAllCustomControls() {
   document.querySelectorAll('select.form-input, #purchase-month-select').forEach(sel => syncCustomSelect(sel));
   document.querySelectorAll('input[type="date"].form-input').forEach(inp => syncCustomDatePicker(inp));
+  document.querySelectorAll('input[type="time"].form-input').forEach(inp => syncCustomTimePicker(inp));
 }
 
 function initAllCustomControls() {
   document.querySelectorAll('select.form-input, #purchase-month-select').forEach(sel => initCustomSelect(sel));
   document.querySelectorAll('input[type="date"].form-input').forEach(inp => initCustomDatePicker(inp));
+  document.querySelectorAll('input[type="time"].form-input').forEach(inp => initCustomTimePicker(inp));
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.custom-select-wrapper') && !e.target.closest('.custom-date-wrapper')) {
+    if (!e.target.closest('.custom-select-wrapper') && !e.target.closest('.custom-date-wrapper') && !e.target.closest('.custom-time-wrapper')) {
       closeAllCustomControls();
     }
   });

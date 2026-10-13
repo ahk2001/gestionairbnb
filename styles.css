@@ -4111,7 +4111,8 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
   display: none !important;
   -webkit-appearance: none;
 }
@@ -4133,7 +4134,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .form-group.has-open-dropdown,
 .form-group:has(.custom-select-wrapper.open),
-.form-group:has(.custom-date-wrapper.open) {
+.form-group:has(.custom-date-wrapper.open),
+.form-group:has(.custom-time-wrapper.open) {
   z-index: 100 !important;
   position: relative !important;
 }
@@ -4514,57 +4516,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   letter-spacing: 0.02em;
 }
 
-/* Seletor Customizado de Horário de Início */
-.custom-time-input-wrap {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
 
-.custom-time-input {
-  width: 100%;
-  min-height: 48px;
-  height: 48px;
-  padding: 10px 14px 10px 48px !important;
-  font-size: 0.94rem;
-  font-weight: 700;
-  color: var(--text-main);
-  background: rgba(249, 250, 251, 0.92);
-  border: 1.5px solid rgba(226, 232, 240, 0.95);
-  border-radius: 14px;
-  outline: none;
-  font-family: inherit;
-  transition: all 0.22s var(--ease-spring);
-  box-sizing: border-box;
-}
-
-.custom-time-input:hover {
-  background: #FFFFFF;
-  border-color: rgba(15, 39, 68, 0.35);
-  box-shadow: 0 3px 10px rgba(15, 39, 68, 0.05);
-}
-
-.custom-time-input:focus {
-  border-color: var(--accent-navy);
-  background: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(15, 39, 68, 0.08), 0 4px 14px rgba(11, 13, 17, 0.05);
-}
-
-.custom-time-icon-box {
-  position: absolute;
-  left: 10px;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: rgba(15, 39, 68, 0.07);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent-navy);
-  pointer-events: none;
-  flex-shrink: 0;
-}
 
 .custom-date-popover {
   position: absolute;
@@ -4736,6 +4688,277 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .custom-date-day-btn.selected::after {
   background: #FFFFFF;
+}
+
+/* ==========================================================================
+   CUSTOM TIME PICKER - LUXURY EXCLUSIVE POPOVER & WHEEL SELECTOR
+   ========================================================================== */
+.custom-time-wrapper {
+  position: relative;
+  width: 100%;
+  user-select: none;
+}
+
+.custom-time-trigger {
+  width: 100%;
+  padding: 10px 14px;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(226, 232, 240, 0.95);
+  background: rgba(249, 250, 251, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.22s var(--ease-spring);
+  color: var(--text-main);
+  outline: none;
+}
+
+.custom-time-trigger:hover {
+  background: #FFFFFF;
+  border-color: rgba(15, 39, 68, 0.35);
+  box-shadow: 0 3px 10px rgba(15, 39, 68, 0.05);
+}
+
+.custom-time-wrapper.open .custom-time-trigger,
+.custom-time-trigger:focus-visible {
+  border-color: var(--accent-navy);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(15, 39, 68, 0.08), 0 4px 14px rgba(11, 13, 17, 0.05);
+}
+
+.custom-time-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.custom-time-icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(15, 39, 68, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-navy, #0F2744);
+  flex-shrink: 0;
+}
+
+.custom-time-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.custom-time-val {
+  font-size: 0.90rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.custom-time-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--accent-navy, #0F2744);
+  color: #FFFFFF;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+/* Popover do Seletor de Horário */
+.custom-time-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 36px);
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(15, 39, 68, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 20px 48px rgba(11, 13, 17, 0.20), 0 4px 16px rgba(11, 13, 17, 0.06);
+  padding: 14px;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.22s var(--ease-spring), visibility 0.2s;
+}
+
+.custom-time-wrapper.open .custom-time-popover {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+/* Chips Rápidos de Horário */
+.custom-time-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  scrollbar-width: none;
+}
+.custom-time-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-time-chip {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  background: rgba(248, 250, 252, 0.9);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  outline: none;
+}
+
+.custom-time-chip:hover {
+  background: #FFFFFF;
+  border-color: rgba(15, 39, 68, 0.3);
+}
+
+.custom-time-chip.active {
+  background: var(--accent-navy, #0F2744);
+  border-color: var(--accent-navy, #0F2744);
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+/* Colunas de seleção de Horas e Minutos */
+.custom-time-selector-wrap {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  background: rgba(248, 250, 252, 0.85);
+  border-radius: 14px;
+  padding: 10px 8px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+.custom-time-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.custom-time-col-header {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.custom-time-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 135px;
+  overflow-y: auto;
+  width: 100%;
+  padding: 2px 4px;
+  scrollbar-width: thin;
+}
+
+.custom-time-item {
+  width: 100%;
+  padding: 5px 0;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.custom-time-item:hover {
+  background: rgba(15, 39, 68, 0.08);
+}
+
+.custom-time-item.active {
+  background: var(--accent-navy, #0F2744);
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(15, 39, 68, 0.2);
+}
+
+.custom-time-sep {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-navy, #0F2744);
+  margin-top: 14px;
+  user-select: none;
+}
+
+/* Rodapé do Popover */
+.custom-time-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.custom-time-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.custom-time-summary-val {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--accent-navy, #0F2744);
+}
+
+.custom-time-confirm-btn {
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: var(--accent-navy, #0F2744);
+  color: #FFFFFF;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(15, 39, 68, 0.18);
+}
+
+.custom-time-confirm-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
 }
 
 /* ==========================================================================
