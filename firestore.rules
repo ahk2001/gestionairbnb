@@ -6,12 +6,18 @@ service cloud.firestore {
     // Funções de Autorização & Segurança no Servidor
     // ========================================================================
 
+    // Verifica se um e-mail pertence aos administradores raiz
+    function isRootOwnerEmail(email) {
+      return email != null &&
+             (email.lower() == 'gestionairbnb2026@gmail.com' ||
+              email.lower() == 'gestao.airbnb.portugal@gmail.com');
+    }
+
     // Administrador raiz pré-autorizado para bootstrap seguro
     function isRootOwner() {
       return request.auth != null &&
              request.auth.token.email != null &&
-             (request.auth.token.email.lower() == 'gestionairbnb2026@gmail.com' ||
-              request.auth.token.email.lower() == 'gestao.airbnb.portugal@gmail.com');
+             isRootOwnerEmail(request.auth.token.email);
     }
 
     // Usuário autenticado pelo Google com e-mail verificado
@@ -65,7 +71,8 @@ service cloud.firestore {
       allow create: if isOwner() || (isRootOwner() && request.auth.token.email.lower() == email.lower());
 
       // Apenas o proprietário pode alterar papéis ou revogar acessos
-      allow update, delete: if isOwner();
+      // Protege contra exclusão ou modificação dos registros de administradores raiz por donos secundários
+      allow update, delete: if isOwner() && (!isRootOwnerEmail(email) || isRootOwner());
     }
 
     // ========================================================================
@@ -114,12 +121,12 @@ service cloud.firestore {
         request.resource.data.email != null &&
         request.resource.data.email.lower() == request.auth.token.email.lower()
       );
-      // Colaboradora pode atualizar seu próprio perfil (nome/foto); Dono pode editar todos
+      // Colaboradora só atualiza o seu próprio perfil e não pode alterar o e-mail cadastrado
       allow update: if isOwner() || (
-        isStaff() && (
-          (resource.data.email != null && resource.data.email.lower() == request.auth.token.email.lower()) ||
-          (request.resource.data.email != null && request.resource.data.email.lower() == request.auth.token.email.lower())
-        )
+        isStaff() &&
+        resource.data.email != null &&
+        resource.data.email.lower() == request.auth.token.email.lower() &&
+        (request.resource.data.email == null || request.resource.data.email.lower() == resource.data.email.lower())
       );
     }
 
@@ -128,7 +135,18 @@ service cloud.firestore {
     // ========================================================================
     match /notes/{noteId} {
       allow read: if isAuthorizedUser();
-      allow create, update, delete: if isAuthorizedUser();
+      // Não permite que colaboradora forje nota com perfil de 'owner'
+      allow create: if isOwner() || (
+        isStaff() &&
+        request.resource.data.authorType != 'owner'
+      );
+      // Dono e equipe podem marcar como resolvido/reabrir
+      allow update: if isAuthorizedUser();
+      // Integridade dos avisos: colaboradora só pode apagar notas criadas pela equipe, NUNCA do gestor
+      allow delete: if isOwner() || (
+        isStaff() &&
+        resource.data.authorType != 'owner'
+      );
     }
 
     // ========================================================================
@@ -155,19 +173,26 @@ service cloud.firestore {
     // ========================================================================
     match /timesheets/{timesheetId} {
       allow read: if isAuthorizedUser();
-      allow create: if isAuthorizedUser();
-      // Colaboradora só edita o próprio registro; Dono pode editar qualquer um
-      allow update: if isOwner() || (
-        isStaff() && (
-          (resource.data.staffEmail != null && resource.data.staffEmail == request.auth.token.email.lower()) ||
-          (request.resource.data.staffEmail != null && request.resource.data.staffEmail == request.auth.token.email.lower())
+      // Dono cria qualquer registro; Colaboradora só cria registro atribuído ao seu próprio e-mail
+      allow create: if isAuthorizedUser() && (
+        isOwner() ||
+        (
+          request.resource.data.staffEmail != null &&
+          request.resource.data.staffEmail.lower() == request.auth.token.email.lower()
         )
       );
-      // Dono pode apagar qualquer registro; colaboradora pode apagar o seu próprio
+      // Colaboradora só edita o próprio registro existente e não pode mudar a titularidade do e-mail
+      allow update: if isOwner() || (
+        isStaff() &&
+        resource.data.staffEmail != null &&
+        resource.data.staffEmail.lower() == request.auth.token.email.lower() &&
+        (request.resource.data.staffEmail == null || request.resource.data.staffEmail.lower() == resource.data.staffEmail.lower())
+      );
+      // Dono pode apagar qualquer registro; colaboradora só pode apagar o seu próprio
       allow delete: if isOwner() || (
         isStaff() &&
         resource.data.staffEmail != null &&
-        resource.data.staffEmail == request.auth.token.email.lower()
+        resource.data.staffEmail.lower() == request.auth.token.email.lower()
       );
     }
 

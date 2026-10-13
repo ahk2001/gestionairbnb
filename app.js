@@ -529,16 +529,18 @@ function escapeHtml(str) {
 // ==========================================================================
 // Feedback Tátil e Notificações (Toast Limpo sem Emojis)
 // ==========================================================================
-function showToast(message) {
+function showToast(message, duration = 2800) {
   const container = document.getElementById('toast-container');
   if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.innerHTML = `<span>${message}</span>`;
+  const span = document.createElement('span');
+  span.textContent = String(message ?? '');
+  toast.appendChild(span);
   container.appendChild(toast);
   setTimeout(() => {
     toast.remove();
-  }, 2800);
+  }, typeof duration === 'number' ? duration : 2800);
 }
 
 // ==========================================================================
@@ -1705,22 +1707,22 @@ function renderProducts() {
         ` : ''}
 
         <div class="product-top-row">
-          <div class="product-img-wrapper" data-zoom-src="${item.photo}" data-zoom-title="${encodeURIComponent(item.name)}" data-zoom-desc="${encodeURIComponent(item.description || '')}">
-            <img class="product-img" src="${item.photo}" alt="${item.name}" loading="lazy" onerror="this.src='https://placehold.co/160x160?text=Produto'">
+          <div class="product-img-wrapper" data-zoom-src="${escapeHtml(item.photo || '')}" data-zoom-title="${encodeURIComponent(item.name || '')}" data-zoom-desc="${encodeURIComponent(item.description || '')}">
+            <img class="product-img" src="${escapeHtml(item.photo || '')}" alt="${escapeHtml(item.name || '')}" loading="lazy" onerror="this.src='https://placehold.co/160x160?text=Produto'">
             <span class="zoom-hint-badge">${lblZoom}</span>
           </div>
 
           <div class="product-details">
             <div class="product-tags">
-              <span class="brand-badge">${item.brand || 'BOSQUE VERDE'}</span>
+              <span class="brand-badge">${escapeHtml(item.brand || 'BOSQUE VERDE')}</span>
               ${propBadgeHtml}
             </div>
-            <h3 class="product-name" title="${item.name}">${item.name}</h3>
+            <h3 class="product-name" title="${escapeHtml(item.name || '')}">${escapeHtml(item.name || '')}</h3>
 
             <div class="product-qty-row">
               <div class="qty-display">
                 <span class="qty-number" id="qty-val-${item.id}">${item.quantity}</span>
-                <span class="qty-unit">${item.unit || 'un'}</span>
+                <span class="qty-unit">${escapeHtml(item.unit || 'un')}</span>
               </div>
 
               <!-- Ajuste Rápido - e + -->
@@ -1965,12 +1967,12 @@ function renderProductsTab() {
       const btnDeleteTxt = window.I18N ? window.I18N.t('products.btnDelete') : 'Excluir';
       activeContainer.innerHTML = filtered.map(item => `
         <div class="catalog-item-card" data-catalog-id="${item.id}">
-          <img class="catalog-item-thumb" src="${item.photo}" alt="${item.name}" loading="lazy" onerror="this.src='https://placehold.co/100x100?text=Produto'">
+          <img class="catalog-item-thumb" src="${escapeHtml(item.photo || '')}" alt="${escapeHtml(item.name || '')}" loading="lazy" onerror="this.src='https://placehold.co/100x100?text=Produto'">
           <div class="catalog-item-info">
-            <h4 class="catalog-item-name" title="${item.name}">${item.name}</h4>
+            <h4 class="catalog-item-name" title="${escapeHtml(item.name || '')}">${escapeHtml(item.name || '')}</h4>
             <div class="catalog-item-meta">
-              <span class="brand-badge">${item.brand || 'BOSQUE VERDE'}</span>
-              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">• ${item.unit || 'un'}</span>
+              <span class="brand-badge">${escapeHtml(item.brand || 'BOSQUE VERDE')}</span>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">• ${escapeHtml(item.unit || 'un')}</span>
             </div>
           </div>
           <div class="catalog-actions-group">
@@ -1980,7 +1982,7 @@ function renderProductsTab() {
               </svg>
               <span>${btnEditTxt}</span>
             </button>
-            <button type="button" class="btn-catalog-action btn-catalog-delete" data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" title="${btnDeleteTxt}">
+            <button type="button" class="btn-catalog-action btn-catalog-delete" data-id="${item.id}" data-name="${encodeURIComponent(item.name || '')}" title="${btnDeleteTxt}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
               </svg>
@@ -2014,11 +2016,11 @@ function renderProductsTab() {
 
         return `
           <div class="trash-item-card" data-trash-id="${item.id}">
-            <img class="trash-item-thumb" src="${item.photo}" alt="${item.name}" loading="lazy" onerror="this.src='https://placehold.co/100x100?text=Produto'">
+            <img class="trash-item-thumb" src="${escapeHtml(item.photo || '')}" alt="${escapeHtml(item.name || '')}" loading="lazy" onerror="this.src='https://placehold.co/100x100?text=Produto'">
             <div class="trash-item-info">
-              <h4 class="trash-item-name" title="${item.name}">${item.name}</h4>
+              <h4 class="trash-item-name" title="${escapeHtml(item.name || '')}">${escapeHtml(item.name || '')}</h4>
               <div class="trash-item-meta">
-                <span class="brand-badge">${item.brand || 'BOSQUE VERDE'}</span>
+                <span class="brand-badge">${escapeHtml(item.brand || 'BOSQUE VERDE')}</span>
                 <span class="trash-days-left">${trashDaysTxt}</span>
               </div>
             </div>
@@ -2336,17 +2338,17 @@ function renderUrgentItems() {
     const isFalta = item.status === 'falta';
     return `
       <div class="urgent-item-card ${isFalta ? 'is-falta' : 'is-acabando'}">
-        <img class="urgent-item-img" src="${item.photo}" alt="${item.name}" loading="lazy">
+        <img class="urgent-item-img" src="${escapeHtml(item.photo || '')}" alt="${escapeHtml(item.name || '')}" loading="lazy">
         <div class="urgent-item-info">
-          <h4 class="urgent-item-title">${item.name}</h4>
+          <h4 class="urgent-item-title">${escapeHtml(item.name || '')}</h4>
           <div class="urgent-item-meta">
             <span class="status-badge-inline ${isFalta ? 'falta' : 'acabando'}">
               ${isFalta ? faltaLabel : atencaoLabel}
             </span>
             <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">
-              ${stockLabel}: ${item.quantity} ${item.unit}
+              ${stockLabel}: ${item.quantity} ${escapeHtml(item.unit || 'un')}
             </span>
-            <span class="prop-badge-small prop-badge-${(item.propertyId || '').toLowerCase()}" data-prop="${item.propertyId}">${item.propertyId}</span>
+            <span class="prop-badge-small prop-badge-${(item.propertyId || '').toLowerCase()}" data-prop="${escapeHtml(item.propertyId || '')}">${escapeHtml(item.propertyId || '')}</span>
           </div>
         </div>
         <button type="button" class="urgent-buy-btn" data-id="${item.id}" data-prop="${item.propertyId}">
@@ -2407,22 +2409,24 @@ function renderNotes() {
       authorPhoto = state.currentUser.photo;
     }
 
+    const safeContent = escapeHtml(note.content || '').replace(/\n/g, '<br>');
+
     return `
       <div class="note-card ${note.isDone ? 'is-done' : ''}" id="note-${note.id}">
         <div class="note-header">
           <div style="display: flex; align-items: center; gap: 8px;">
             ${authorPhoto
-              ? `<img src="${authorPhoto}" class="note-author-avatar-img" alt="${escapeHtml(note.authorName || '')}">`
+              ? `<img src="${escapeHtml(authorPhoto)}" class="note-author-avatar-img" alt="${escapeHtml(note.authorName || '')}">`
               : `<span class="note-author-avatar-img" style="background: ${isOwner ? '#D97706' : '#059669'}; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;">${getInitials(note.authorName, isOwner ? 'AD' : 'EQ')}</span>`
             }
             <span class="note-author-tag ${isOwner ? 'is-owner' : 'is-staff'}">
               <span>${escapeHtml(note.authorName || (isOwner ? defaultOwnerAuthor : defaultStaffAuthor))}</span>
-              <span class="prop-badge-small prop-badge-${(note.propertyId || '').toLowerCase()}" data-prop="${note.propertyId}">${note.propertyId}</span>
+              <span class="prop-badge-small prop-badge-${(note.propertyId || '').toLowerCase()}" data-prop="${escapeHtml(note.propertyId || '')}">${escapeHtml(note.propertyId || '')}</span>
             </span>
           </div>
           <span class="note-time">${formatDateTime(note.createdAt)}</span>
         </div>
-        <p class="note-body">${note.content}</p>
+        <p class="note-body">${safeContent}</p>
         <div class="note-footer">
           <button type="button" class="note-action-btn btn-toggle-note-done" data-id="${note.id}">
             ${note.isDone ? reopenTxt : doneTxt}
@@ -2971,9 +2975,9 @@ function renderCalendar() {
         ${ev.notes ? `<p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.35;">${escapeHtml(ev.notes)}</p>` : ''}
         <div class="cal-meta">
           <span class="cal-staff" style="display: flex; align-items: center; gap: 4px;">
-            ${staffPhoto ? `<img src="${staffPhoto}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">` : ''}
+            ${staffPhoto ? `<img src="${escapeHtml(staffPhoto)}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">` : ''}
             <span>${escapeHtml(ev.assignedStaffName || defaultStaffName)}</span>
-            <span class="prop-badge-small prop-badge-${(ev.propertyId || '').toLowerCase()}" data-prop="${ev.propertyId}" style="margin-left: 4px;">${ev.propertyId}</span>
+            <span class="prop-badge-small prop-badge-${(ev.propertyId || '').toLowerCase()}" data-prop="${escapeHtml(ev.propertyId || '')}" style="margin-left: 4px;">${escapeHtml(ev.propertyId || '')}</span>
           </span>
           <div style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="topbar-btn btn-toggle-cal-status" data-id="${ev.id}" style="${isDone ? 'background: rgba(16,185,129,0.12); color: #047857; font-weight: 700;' : ''}">
@@ -3540,8 +3544,8 @@ function renderTimesheets() {
             <div class="ts-staff-picker-left">
               <div class="ts-user-avatar ${photoUrl ? 'has-photo' : ''}" title="${escapeHtml(staff.name)}" style="overflow: hidden; padding: 0; background: ${photoUrl ? 'transparent' : '#0B0D11'};">
                 ${photoUrl
-                  ? `<img src="${escapeHtml(photoUrl)}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" onerror="this.onerror=null; this.parentElement.style.background='#0B0D11'; this.parentElement.innerHTML='${escapeHtml(initials)}';">`
-                  : initials
+                  ? `<img src="${escapeHtml(photoUrl)}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" onerror="this.onerror=null; this.parentElement.style.background='#0B0D11'; this.parentElement.textContent='${escapeHtml(initials)}';">`
+                  : escapeHtml(initials)
                 }
               </div>
               <div class="ts-staff-picker-info">
@@ -4008,7 +4012,7 @@ function openManagerStaffTimesheetModal(staffId) {
     }
     const initials = staff.avatar || getInitials(staff.name, 'EQ');
     if (photoUrl) {
-      avatarEl.innerHTML = `<img src="${escapeHtml(photoUrl)}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.style.background='#0B0D11'; this.parentElement.innerHTML='${escapeHtml(initials)}';">`;
+      avatarEl.innerHTML = `<img src="${escapeHtml(photoUrl)}" class="ts-staff-picker-avatar-img" alt="${escapeHtml(staff.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.style.background='#0B0D11'; this.parentElement.textContent='${escapeHtml(initials)}';">`;
       avatarEl.style.overflow = 'hidden';
       avatarEl.style.padding = '0';
       avatarEl.style.background = 'transparent';
@@ -4829,13 +4833,13 @@ function openViewPurchaseModal(purchaseId) {
       <div class="view-purchase-item-row">
         <div style="display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1;">
           ${item.productPhoto
-            ? `<img src="${item.productPhoto}" class="view-purchase-item-thumb" alt="${item.productName}">`
+            ? `<img src="${escapeHtml(item.productPhoto || '')}" class="view-purchase-item-thumb" alt="${escapeHtml(item.productName || '')}">`
             : `<div class="view-purchase-item-thumb" style="background: #F1F5F9; display: flex; align-items: center; justify-content: center;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>
               </div>`
           }
           <div class="view-purchase-item-info">
-            <h5 class="view-purchase-item-name">${item.productName}</h5>
+            <h5 class="view-purchase-item-name">${escapeHtml(item.productName || '')}</h5>
           </div>
         </div>
         <span class="view-purchase-item-qty">+${item.quantity} un</span>
