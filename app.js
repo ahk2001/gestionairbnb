@@ -3248,11 +3248,7 @@ function renderOwnerDashboard() {
         </div>
       `;
     } else {
-      const sortedPurchases = [...filteredPurchases].sort((a, b) => {
-        const timeA = new Date(a.purchaseDate || a.createdAt || 0).getTime();
-        const timeB = new Date(b.purchaseDate || b.createdAt || 0).getTime();
-        return timeB - timeA;
-      });
+      const sortedPurchases = [...filteredPurchases].sort(comparePurchasesDesc);
       const MAX_RECENT = 5;
       const visiblePurchases = sortedPurchases.slice(0, MAX_RECENT);
       const hasMore = sortedPurchases.length > MAX_RECENT;
@@ -4923,6 +4919,56 @@ window.closeViewPurchaseModal = closeViewPurchaseModal;
 // RENDERIZAÇÃO E MODAL DE COMPROVANTES / HISTÓRICO COMPLETO DE COMPRAS
 // ==========================================================================
 
+function getPurchaseExactTime(p) {
+  if (!p) return 0;
+  if (p.createdAt) {
+    const t = new Date(p.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (p.timestamp && !isNaN(Number(p.timestamp))) {
+    return Number(p.timestamp);
+  }
+  const m = String(p.id || '').match(/^pur_(\d{10,})/);
+  if (m) {
+    return Number(m[1]);
+  }
+  return 0;
+}
+
+function comparePurchasesDesc(a, b) {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  const dateA = String(a.purchaseDate || '').slice(0, 10);
+  const dateB = String(b.purchaseDate || '').slice(0, 10);
+
+  // 1. Se as datas de compra forem dias diferentes (ex: 2026-10-13 vs 2026-10-11), o dia mais recente vem primeiro
+  if (dateA && dateB && dateA !== dateB) {
+    return dateB.localeCompare(dateA);
+  }
+
+  // 2. No mesmo dia (ex: todas feitas em 2026-10-13): desempatar pelo momento exato em que a compra foi registrada
+  const timeA = getPurchaseExactTime(a);
+  const timeB = getPurchaseExactTime(b);
+
+  if (timeB !== timeA && (timeB > 0 || timeA > 0)) {
+    return timeB - timeA;
+  }
+
+  // 3. Fallback adicional se IDs contiverem numeração sequencial (ex: pur_2 vs pur_1)
+  const numA = Number(String(a.id || '').replace(/\D/g, '')) || 0;
+  const numB = Number(String(b.id || '').replace(/\D/g, '')) || 0;
+  if (numB !== numA && (numB > 0 || numA > 0)) {
+    return numB - numA;
+  }
+
+  return String(b.id || '').localeCompare(String(a.id || ''));
+}
+
+window.getPurchaseExactTime = getPurchaseExactTime;
+window.comparePurchasesDesc = comparePurchasesDesc;
+
 function renderPurchaseCardHtml(p, receiptTagTxt) {
   const hasReceipt = Boolean(p.receiptPhoto);
   const buyerObj = (state.data.staff || []).find(s => s.id === p.buyerStaffId || s.name === p.buyerName);
@@ -5001,12 +5047,8 @@ function closeAllPurchasesModal() {
 }
 
 function renderAllPurchasesModalContent() {
-  // Ordena sempre as compras mais recentes primeiro
-  const allPurchases = [...(state.data.purchases || [])].sort((a, b) => {
-    const timeA = new Date(a.purchaseDate || a.createdAt || 0).getTime();
-    const timeB = new Date(b.purchaseDate || b.createdAt || 0).getTime();
-    return timeB - timeA;
-  });
+  // Ordena sempre as compras mais recentes primeiro (considerando dia e hora exata de criação)
+  const allPurchases = [...(state.data.purchases || [])].sort(comparePurchasesDesc);
 
   let filteredList = allPurchases;
   if (_allPurchasesFilterDate && _allPurchasesFilterDate.trim() !== '') {
@@ -6426,8 +6468,10 @@ function handlePurchaseSubmit(e) {
     ? items[0].productName
     : `${items.length} Itens: ${items.map(i => `${i.quantity}x ${i.productName}`).slice(0, 2).join(', ')}${items.length > 2 ? '...' : ''}`;
 
+  const nowTs = Date.now();
+  const nowIso = new Date().toISOString();
   const newPurchase = {
-    id: `pur_${Date.now()}`,
+    id: `pur_${nowTs}`,
     propertyId: propId,
     productId: items[0].catalogId,
     productName: summaryName,
@@ -6438,6 +6482,8 @@ function handlePurchaseSubmit(e) {
     buyerName: buyerName,
     buyerPhoto: state.currentUser ? (state.currentUser.photo || null) : null,
     purchaseDate: date,
+    createdAt: nowIso,
+    timestamp: nowTs,
     quantityBought: totalUnits,
     totalCost: cost,
     receiptPhoto: state.tempReceiptBase64,

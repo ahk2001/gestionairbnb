@@ -90,7 +90,20 @@
               // Garante que compras locais criadas recentemente não sejam descartadas antes da confirmação da nuvem
               const remoteIds = new Set(items.map(it => String(it.id)));
               const localPending = (appState.data.purchases || []).filter(p => p && p.id && !remoteIds.has(String(p.id)));
-              appState.data.purchases = [...localPending, ...items];
+              const combinedPurchases = [...localPending, ...items];
+              if (typeof root.comparePurchasesDesc === 'function') {
+                combinedPurchases.sort(root.comparePurchasesDesc);
+              } else {
+                combinedPurchases.sort((a, b) => {
+                  const dateA = String(a.purchaseDate || '').slice(0, 10);
+                  const dateB = String(b.purchaseDate || '').slice(0, 10);
+                  if (dateA !== dateB) return dateB.localeCompare(dateA);
+                  const numA = Number(String(a.id || '').replace(/\D/g, '')) || 0;
+                  const numB = Number(String(b.id || '').replace(/\D/g, '')) || 0;
+                  return numB - numA;
+                });
+              }
+              appState.data.purchases = combinedPurchases;
             } else if (colName === 'notes') {
               // Garante que recados locais recém-criados não sejam descartados antes da confirmação da nuvem
               const remoteIds = new Set(items.map(it => String(it.id)));

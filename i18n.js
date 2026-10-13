@@ -231,6 +231,7 @@
       'purchases.allDatesBtn': 'Ver Todas',
       'purchases.filteredSummary': '{count} compras • Total: {sum}',
       'purchases.noPurchasesDate': 'Ningún comprobante encontrado para esta fecha.',
+      'purchases.btnCloseModal': 'Cerrar',
       'timesheet.inProgress': 'En curso',
       'timesheet.noBreak': 'Sin pausa',
       'timesheet.break': 'Pausa: {time}',
@@ -903,6 +904,7 @@
       'purchases.allDatesBtn': 'Ver Todas',
       'purchases.filteredSummary': '{count} compras • Total: {sum}',
       'purchases.noPurchasesDate': 'Nenhum comprovante encontrado para esta data.',
+      'purchases.btnCloseModal': 'Fechar',
 
       // Modais
       // Modal Registrar Compra
