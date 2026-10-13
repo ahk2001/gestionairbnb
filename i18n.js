@@ -129,6 +129,20 @@
       'calendar.scheduleMonth': '+ Programar Turno',
       'calendar.noEventsDayTitle': 'Ningún turno programado para {date}',
       'calendar.noEventsDaySub': 'El inmueble está sin actividades programadas en este día.',
+      'calendar.todayBtn': 'Hoy',
+      'calendar.shiftSingle': 'turno',
+      'calendar.shiftPlural': 'turnos',
+      'calendar.upcomingShiftSingle': 'próximo turno',
+      'calendar.upcomingShiftPlural': 'próximos turnos',
+      'calendar.viewMonthFull': 'Visualizando Mes Completo',
+      'calendar.viewDaySelected': 'Día Seleccionado ({weekday})',
+      'calendar.seeMonth': 'Ver Mes ✕',
+      'calendar.legendChecking': 'Checking',
+      'calendar.legendCheckout': 'Checkout',
+      'calendar.legendLimpeza': 'Limpieza',
+      'calendar.legendManutencao': 'Mantenimiento',
+      'calendar.legendCompras': 'Compras',
+      'calendar.weekdaysShort': ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 
       // Aba 5: Gestão (Perfil, Idioma, Horas, Finanças, Equipe, Compras)
       'owner.profileName': 'Equipo',
@@ -570,6 +584,20 @@
       'calendar.scheduleMonth': '+ Agendar Escala',
       'calendar.noEventsDayTitle': 'Nenhuma escala agendada para {date}',
       'calendar.noEventsDaySub': 'O imóvel está sem atividades programadas neste dia.',
+      'calendar.todayBtn': 'Hoje',
+      'calendar.shiftSingle': 'escala',
+      'calendar.shiftPlural': 'escalas',
+      'calendar.upcomingShiftSingle': 'próxima escala',
+      'calendar.upcomingShiftPlural': 'próximas escalas',
+      'calendar.viewMonthFull': 'Visualizando Mês Completo',
+      'calendar.viewDaySelected': 'Dia Selecionado ({weekday})',
+      'calendar.seeMonth': 'Ver Mês ✕',
+      'calendar.legendChecking': 'Checking',
+      'calendar.legendCheckout': 'Checkout',
+      'calendar.legendLimpeza': 'Limpeza',
+      'calendar.legendManutencao': 'Manutenção',
+      'calendar.legendCompras': 'Compras',
+      'calendar.weekdaysShort': ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
 
       // Aba 5: Gestão (Perfil, Idioma, Horas, Finanças, Equipe, Compras)
       'owner.profileName': 'Equipe',
@@ -1004,7 +1032,26 @@
       } catch (err) {
         console.warn('[I18N] Falha ao disparar evento airbnb-language-changed:', err);
       }
+
+      // Redundância direta: chama renderAll se disponível
+      if (triggerRender && typeof window.renderAll === 'function') {
+        try { window.renderAll(); } catch (e) {}
+      }
     }
+  }
+
+  // Delegação global e infalível de clique para qualquer botão [data-lang-btn]
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', function (e) {
+      const btn = e.target && e.target.closest ? e.target.closest('[data-lang-btn]') : null;
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const targetLang = btn.getAttribute('data-lang-btn');
+      if (targetLang === 'es' || targetLang === 'pt') {
+        setLanguage(targetLang);
+      }
+    }, true);
   }
 
   // Inicializa imediatamente

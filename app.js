@@ -486,7 +486,10 @@ function formatDateTime(isoDate) {
   if (!isoDate) return '';
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return isoDate;
-  return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  const isEs = window.I18N ? window.I18N.getLanguage() === 'es' : false;
+  const separator = isEs ? ' a las ' : ' às ';
+  const locale = isEs ? 'es-ES' : 'pt-BR';
+  return `${d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })}${separator}${d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function escapeHtml(str) {
@@ -2521,6 +2524,18 @@ function getEventBorderColor(type, isDone) {
   return getEventColor(type);
 }
 
+function getEventTypeName(type) {
+  const currentLang = window.I18N ? window.I18N.getLanguage() : 'es';
+  switch (type) {
+    case 'limpeza': return window.I18N ? window.I18N.t('calendar.typeLimpeza') : (currentLang === 'es' ? 'Limpieza' : 'Limpeza');
+    case 'checking': return window.I18N ? window.I18N.t('calendar.typeChecking') : 'Checking';
+    case 'checkout': return window.I18N ? window.I18N.t('calendar.typeCheckout') : 'Checkout';
+    case 'manutencao': return window.I18N ? window.I18N.t('calendar.typeManutencao') : (currentLang === 'es' ? 'Mantenimiento' : 'Manutenção');
+    case 'compras': return window.I18N ? window.I18N.t('calendar.typeCompras') : 'Compras';
+    default: return type || 'Checking';
+  }
+}
+
 function renderCalendarWidget() {
   const container = document.getElementById('calendar-widget-container');
   if (!container) return;
@@ -2615,27 +2630,35 @@ function renderCalendarWidget() {
     `;
   }
 
+  const currentLang = window.I18N ? window.I18N.getLanguage() : 'es';
+  const shiftSingle = window.I18N ? window.I18N.t('calendar.shiftSingle') : (currentLang === 'es' ? 'turno' : 'escala');
+  const shiftPlural = window.I18N ? window.I18N.t('calendar.shiftPlural') : (currentLang === 'es' ? 'turnos' : 'escalas');
+  const todayBtnTxt = window.I18N ? window.I18N.t('calendar.todayBtn') : (currentLang === 'es' ? 'Hoy' : 'Hoje');
+  const weekdays = (window.I18N && Array.isArray(window.I18N.t('calendar.weekdaysShort')))
+    ? window.I18N.t('calendar.weekdaysShort')
+    : (currentLang === 'es' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']);
+
+  const legChecking = window.I18N ? window.I18N.t('calendar.legendChecking') : 'Checking';
+  const legCheckout = window.I18N ? window.I18N.t('calendar.legendCheckout') : 'Checkout';
+  const legLimpeza = window.I18N ? window.I18N.t('calendar.legendLimpeza') : (currentLang === 'es' ? 'Limpieza' : 'Limpeza');
+  const legManutencao = window.I18N ? window.I18N.t('calendar.legendManutencao') : (currentLang === 'es' ? 'Mantenimiento' : 'Manutenção');
+  const legCompras = window.I18N ? window.I18N.t('calendar.legendCompras') : 'Compras';
+
   container.innerHTML = `
     <div class="cal-board-header">
       <div class="cal-board-title-wrap">
         <h3 class="cal-board-title">${monthName} ${year}</h3>
-        <span class="cal-board-badge">${monthEvents.length} ${monthEvents.length === 1 ? 'escala' : 'escalas'}</span>
+        <span class="cal-board-badge">${monthEvents.length} ${monthEvents.length === 1 ? shiftSingle : shiftPlural}</span>
       </div>
       <div class="cal-board-nav-actions">
-        <button type="button" class="cal-board-today-btn" id="cal-board-btn-today" title="Ir para hoje">Hoje</button>
-        <button type="button" class="cal-board-nav-btn" id="cal-board-btn-prev" title="Mês anterior">${chevronLeftSvgIcon}</button>
-        <button type="button" class="cal-board-nav-btn" id="cal-board-btn-next" title="Próximo mês">${chevronRightSvgIcon}</button>
+        <button type="button" class="cal-board-today-btn" id="cal-board-btn-today" title="${todayBtnTxt}">${todayBtnTxt}</button>
+        <button type="button" class="cal-board-nav-btn" id="cal-board-btn-prev">${chevronLeftSvgIcon}</button>
+        <button type="button" class="cal-board-nav-btn" id="cal-board-btn-next">${chevronRightSvgIcon}</button>
       </div>
     </div>
 
     <div class="cal-board-weekdays">
-      <span>Dom</span>
-      <span>Seg</span>
-      <span>Ter</span>
-      <span>Qua</span>
-      <span>Qui</span>
-      <span>Sex</span>
-      <span>Sáb</span>
+      ${weekdays.map(w => `<span>${w}</span>`).join('')}
     </div>
 
     <div class="cal-board-grid">
@@ -2643,11 +2666,11 @@ function renderCalendarWidget() {
     </div>
 
     <div class="cal-mini-legend">
-      <span class="cal-legend-item"><span class="cal-legend-dot checking"></span>Checking</span>
-      <span class="cal-legend-item"><span class="cal-legend-dot checkout"></span>Checkout</span>
-      <span class="cal-legend-item"><span class="cal-legend-dot limpeza"></span>Limpeza</span>
-      <span class="cal-legend-item"><span class="cal-legend-dot manutencao"></span>Manutenção</span>
-      <span class="cal-legend-item"><span class="cal-legend-dot compras"></span>Compras</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot checking"></span>${legChecking}</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot checkout"></span>${legCheckout}</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot limpeza"></span>${legLimpeza}</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot manutencao"></span>${legManutencao}</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot compras"></span>${legCompras}</span>
     </div>
   `;
 
@@ -2716,30 +2739,43 @@ function renderCalendarFilterBar() {
     allEvents = allEvents.filter(e => e.propertyId === state.selectedProperty);
   }
 
+  const currentLang = window.I18N ? window.I18N.getLanguage() : 'es';
+  const shiftSingle = window.I18N ? window.I18N.t('calendar.shiftSingle') : (currentLang === 'es' ? 'turno' : 'escala');
+  const shiftPlural = window.I18N ? window.I18N.t('calendar.shiftPlural') : (currentLang === 'es' ? 'turnos' : 'escalas');
+  const upcomingSingle = window.I18N ? window.I18N.t('calendar.upcomingShiftSingle') : (currentLang === 'es' ? 'próximo turno' : 'próxima escala');
+  const upcomingPlural = window.I18N ? window.I18N.t('calendar.upcomingShiftPlural') : (currentLang === 'es' ? 'próximos turnos' : 'próximas escalas');
+  const viewMonthFullTxt = window.I18N ? window.I18N.t('calendar.viewMonthFull') : (currentLang === 'es' ? 'Visualizando Mes Completo' : 'Visualizando Mês Completo');
+  const btnScheduleTxt = window.I18N ? window.I18N.t('calendar.btnNew') : (currentLang === 'es' ? '+ Programar' : '+ Agendar');
+  const btnClearFilterTxt = window.I18N ? window.I18N.t('calendar.seeMonth') : (currentLang === 'es' ? 'Ver Mes ✕' : 'Ver Mês ✕');
+
   if (selectedDate) {
     const parts = selectedDate.split('-');
     const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10) - 1;
     const d = parseInt(parts[2], 10);
     const dateObj = new Date(y, m, d);
-    const weekdayName = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const locale = currentLang === 'es' ? 'es-ES' : 'pt-BR';
+    const weekdayName = dateObj.toLocaleDateString(locale, { weekday: 'long' });
     const capitalizedWeekday = weekdayName.charAt(0).toUpperCase() + weekdayName.slice(1);
     const formattedDate = `${d} de ${CAL_MONTH_NAMES[m]}`;
 
     const dayEvents = allEvents.filter(e => e.eventDate === selectedDate);
-    const countStr = `${dayEvents.length} ${dayEvents.length === 1 ? 'escala' : 'escalas'}`;
+    const countStr = `${dayEvents.length} ${dayEvents.length === 1 ? shiftSingle : shiftPlural}`;
+    const daySelectedLabel = window.I18N
+      ? window.I18N.t('calendar.viewDaySelected', { weekday: capitalizedWeekday })
+      : (currentLang === 'es' ? `Día Seleccionado (${capitalizedWeekday})` : `Dia Selecionado (${capitalizedWeekday})`);
 
     container.innerHTML = `
       <div class="cal-filter-info">
-        <span class="cal-filter-label">Dia Selecionado (${capitalizedWeekday})</span>
+        <span class="cal-filter-label">${daySelectedLabel}</span>
         <span class="cal-filter-val">${formattedDate} • ${countStr}</span>
       </div>
       <div class="cal-filter-actions">
         <button type="button" class="cal-btn-schedule-day" id="btn-schedule-selected-day">
-          + Agendar
+          ${btnScheduleTxt}
         </button>
-        <button type="button" class="cal-filter-btn-clear" id="btn-clear-date-filter" title="Ver todas as escalas do mês">
-          Ver Mês ✕
+        <button type="button" class="cal-filter-btn-clear" id="btn-clear-date-filter" title="${btnClearFilterTxt}">
+          ${btnClearFilterTxt}
         </button>
       </div>
     `;
@@ -2758,16 +2794,16 @@ function renderCalendarFilterBar() {
     const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const upcomingMonthEvents = allEvents.filter(e => e.eventDate && e.eventDate.startsWith(`${year}-${monthPad}`) && e.eventDate >= todayIso);
     const monthName = CAL_MONTH_NAMES[month];
-    const countStr = `${upcomingMonthEvents.length} ${upcomingMonthEvents.length === 1 ? 'próxima escala' : 'próximas escalas'}`;
+    const countStr = `${upcomingMonthEvents.length} ${upcomingMonthEvents.length === 1 ? upcomingSingle : upcomingPlural}`;
 
     container.innerHTML = `
       <div class="cal-filter-info">
-        <span class="cal-filter-label">Visualizando Mês Completo</span>
+        <span class="cal-filter-label">${viewMonthFullTxt}</span>
         <span class="cal-filter-val">${monthName} de ${year} • ${countStr}</span>
       </div>
       <div class="cal-filter-actions">
         <button type="button" class="cal-btn-schedule-day" id="btn-schedule-month-event">
-          + Agendar
+          ${btnScheduleTxt}
         </button>
       </div>
     `;
@@ -2888,7 +2924,7 @@ function renderCalendar() {
       <div class="calendar-card" style="border-left: 4px solid ${borderLeftColor}; ${isDone ? 'opacity: 0.58;' : ''}">
         <div class="cal-top">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span class="cal-type-badge ${ev.eventType || 'checking'}">${ev.eventType || 'checking'}</span>
+            <span class="cal-type-badge ${ev.eventType || 'checking'}">${getEventTypeName(ev.eventType)}</span>
             ${ev.startTime ? `
               <span class="cal-time-badge">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -7741,6 +7777,8 @@ function initModalScrollLock() {
 }
 
 // Exposição global das funções de transição de tela para suporte direto
+window.renderAll = renderAll;
+window.showToast = showToast;
 window.showGateStep = showGateStep;
 window.handlePinKey = handlePinKey;
 window.performGoogleLogin = performGoogleLogin;
