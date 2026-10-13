@@ -3854,20 +3854,21 @@ function showManagerTimesheetHours(staffId, dateStr) {
           breakDisplay = `Pausa: ${t.breakStartTime}`;
         }
 
+        const dateFormatted = formatTimesheetDate(t.date || dateStr);
         const isPaid = Boolean(t.isPaid);
         const paidBadgeHtml = isPaid
-          ? `<span class="ts-paid-badge is-paid" title="Horas confirmadas como pagas">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          ? `<span class="mgr-ts-mini-status is-paid" title="Horas confirmadas como pagas">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Pagas</span>
+              <span>Pago</span>
             </span>`
-          : `<span class="ts-paid-badge is-unpaid" title="Horas pendentes de pagamento">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          : `<span class="mgr-ts-mini-status is-unpaid" title="Horas pendentes de pagamento">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>Não Pagas</span>
+              <span>Não Pago</span>
             </span>`;
 
         const managerStatusHtml = isPaid
@@ -3896,49 +3897,72 @@ function showManagerTimesheetHours(staffId, dateStr) {
             </div>`;
 
         return `
-          <div class="timesheet-card mgr-ts-record-card" data-ts-id="${t.id}">
-            <div class="ts-card-header">
+          <div class="timesheet-card mgr-ts-record-card is-collapsed" data-ts-id="${t.id}">
+            <div class="ts-card-header" role="button" tabindex="0" title="Toque para ver os detalhes deste expediente">
               <div class="ts-card-user-info">
-                <span class="mgr-ts-day-label">Expediente do Dia</span>
+                <div class="mgr-ts-card-date-wrap">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B; flex-shrink: 0;">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                    <line x1="16" x2="16" y1="2" y2="6"></line>
+                    <line x1="8" x2="8" y1="2" y2="6"></line>
+                    <line x1="3" x2="21" y1="10" y2="10"></line>
+                  </svg>
+                  <span class="mgr-ts-card-date-txt">${dateFormatted}</span>
+                </div>
               </div>
               <div class="ts-card-badges">
                 ${paidBadgeHtml}
                 <span class="ts-total-badge ${!hasEnd ? 'in-progress' : ''}">
                   ${totalText}
                 </span>
-              </div>
-            </div>
-
-            <div class="ts-card-timeline">
-              <div class="ts-time-pill pill-start">
-                <span class="ts-time-pill-label">Início</span>
-                <span class="ts-time-pill-val">${t.startTime || '--:--'}</span>
-              </div>
-              <div class="ts-time-pill pill-break">
-                <span class="ts-time-pill-label">Pausa</span>
-                <span class="ts-time-pill-val" style="font-size: 0.78rem;">${breakDisplay}</span>
-              </div>
-              <div class="ts-time-pill pill-end">
-                <span class="ts-time-pill-label">Fim</span>
-                <span class="ts-time-pill-val">${t.endTime || 'Em andamento'}</span>
-              </div>
-            </div>
-
-            ${managerStatusHtml}
-
-            <div class="ts-card-actions">
-              <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="Exportar horas trabalhadas para o WhatsApp">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
+                <svg class="ts-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-                <span>Exportar WhatsApp</span>
-              </button>
+              </div>
+            </div>
+
+            <div class="ts-card-details">
+              <div class="ts-card-timeline">
+                <div class="ts-time-pill pill-start">
+                  <span class="ts-time-pill-label">Início</span>
+                  <span class="ts-time-pill-val">${t.startTime || '--:--'}</span>
+                </div>
+                <div class="ts-time-pill pill-break">
+                  <span class="ts-time-pill-label">Pausa</span>
+                  <span class="ts-time-pill-val" style="font-size: 0.78rem;">${breakDisplay}</span>
+                </div>
+                <div class="ts-time-pill pill-end">
+                  <span class="ts-time-pill-label">Fim</span>
+                  <span class="ts-time-pill-val">${t.endTime || 'Em andamento'}</span>
+                </div>
+              </div>
+
+              ${managerStatusHtml}
+
+              <div class="ts-card-actions">
+                <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="Exportar horas trabalhadas para o WhatsApp">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
+                  </svg>
+                  <span>Exportar WhatsApp</span>
+                </button>
+              </div>
             </div>
           </div>
         `;
       }).join('')}
     </div>
   `;
+
+  // Listener para expandir / recolher card do gestor ao clicar no header
+  hoursContainer.querySelectorAll('.mgr-ts-record-card').forEach(card => {
+    const header = card.querySelector('.ts-card-header');
+    if (header) {
+      header.addEventListener('click', () => {
+        card.classList.toggle('is-collapsed');
+      });
+    }
+  });
 
   hoursContainer.querySelectorAll('.btn-ts-whatsapp').forEach(btn => {
     btn.addEventListener('click', (e) => {

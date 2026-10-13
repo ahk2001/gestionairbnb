@@ -6834,6 +6834,53 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border: 1px solid var(--border-light, #E2E8F0);
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+
+.mgr-ts-record-card:hover {
+  border-color: rgba(15, 23, 42, 0.15);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+.mgr-ts-card-date-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mgr-ts-card-date-txt {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main, #0F172A);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mgr-ts-mini-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.mgr-ts-mini-status.is-paid {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.mgr-ts-mini-status.is-unpaid {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
 .mgr-ts-day-label {
