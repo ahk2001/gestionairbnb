@@ -5017,17 +5017,273 @@ function renderPurchaseCardHtml(p, receiptTagTxt) {
 }
 
 let _allPurchasesFilterDate = '';
+let _allPurchasesFilterPreset = 'todos';
+let _allPurchasesCalYear = new Date().getFullYear();
+let _allPurchasesCalMonth = new Date().getMonth();
+
+function closeAllPurchasesDatePickerPopover() {
+  const wrap = document.getElementById('all-purchases-date-picker-wrap');
+  if (wrap) {
+    wrap.classList.remove('open');
+    const trigger = wrap.querySelector('.all-purchases-date-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function syncAllPurchasesDateFilterUI() {
+  const triggerDisplay = document.getElementById('all-purchases-date-display');
+  const triggerBadge = document.getElementById('all-purchases-date-badge');
+  const clearBtn = document.getElementById('btn-all-purchases-clear-icon');
+  const dateInput = document.getElementById('all-purchases-date-input');
+  const isEs = typeof isSpanish === 'function' ? isSpanish() : true;
+
+  if (dateInput) {
+    dateInput.value = _allPurchasesFilterDate || '';
+  }
+
+  // Atualiza botões de pílula de pré-seleção
+  document.querySelectorAll('#all-purchases-presets-row .purchase-pill').forEach(pill => {
+    const preset = pill.dataset.allPreset;
+    const isPillActive = !_allPurchasesFilterDate && preset === _allPurchasesFilterPreset;
+    pill.classList.toggle('active', isPillActive);
+  });
+
+  if (_allPurchasesFilterDate) {
+    const info = getFormattedDateInfo(_allPurchasesFilterDate);
+    if (triggerDisplay) triggerDisplay.textContent = info.formattedShort;
+    if (triggerBadge) {
+      if (info.badge) {
+        triggerBadge.textContent = info.badge;
+        triggerBadge.style.display = 'inline-block';
+      } else {
+        triggerBadge.style.display = 'none';
+      }
+    }
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+  } else if (_allPurchasesFilterPreset && _allPurchasesFilterPreset !== 'todos') {
+    const presetNames = isEs ? {
+      hoje: 'Compras de Hoy',
+      ontem: 'Compras de Ayer',
+      semana: 'Esta Semana',
+      este_mes: 'Este Mes'
+    } : {
+      hoje: 'Compras de Hoje',
+      ontem: 'Compras de Ontem',
+      semana: 'Esta Semana',
+      este_mes: 'Este Mês'
+    };
+    if (triggerDisplay) triggerDisplay.textContent = presetNames[_allPurchasesFilterPreset] || (isEs ? 'Filtrado' : 'Filtrado');
+    if (triggerBadge) triggerBadge.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
+  } else {
+    const defaultLabel = window.I18N ? window.I18N.t('purchases.allDatesLabel') : (isEs ? 'Todas las fechas' : 'Todas as datas');
+    if (triggerDisplay) triggerDisplay.textContent = defaultLabel;
+    if (triggerBadge) triggerBadge.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
+  }
+
+  renderAllPurchasesCalendarPopover(_allPurchasesCalYear, _allPurchasesCalMonth);
+}
+
+function renderAllPurchasesCalendarPopover(year, month) {
+  const popover = document.getElementById('all-purchases-calendar-popover');
+  if (!popover) return;
+
+  const monthNames = getI18nMonths();
+  const isEs = typeof isSpanish === 'function' ? isSpanish() : true;
+
+  // Dias com compras para indicador pontual elegante
+  const purchasesDates = new Set();
+  (state.data.purchases || []).forEach(p => {
+    if (p.purchaseDate) {
+      const d = String(p.purchaseDate).slice(0, 10);
+      purchasesDates.add(d);
+    }
+  });
+
+  const today = new Date();
+  const todayIso = today.toISOString().split('T')[0];
+
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  let daysHtml = '';
+
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const prevDay = daysInPrevMonth - i;
+    daysHtml += `<button type="button" class="custom-date-day-btn other-month" tabindex="-1">${prevDay}</button>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dPad = String(d).padStart(2, '0');
+    const mPad = String(month + 1).padStart(2, '0');
+    const isoDate = `${year}-${mPad}-${dPad}`;
+
+    const isSelected = isoDate === _allPurchasesFilterDate;
+    const isToday = isoDate === todayIso;
+    const hasPurchases = purchasesDates.has(isoDate);
+
+    daysHtml += `
+      <button type="button" 
+        class="custom-date-day-btn ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${hasPurchases ? 'has-purchases' : ''}" 
+        data-date="${isoDate}">
+        ${d}
+      </button>
+    `;
+  }
+
+  const totalSlots = firstDayIndex + daysInMonth;
+  const remaining = totalSlots <= 35 ? 35 - totalSlots : 42 - totalSlots;
+  for (let n = 1; n <= remaining; n++) {
+    daysHtml += `<button type="button" class="custom-date-day-btn other-month" tabindex="-1">${n}</button>`;
+  }
+
+  const allDatesLabel = window.I18N ? window.I18N.t('purchases.allDatesBtn') : 'Ver Todas';
+  const todayLabel = window.I18N ? window.I18N.t('datePicker.today') : (isEs ? 'Hoy' : 'Hoje');
+  const yesterdayLabel = window.I18N ? window.I18N.t('datePicker.yesterday') : (isEs ? 'Ayer' : 'Ontem');
+
+  popover.innerHTML = `
+    <div class="custom-date-chips">
+      <button type="button" class="custom-date-chip ${!_allPurchasesFilterDate && _allPurchasesFilterPreset === 'todos' ? 'active' : ''}" data-pop-action="all">${allDatesLabel}</button>
+      <button type="button" class="custom-date-chip ${!_allPurchasesFilterDate && _allPurchasesFilterPreset === 'hoje' ? 'active' : ''}" data-pop-action="today">${todayLabel}</button>
+      <button type="button" class="custom-date-chip ${!_allPurchasesFilterDate && _allPurchasesFilterPreset === 'ontem' ? 'active' : ''}" data-pop-action="yesterday">${yesterdayLabel}</button>
+    </div>
+    <div class="custom-date-header">
+      <button type="button" class="custom-date-nav-btn" data-all-cal-dir="prev" aria-label="Mes Anterior">‹</button>
+      <span class="custom-date-month-title">${monthNames[month]} ${year}</span>
+      <button type="button" class="custom-date-nav-btn" data-all-cal-dir="next" aria-label="Próximo Mes">›</button>
+    </div>
+    <div class="custom-date-weekdays">
+      ${isEs ? '<span>DOM</span><span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span>' : '<span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span>'}
+    </div>
+    <div class="custom-date-days-grid">${daysHtml}</div>
+  `;
+
+  popover.querySelector('[data-all-cal-dir="prev"]')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _allPurchasesCalMonth--;
+    if (_allPurchasesCalMonth < 0) {
+      _allPurchasesCalMonth = 11;
+      _allPurchasesCalYear--;
+    }
+    renderAllPurchasesCalendarPopover(_allPurchasesCalYear, _allPurchasesCalMonth);
+  });
+
+  popover.querySelector('[data-all-cal-dir="next"]')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _allPurchasesCalMonth++;
+    if (_allPurchasesCalMonth > 11) {
+      _allPurchasesCalMonth = 0;
+      _allPurchasesCalYear++;
+    }
+    renderAllPurchasesCalendarPopover(_allPurchasesCalYear, _allPurchasesCalMonth);
+  });
+
+  popover.querySelectorAll('[data-pop-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = btn.dataset.popAction;
+      if (action === 'all') {
+        _allPurchasesFilterDate = '';
+        _allPurchasesFilterPreset = 'todos';
+      } else if (action === 'today') {
+        _allPurchasesFilterDate = new Date().toISOString().split('T')[0];
+        _allPurchasesFilterPreset = '';
+      } else if (action === 'yesterday') {
+        const y = new Date();
+        y.setDate(y.getDate() - 1);
+        _allPurchasesFilterDate = y.toISOString().split('T')[0];
+        _allPurchasesFilterPreset = '';
+      }
+      closeAllPurchasesDatePickerPopover();
+      syncAllPurchasesDateFilterUI();
+      renderAllPurchasesModalContent();
+    });
+  });
+
+  popover.querySelectorAll('.custom-date-day-btn:not(.other-month)').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _allPurchasesFilterDate = btn.dataset.date;
+      _allPurchasesFilterPreset = '';
+      closeAllPurchasesDatePickerPopover();
+      syncAllPurchasesDateFilterUI();
+      renderAllPurchasesModalContent();
+    });
+  });
+}
+
+function initAllPurchasesDatePicker() {
+  const wrap = document.getElementById('all-purchases-date-picker-wrap');
+  const trigger = document.getElementById('btn-all-purchases-date-trigger');
+  const clearIcon = document.getElementById('btn-all-purchases-clear-icon');
+  const presetsRow = document.getElementById('all-purchases-presets-row');
+
+  if (trigger && wrap) {
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (e.target.closest('#btn-all-purchases-clear-icon')) return;
+      const isOpen = wrap.classList.contains('open');
+      closeAllCustomControls();
+      if (!isOpen) {
+        wrap.classList.add('open');
+        trigger.setAttribute('aria-expanded', 'true');
+      } else {
+        wrap.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  if (clearIcon) {
+    clearIcon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _allPurchasesFilterDate = '';
+      _allPurchasesFilterPreset = 'todos';
+      closeAllPurchasesDatePickerPopover();
+      syncAllPurchasesDateFilterUI();
+      renderAllPurchasesModalContent();
+    });
+  }
+
+  if (presetsRow) {
+    presetsRow.querySelectorAll('.purchase-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const preset = pill.dataset.allPreset;
+        _allPurchasesFilterPreset = preset;
+        _allPurchasesFilterDate = '';
+        closeAllPurchasesDatePickerPopover();
+        syncAllPurchasesDateFilterUI();
+        renderAllPurchasesModalContent();
+      });
+    });
+  }
+}
 
 function openAllPurchasesModal(selectedDate = '') {
   const modal = document.getElementById('modal-all-purchases');
   if (!modal) return;
 
-  _allPurchasesFilterDate = selectedDate || '';
-  const dateInput = document.getElementById('all-purchases-date-input');
-  if (dateInput) {
-    dateInput.value = _allPurchasesFilterDate;
+  if (selectedDate) {
+    _allPurchasesFilterDate = selectedDate;
+    _allPurchasesFilterPreset = '';
+    const parts = selectedDate.split('-');
+    if (parts.length === 3) {
+      _allPurchasesCalYear = parseInt(parts[0], 10);
+      _allPurchasesCalMonth = parseInt(parts[1], 10) - 1;
+    }
+  } else {
+    _allPurchasesFilterDate = '';
+    _allPurchasesFilterPreset = 'todos';
+    const now = new Date();
+    _allPurchasesCalYear = now.getFullYear();
+    _allPurchasesCalMonth = now.getMonth();
   }
 
+  closeAllPurchasesDatePickerPopover();
+  syncAllPurchasesDateFilterUI();
   renderAllPurchasesModalContent();
 
   modal.style.display = 'flex';
@@ -5037,6 +5293,7 @@ function openAllPurchasesModal(selectedDate = '') {
 function closeAllPurchasesModal() {
   const modal = document.getElementById('modal-all-purchases');
   if (modal) {
+    closeAllPurchasesDatePickerPopover();
     modal.classList.remove('active');
     setTimeout(() => {
       if (!modal.classList.contains('active')) {
@@ -5056,6 +5313,17 @@ function renderAllPurchasesModalContent() {
       if (!p.purchaseDate) return false;
       const pDateStr = String(p.purchaseDate).slice(0, 10);
       return pDateStr === _allPurchasesFilterDate;
+    });
+  } else if (_allPurchasesFilterPreset && _allPurchasesFilterPreset !== 'todos') {
+    const { todayStr, yesterdayStr, mondayStr, sundayStr, currentYearMonth } = getPurchaseDateFilterRange();
+    filteredList = allPurchases.filter(p => {
+      if (!p.purchaseDate) return false;
+      const pDate = p.purchaseDate.split('T')[0];
+      if (_allPurchasesFilterPreset === 'hoje') return pDate === todayStr;
+      if (_allPurchasesFilterPreset === 'ontem') return pDate === yesterdayStr;
+      if (_allPurchasesFilterPreset === 'semana') return pDate >= mondayStr && pDate <= sundayStr;
+      if (_allPurchasesFilterPreset === 'este_mes') return pDate.startsWith(currentYearMonth);
+      return true;
     });
   }
 
@@ -5081,9 +5349,15 @@ function renderAllPurchasesModalContent() {
   const listEl = document.getElementById('all-purchases-modal-list');
   if (listEl) {
     if (filteredList.length === 0) {
-      const emptyMsg = _allPurchasesFilterDate
-        ? (window.I18N ? window.I18N.t('purchases.noPurchasesDate') : 'Nenhum comprovante encontrado para esta data.')
-        : (window.I18N ? window.I18N.t('purchases.emptyPeriod') : 'Nenhuma compra registrada.');
+      const isEs = typeof isSpanish === 'function' ? isSpanish() : true;
+      let emptyMsg = '';
+      if (_allPurchasesFilterDate) {
+        emptyMsg = window.I18N ? window.I18N.t('purchases.noPurchasesDate') : (isEs ? 'Ningún comprobante encontrado para esta fecha.' : 'Nenhum comprovante encontrado para esta data.');
+      } else if (_allPurchasesFilterPreset && _allPurchasesFilterPreset !== 'todos') {
+        emptyMsg = isEs ? 'Ningún comprobante registrado en este período.' : 'Nenhum comprovante registrado neste período.';
+      } else {
+        emptyMsg = window.I18N ? window.I18N.t('purchases.emptyPeriod') : (isEs ? 'Ninguna compra registrada.' : 'Nenhuma compra registrada.');
+      }
       listEl.innerHTML = `
         <div style="text-align: center; padding: 36px 16px; font-size: 0.84rem; color: var(--text-muted); background: #F8FAFC; border: 1.5px dashed var(--border-light); border-radius: 14px; margin: 8px 0;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin: 0 auto 8px; display: block; opacity: 0.5;">
@@ -5113,6 +5387,9 @@ window.renderPurchaseCardHtml = renderPurchaseCardHtml;
 window.openAllPurchasesModal = openAllPurchasesModal;
 window.closeAllPurchasesModal = closeAllPurchasesModal;
 window.renderAllPurchasesModalContent = renderAllPurchasesModalContent;
+window.syncAllPurchasesDateFilterUI = syncAllPurchasesDateFilterUI;
+window.renderAllPurchasesCalendarPopover = renderAllPurchasesCalendarPopover;
+window.initAllPurchasesDatePicker = initAllPurchasesDatePicker;
 
 // Compartilhar Resumo Financeiro no WhatsApp (respeita o filtro de período selecionado)
 function copyFinancialReportToWhatsApp() {
@@ -6179,12 +6456,18 @@ function syncAllCustomControls() {
   document.querySelectorAll('select.form-input, #purchase-month-select').forEach(sel => syncCustomSelect(sel));
   document.querySelectorAll('input[type="date"].form-input').forEach(inp => syncCustomDatePicker(inp));
   document.querySelectorAll('input[type="time"].form-input').forEach(inp => syncCustomTimePicker(inp));
+  if (typeof syncAllPurchasesDateFilterUI === 'function') {
+    syncAllPurchasesDateFilterUI();
+  }
 }
 
 function initAllCustomControls() {
   document.querySelectorAll('select.form-input, #purchase-month-select').forEach(sel => initCustomSelect(sel));
   document.querySelectorAll('input[type="date"].form-input').forEach(inp => initCustomDatePicker(inp));
   document.querySelectorAll('input[type="time"].form-input').forEach(inp => initCustomTimePicker(inp));
+  if (typeof initAllPurchasesDatePicker === 'function') {
+    initAllPurchasesDatePicker();
+  }
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.custom-select-wrapper') && !e.target.closest('.custom-date-wrapper') && !e.target.closest('.custom-time-wrapper')) {
@@ -7500,6 +7783,7 @@ function setupEventListeners() {
 
   // Modal Zoom
   document.getElementById('btn-close-zoom-modal')?.addEventListener('click', closeZoomModal);
+  document.getElementById('btn-close-zoom-bottom')?.addEventListener('click', closeZoomModal);
 
   // Sub-abas da Aba Produtos (Ativos vs Lixeira)
   document.querySelectorAll('.products-subtab-btn').forEach(btn => {
@@ -7642,23 +7926,7 @@ function setupEventListeners() {
   // Modal Histórico Completo de Compras & Filtro de Data
   document.getElementById('btn-close-all-purchases')?.addEventListener('click', closeAllPurchasesModal);
   document.getElementById('btn-close-all-purchases-bottom')?.addEventListener('click', closeAllPurchasesModal);
-
-  const allPurchasesDateInput = document.getElementById('all-purchases-date-input');
-  if (allPurchasesDateInput) {
-    const handleDateFilterChange = (e) => {
-      _allPurchasesFilterDate = e.target.value || '';
-      renderAllPurchasesModalContent();
-    };
-    allPurchasesDateInput.addEventListener('change', handleDateFilterChange);
-    allPurchasesDateInput.addEventListener('input', handleDateFilterChange);
-  }
-
-  document.getElementById('btn-all-purchases-clear-date')?.addEventListener('click', () => {
-    _allPurchasesFilterDate = '';
-    const dateInput = document.getElementById('all-purchases-date-input');
-    if (dateInput) dateInput.value = '';
-    renderAllPurchasesModalContent();
-  });
+  initAllPurchasesDatePicker();
 
   // Delegação de cliques para cards de compra dentro do modal de histórico completo
   document.getElementById('all-purchases-modal-list')?.addEventListener('click', (e) => {

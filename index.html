@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=90">
-  <script src="i18n.js?v=90"></script>
+  <link rel="stylesheet" href="styles.css?v=91">
+  <script src="i18n.js?v=91"></script>
 </head>
 <body>
 
@@ -780,7 +780,7 @@
           </div>
         </div>
 
-        <button type="button" class="form-submit-btn" id="btn-close-view-purchase-bottom" style="margin-top: 14px;" data-i18n="modalViewPurchase.btnClose">
+        <button type="button" class="form-submit-btn sheet-bottom-close-btn" id="btn-close-view-purchase-bottom" style="margin-top: 14px;" data-i18n="modalViewPurchase.btnClose">
           Cerrar Detalles
         </button>
       </div>
@@ -802,20 +802,50 @@
         <button class="sheet-close-btn" id="btn-close-all-purchases" type="button">✕</button>
       </div>
 
-      <!-- Barra de Filtro de Data -->
-      <div class="all-purchases-filter-bar">
-        <div class="all-purchases-date-wrap">
-          <svg class="all-purchases-cal-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-            <line x1="16" x2="16" y1="2" y2="6"/>
-            <line x1="8" x2="8" y1="2" y2="6"/>
-            <line x1="3" x2="21" y1="10" y2="10"/>
-          </svg>
-          <input type="date" id="all-purchases-date-input" class="all-purchases-date-input" aria-label="Filtrar por fecha">
+      <!-- Barra de Filtros e Seleção de Data -->
+      <div class="all-purchases-filter-section">
+        <!-- Pílulas de filtro rápido -->
+        <div class="all-purchases-presets-row" id="all-purchases-presets-row">
+          <button type="button" class="purchase-pill active" data-all-preset="todos" data-i18n="finance.filterAll">Todas</button>
+          <button type="button" class="purchase-pill" data-all-preset="hoje" data-i18n="finance.filterToday">Hoy</button>
+          <button type="button" class="purchase-pill" data-all-preset="ontem" data-i18n="finance.filterYesterday">Ayer</button>
+          <button type="button" class="purchase-pill" data-all-preset="semana" data-i18n="finance.filterWeek">Esta Semana</button>
+          <button type="button" class="purchase-pill" data-all-preset="este_mes" data-i18n="finance.filterMonth">Este Mes</button>
         </div>
-        <button type="button" id="btn-all-purchases-clear-date" class="all-purchases-clear-btn" data-i18n="purchases.allDatesBtn">
-          Ver Todas
-        </button>
+
+        <!-- Seletor de Data Customizado (Zero padrão navegador) -->
+        <div class="all-purchases-date-picker-wrap custom-date-wrapper" id="all-purchases-date-picker-wrap">
+          <button type="button" class="all-purchases-date-trigger custom-date-trigger" id="btn-all-purchases-date-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="purchases.chooseDateTooltip" title="Seleccionar fecha en el calendario">
+            <div class="custom-date-trigger-content">
+              <span class="custom-date-icon-box">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                  <line x1="16" x2="16" y1="2" y2="6"/>
+                  <line x1="8" x2="8" y1="2" y2="6"/>
+                  <line x1="3" x2="21" y1="10" y2="10"/>
+                </svg>
+              </span>
+              <div class="custom-date-text-wrap">
+                <span class="custom-date-val" id="all-purchases-date-display" data-i18n="purchases.allDatesLabel">Todas las fechas</span>
+                <span class="custom-date-badge" id="all-purchases-date-badge" style="display: none;"></span>
+              </div>
+            </div>
+            <div class="all-purchases-trigger-actions">
+              <button type="button" class="all-purchases-trigger-clear-btn" id="btn-all-purchases-clear-icon" title="Limpiar filtro" style="display: none;">✕</button>
+              <span class="custom-select-chevron">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </span>
+            </div>
+          </button>
+
+          <!-- Popover com Calendário Interativo -->
+          <div class="custom-date-popover all-purchases-calendar-popover" id="all-purchases-calendar-popover" role="dialog" aria-label="Elegir Fecha"></div>
+
+          <!-- Input nativo oculto para manter compatibilidade e acessibilidade -->
+          <input type="date" id="all-purchases-date-input" class="native-control-hidden" aria-label="Filtrar por fecha">
+        </div>
       </div>
 
       <!-- Barra de Resumo de Compras Filtradas -->
@@ -828,7 +858,7 @@
         <!-- Injetado dinamicamente via JS -->
       </div>
 
-      <button type="button" class="form-submit-btn" id="btn-close-all-purchases-bottom" style="margin-top: 14px;" data-i18n="purchases.btnCloseModal">
+      <button type="button" class="form-submit-btn sheet-bottom-close-btn" id="btn-close-all-purchases-bottom" style="margin-top: 14px;" data-i18n="purchases.btnCloseModal">
         Cerrar
       </button>
     </div>
@@ -849,6 +879,10 @@
 
       <img id="zoom-img-target" class="zoom-modal-img" src="" alt="Foto ampliada">
       <p id="zoom-description" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px;"></p>
+
+      <button type="button" class="form-submit-btn sheet-bottom-close-btn" id="btn-close-zoom-bottom" style="margin-top: 16px;" data-i18n="purchases.btnCloseModal">
+        Cerrar
+      </button>
     </div>
   </div>
 
@@ -1650,6 +1684,6 @@
   <script src="cloud-sync.js?v=83"></script>
   <script src="touch-scroll.js?v=83"></script>
   <script src="initialData.js?v=83"></script>
-  <script src="app.js?v=90"></script>
+  <script src="app.js?v=91"></script>
 </body>
 </html>
