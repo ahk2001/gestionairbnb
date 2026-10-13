@@ -5668,9 +5668,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .all-purchases-sheet {
+  width: 100% !important;
+  max-width: 420px !important;
   max-height: 88vh;
-  display: flex;
-  flex-direction: column;
+  margin: 0 auto;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
 }
 
 /* Seção de Filtros e Seleção de Data do Histórico de Compras */

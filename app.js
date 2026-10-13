@@ -5234,6 +5234,13 @@ function initAllPurchasesDatePicker() {
         trigger.setAttribute('aria-expanded', 'false');
       }
     });
+
+    trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        trigger.click();
+      }
+    });
   }
 
   if (clearIcon) {

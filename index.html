@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=91">
-  <script src="i18n.js?v=91"></script>
+  <link rel="stylesheet" href="styles.css?v=92">
+  <script src="i18n.js?v=92"></script>
 </head>
 <body>
 
@@ -815,7 +815,7 @@
 
         <!-- Seletor de Data Customizado (Zero padrão navegador) -->
         <div class="all-purchases-date-picker-wrap custom-date-wrapper" id="all-purchases-date-picker-wrap">
-          <button type="button" class="all-purchases-date-trigger custom-date-trigger" id="btn-all-purchases-date-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="purchases.chooseDateTooltip" title="Seleccionar fecha en el calendario">
+          <div class="all-purchases-date-trigger custom-date-trigger" id="btn-all-purchases-date-trigger" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="purchases.chooseDateTooltip" title="Seleccionar fecha en el calendario">
             <div class="custom-date-trigger-content">
               <span class="custom-date-icon-box">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -838,7 +838,7 @@
                 </svg>
               </span>
             </div>
-          </button>
+          </div>
 
           <!-- Popover com Calendário Interativo -->
           <div class="custom-date-popover all-purchases-calendar-popover" id="all-purchases-calendar-popover" role="dialog" aria-label="Elegir Fecha"></div>
@@ -1684,6 +1684,6 @@
   <script src="cloud-sync.js?v=83"></script>
   <script src="touch-scroll.js?v=83"></script>
   <script src="initialData.js?v=83"></script>
-  <script src="app.js?v=91"></script>
+  <script src="app.js?v=92"></script>
 </body>
 </html>
