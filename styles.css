@@ -2605,22 +2605,30 @@ html, body {
   background: #F8F9FA;
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .staff-info-col {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
 }
 
 .staff-avatar-circle {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #FFFFFF;
   display: flex;
@@ -2630,12 +2638,23 @@ html, body {
   font-weight: 800;
   color: var(--text-main);
   border: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.staff-text-col {
+  min-width: 0;
+  flex: 1 1 0%;
+  overflow: hidden;
 }
 
 .staff-name-title {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 .staff-pin-code {
@@ -2643,18 +2662,85 @@ html, body {
   color: var(--text-dim);
 }
 
+.staff-email-badge {
+  font-size: 0.71rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.staff-email-badge svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.staff-email-badge span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: block;
+}
+
+.staff-actions-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-toggle-staff-active {
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.3;
+  transition: all 0.18s ease;
+}
+
+.btn-toggle-staff-active.is-active {
+  background: #DCFCE7;
+  color: #15803D;
+  border: 1px solid #86EFAC;
+}
+
+.btn-toggle-staff-active.is-active:hover {
+  background: #BBF7D0;
+}
+
+.btn-toggle-staff-active.is-inactive {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FCA5A5;
+}
+
+.btn-toggle-staff-active.is-inactive:hover {
+  background: #FECACA;
+}
+
 .btn-delete-staff {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.22);
   color: #DC2626;
   border-radius: var(--radius-full);
-  padding: 6px 12px;
-  font-size: 0.74rem;
+  padding: 5px 10px;
+  font-size: 0.72rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.3;
   transition: all 0.2s var(--ease-spring);
   outline: none;
 }
@@ -2665,6 +2751,15 @@ html, body {
   border-color: #DC2626;
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(220, 38, 38, 0.22);
+}
+
+@media (max-width: 360px) {
+  .btn-delete-staff span {
+    display: none;
+  }
+  .btn-delete-staff {
+    padding: 5px 8px;
+  }
 }
 
 /* Switch Liga/Desliga */
@@ -3551,45 +3646,7 @@ body.modal-open #main-scroll {
   to { opacity: 1; transform: scale(1.15); }
 }
 
-/* Gestão de Colaboradoras - E-mail e Status de Acesso */
-.staff-email-badge {
-  font-size: 0.73rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 3px;
-}
 
-.btn-toggle-staff-active {
-  padding: 5px 12px;
-  border-radius: var(--radius-full);
-  font-size: 0.74rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.btn-toggle-staff-active.is-active {
-  background: #DCFCE7;
-  color: #15803D;
-  border: 1px solid #86EFAC;
-}
-
-.btn-toggle-staff-active.is-active:hover {
-  background: #BBF7D0;
-}
-
-.btn-toggle-staff-active.is-inactive {
-  background: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FCA5A5;
-}
-
-.btn-toggle-staff-active.is-inactive:hover {
-  background: #FECACA;
-}
 
 @keyframes gateCardEntrance {
   from {

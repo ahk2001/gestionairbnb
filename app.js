@@ -2672,28 +2672,28 @@ function renderOwnerDashboard() {
           <div class="staff-info-col">
             <div class="staff-avatar-circle" title="${escapeHtml(staff.name)}">
               ${staff.photo
-                ? `<img src="${staff.photo}" alt="${escapeHtml(staff.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`
+                ? `<img src="${staff.photo}" alt="${escapeHtml(staff.name)}">`
                 : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                   </svg>`
               }
             </div>
-            <div>
-              <div class="staff-name-title">${escapeHtml(staff.name)}</div>
-              <div class="staff-email-badge">
+            <div class="staff-text-col">
+              <div class="staff-name-title" title="${escapeHtml(staff.name)}">${escapeHtml(staff.name)}</div>
+              <div class="staff-email-badge" title="${escapeHtml(staff.email || 'Sem e-mail Google')}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 <span>${escapeHtml(staff.email || 'Sem e-mail Google')}</span>
               </div>
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="staff-actions-col">
             <button type="button" class="btn-toggle-staff-active ${staff.isActive !== false ? 'is-active' : 'is-inactive'}" data-id="${staff.id}" title="${staff.isActive !== false ? 'Clique para suspender o acesso desta colaboradora' : 'Clique para reativar o acesso'}">
               ${staff.isActive !== false ? 'Ativa' : 'Suspensa'}
             </button>
 
-            <button type="button" class="btn-delete-staff" data-id="${staff.id}" title="Excluir Colaboradora">
+            <button type="button" class="btn-delete-staff" data-id="${staff.id}" title="Excluir Colaboradora" aria-label="Excluir Colaboradora">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
