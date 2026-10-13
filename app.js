@@ -6525,7 +6525,15 @@ function openNewEventModal(prefilledDate) {
   if (notesInput) notesInput.value = '';
 
   syncAllCustomControls();
-  document.getElementById('modal-new-event').classList.add('active');
+  const modalNewEvent = document.getElementById('modal-new-event');
+  if (modalNewEvent) {
+    modalNewEvent.scrollLeft = 0;
+    const sheet = modalNewEvent.querySelector('.bottom-sheet');
+    if (sheet) { sheet.scrollLeft = 0; sheet.scrollTop = 0; }
+    const form = modalNewEvent.querySelector('form');
+    if (form) form.scrollLeft = 0;
+    modalNewEvent.classList.add('active');
+  }
 }
 
 function closeNewEventModal() {
@@ -7362,14 +7370,36 @@ function updateBodyScrollLock() {
   }
 }
 
+function resetModalHorizontalScroll(overlay) {
+  if (!overlay) return;
+  overlay.scrollLeft = 0;
+  const sheet = overlay.querySelector('.bottom-sheet');
+  if (sheet) sheet.scrollLeft = 0;
+  const forms = overlay.querySelectorAll('form');
+  forms.forEach(f => { f.scrollLeft = 0; });
+}
+
 function initModalScrollLock() {
   // MutationObserver para detectar dinamicamente quando qualquer modal ganha ou perde a classe 'active'
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((mutations) => {
     updateBodyScrollLock();
+    mutations.forEach(m => {
+      if (m.target && m.target.classList && m.target.classList.contains('active')) {
+        resetModalHorizontalScroll(m.target);
+      }
+    });
   });
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     observer.observe(overlay, { attributes: true, attributeFilter: ['class', 'style'] });
+
+    // Previne qualquer scroll horizontal indesejado no sheet
+    const sheet = overlay.querySelector('.bottom-sheet');
+    if (sheet) {
+      sheet.addEventListener('scroll', () => {
+        if (sheet.scrollLeft !== 0) sheet.scrollLeft = 0;
+      }, { passive: true });
+    }
 
     // Previne que toque ou arraste no fundo escurecido role a página de trás
     overlay.addEventListener('touchmove', (e) => {

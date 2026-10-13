@@ -3087,15 +3087,17 @@ body.modal-open #main-scroll {
   max-height: 92vh;
   overflow-y: auto;
   overflow-x: hidden !important;
+  overscroll-behavior-x: none !important;
+  touch-action: pan-y !important;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y !important;
   transform: translateY(100%);
   transition: transform 0.42s var(--ease-spring), box-shadow 0.42s ease;
   box-shadow: 0 -24px 64px rgba(11, 13, 17, 0.18), inset 0 1.5px 2px rgba(255, 255, 255, 1);
   border-top: 1px solid var(--glass-border);
+  box-sizing: border-box !important;
 }
 
 .bottom-sheet::-webkit-scrollbar,
@@ -3109,9 +3111,47 @@ body.modal-open #main-scroll {
 }
 
 .modal-overlay form,
-.bottom-sheet form {
-  overflow-x: hidden;
-  max-width: 100%;
+.bottom-sheet form,
+.purchase-form,
+.sheet-form {
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Grids em Modais: Colunas com divisão estrita sem transbordamento lateral */
+.modal-overlay div[style*="grid-template-columns: 1fr 1fr"],
+.bottom-sheet div[style*="grid-template-columns: 1fr 1fr"],
+.modal-form-grid-2col {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.modal-overlay div[style*="grid-template-columns: 1fr 1fr 1fr"],
+.bottom-sheet div[style*="grid-template-columns: 1fr 1fr 1fr"],
+.modal-form-grid-3col {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 6px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.bottom-sheet .form-group,
+.modal-overlay .form-group {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .modal-overlay.active .bottom-sheet {
@@ -3290,7 +3330,10 @@ body.modal-open #main-scroll {
 }
 
 .form-input {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(226, 232, 240, 0.85);
@@ -4153,7 +4196,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-select-trigger {
   width: 100%;
   min-width: 0;
-  padding: 10px 14px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px 10px;
   min-height: 48px;
   border-radius: 14px;
   border: 1.5px solid rgba(226, 232, 240, 0.95);
@@ -4164,7 +4209,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   cursor: pointer;
   text-align: left;
   transition: all 0.22s var(--ease-spring);
@@ -4251,6 +4296,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* Custom Select Dropdown Popover */
 .custom-select-dropdown {
+  display: none;
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
@@ -4271,6 +4317,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .custom-select-wrapper.open .custom-select-dropdown {
+  display: block;
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
@@ -4440,7 +4487,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .custom-date-trigger {
   width: 100%;
-  padding: 10px 14px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 10px;
   min-height: 48px;
   border-radius: 14px;
   border: 1.5px solid rgba(226, 232, 240, 0.95);
@@ -4451,7 +4501,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   cursor: pointer;
   text-align: left;
   transition: all 0.22s var(--ease-spring);
@@ -4475,14 +4525,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-date-trigger-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
+  overflow: hidden;
   flex: 1;
 }
 
 .custom-date-icon-box {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 8px;
   background: rgba(15, 39, 68, 0.07);
   display: flex;
@@ -4495,34 +4546,42 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-date-text-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
+  overflow: hidden;
+  flex: 1;
 }
 
 .custom-date-val {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .custom-date-badge {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   background: var(--accent-navy);
   color: #FFFFFF;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 1px 5px;
+  border-radius: 5px;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-
-
 .custom-date-popover {
+  display: none;
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 36px);
   z-index: 9999;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(28px);
@@ -4539,6 +4598,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .custom-date-wrapper.open .custom-date-popover {
+  display: block;
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
@@ -4701,7 +4761,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .custom-time-trigger {
   width: 100%;
-  padding: 10px 14px;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 10px;
   min-height: 48px;
   border-radius: 14px;
   border: 1.5px solid rgba(226, 232, 240, 0.95);
@@ -4712,7 +4775,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   cursor: pointer;
   text-align: left;
   transition: all 0.22s var(--ease-spring);
@@ -4736,14 +4799,15 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-time-trigger-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
+  overflow: hidden;
   flex: 1;
 }
 
 .custom-time-icon-box {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 8px;
   background: rgba(15, 39, 68, 0.07);
   display: flex;
@@ -4756,33 +4820,42 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-time-text-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
+  overflow: hidden;
+  flex: 1;
 }
 
 .custom-time-val {
-  font-size: 0.90rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .custom-time-badge {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   background: var(--accent-navy, #0F2744);
   color: #FFFFFF;
-  padding: 2px 7px;
+  padding: 1px 5px;
   border-radius: 6px;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Popover do Seletor de Horário */
 .custom-time-popover {
+  display: none;
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  width: 280px;
+  width: 260px;
   max-width: calc(100vw - 36px);
   z-index: 9999;
   background: rgba(255, 255, 255, 0.98);
@@ -4800,6 +4873,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .custom-time-wrapper.open .custom-time-popover {
+  display: block;
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
