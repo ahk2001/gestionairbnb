@@ -6654,19 +6654,6 @@ function setupEventListeners() {
       logout();
     }
   });
-  document.getElementById('topbar-user-btn')?.addEventListener('click', async () => {
-    const confirmed = await showConfirmDialog({
-      title: 'Alternar Usuário',
-      message: 'Deseja alternar de usuário ou sair da sessão atual?',
-      confirmText: 'Sair da Sessão',
-      cancelText: 'Continuar no App',
-      confirmDanger: false,
-      icon: 'logout'
-    });
-    if (confirmed) {
-      logout();
-    }
-  });
 
   // Abas de Imóveis (JB, VN, HN, ALL)
   document.querySelectorAll('.property-tab-btn').forEach(btn => {

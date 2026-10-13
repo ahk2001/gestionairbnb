@@ -168,12 +168,8 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  cursor: pointer;
-  transition: transform 0.2s var(--ease-spring);
-}
-
-.topbar-user:active {
-  transform: scale(0.96);
+  cursor: default;
+  user-select: none;
 }
 
 .user-avatar-badge {
@@ -227,8 +223,7 @@ html, body {
 }
 
 .user-chevron {
-  font-size: 0.55rem;
-  color: var(--text-dim);
+  display: none !important;
 }
 
 .topbar-actions {
@@ -3733,16 +3728,9 @@ body.modal-open #main-scroll {
   letter-spacing: 0.04em;
 }
 
-/* Indicador de Nuvem na Barra Superior */
+/* Indicador de Nuvem na Barra Superior (Ocultado a pedido) */
 .cloud-sync-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 700;
-  transition: all 0.2s ease;
+  display: none !important;
 }
 
 .cloud-sync-badge.status-synced {
