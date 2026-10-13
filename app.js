@@ -3407,24 +3407,11 @@ function renderTimesheets() {
           breakDisplay = `Pausa: ${t.breakStartTime}`;
         }
 
-        const staffObj = (state.data.staff || []).find(s => s.id === t.staffId || s.name === t.staffName);
-        const staffPhoto = t.staffPhoto || staffObj?.photo || (state.currentUser?.photo || null);
         const isPaid = Boolean(t.isPaid);
 
         const paidBadgeHtml = isPaid
-          ? `<span class="ts-paid-badge is-paid" title="Horas confirmadas como pagas">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              <span>Pagas</span>
-            </span>`
-          : `<span class="ts-paid-badge is-unpaid" title="Horas pendentes de pagamento">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span>Não Pagas</span>
-            </span>`;
+          ? `<span class="ts-status-dot is-paid" title="Horas Pagas"></span>`
+          : `<span class="ts-status-dot is-unpaid" title="Não Pago (Pendente)"></span>`;
 
         const paidBtnHtml = isPaid
           ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="Horas marcadas como pagas. Toque para marcar como Não Pagas">
@@ -3445,17 +3432,14 @@ function renderTimesheets() {
           <div class="timesheet-card is-collapsed" data-ts-id="${t.id}">
             <div class="ts-card-header" role="button" tabindex="0" title="Toque para ver os detalhes deste dia">
               <div class="ts-card-user-info">
-                <div class="ts-user-avatar" style="overflow: hidden; padding: 0; background: ${staffPhoto ? 'transparent' : 'rgba(16, 185, 129, 0.12)'}; color: #059669;">
-                  ${staffPhoto
-                    ? `<img src="${staffPhoto}" class="ts-user-photo-img" alt="">`
-                    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                      </svg>`
-                  }
-                </div>
-                <div class="ts-card-meta">
-                  <div class="ts-card-date">${dateFormatted}</div>
+                <div class="ts-card-date-wrap">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B; flex-shrink: 0;">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                    <line x1="16" x2="16" y1="2" y2="6"></line>
+                    <line x1="8" x2="8" y1="2" y2="6"></line>
+                    <line x1="3" x2="21" y1="10" y2="10"></line>
+                  </svg>
+                  <span class="ts-card-date-txt">${dateFormatted}</span>
                 </div>
               </div>
               <div class="ts-card-badges">

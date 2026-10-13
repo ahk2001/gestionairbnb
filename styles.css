@@ -5851,6 +5851,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .ts-card-chevron {
@@ -6830,6 +6831,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
 }
 
+.ts-card-date-wrap,
 .mgr-ts-card-date-wrap {
   display: flex;
   align-items: center;
@@ -6837,8 +6839,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   min-width: 0;
 }
 
+.ts-card-date-txt,
 .mgr-ts-card-date-txt {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: var(--text-main, #0F172A);
   letter-spacing: -0.01em;
@@ -6871,6 +6874,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
+.ts-status-dot,
 .mgr-ts-status-dot {
   width: 9px;
   height: 9px;
@@ -6881,11 +6885,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   transition: transform 0.2s ease;
 }
 
+.ts-status-dot.is-paid,
 .mgr-ts-status-dot.is-paid {
   background: #10B981;
   box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.25);
 }
 
+.ts-status-dot.is-unpaid,
 .mgr-ts-status-dot.is-unpaid {
   background: #F59E0B;
   box-shadow: 0 0 0 2.5px rgba(245, 158, 11, 0.25);
