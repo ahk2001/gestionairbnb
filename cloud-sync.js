@@ -86,11 +86,18 @@
 
           // Atualiza o estado da aplicação
           if (appState && appState.data) {
-            // Se o Firestore retornou dados para essa coleção, substitui no estado
-            if (items.length > 0) {
-              appState.data[colName] = items;
-              if (onDataUpdate) onDataUpdate(colName, items);
+            if (colName === 'purchases') {
+              // Garante que compras locais criadas recentemente não sejam descartadas antes da confirmação da nuvem
+              const remoteIds = new Set(items.map(it => String(it.id)));
+              const localPending = (appState.data.purchases || []).filter(p => p && p.id && !remoteIds.has(String(p.id)));
+              appState.data.purchases = [...localPending, ...items];
+            } else {
+              // Se o Firestore retornou dados para essa coleção, substitui no estado
+              if (items.length > 0) {
+                appState.data[colName] = items;
+              }
             }
+            if (onDataUpdate) onDataUpdate(colName, appState.data[colName]);
           }
           checkInitialLoadComplete();
         }, (err) => {
@@ -231,6 +238,17 @@
         notifySyncStatus('synced');
         return true;
       }
+
+      // Se produtos já existirem mas a coleção de compras estiver vazia na nuvem, inicializa compras
+      if (initialData.purchases && initialData.purchases.length > 0) {
+        const purCol = firestoreMod.collection(firestoreDb, 'purchases');
+        const purSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(purCol) : null;
+        if (!purSnap || purSnap.empty) {
+          console.log('[CloudSync] Coleção de compras vazia no Firestore. Inicializando compras...');
+          await syncCollectionBatch('purchases', initialData.purchases);
+        }
+      }
+
       return false;
     } catch (err) {
       console.warn('[CloudSync] Não foi possível verificar necessidade de seed:', err);

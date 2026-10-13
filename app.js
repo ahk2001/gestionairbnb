@@ -123,6 +123,7 @@ function initApp() {
         // Inicia sincronização em tempo real na nuvem
         if (window.AirbnbCloudSync) {
           AirbnbCloudSync.startRealtimeSync(state, (colName, items) => {
+            try { localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(state.data)); } catch (e) {}
             updateBadges();
             renderAll();
           });
@@ -342,19 +343,56 @@ function syncToCloudDebounced() {
   if (!window.AirbnbCloudSync || !window.isFirebaseConfigured || !window.isFirebaseConfigured()) return;
   if (!state.currentUser) return;
 
+  const isOwner = state.currentUser?.type === 'owner';
+
   if (cloudSyncDebounceTimer) clearTimeout(cloudSyncDebounceTimer);
   cloudSyncDebounceTimer = setTimeout(async () => {
-    try {
-      if (state.data.products) await AirbnbCloudSync.syncCollectionBatch('products', state.data.products);
-      if (state.data.staff) await AirbnbCloudSync.syncCollectionBatch('staff', state.data.staff);
-      if (state.data.notes) await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes);
-      if (state.data.calendar) await AirbnbCloudSync.syncCollectionBatch('calendar', state.data.calendar);
-      if (state.data.purchases) await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases);
-      if (state.data.trashProducts) await AirbnbCloudSync.syncCollectionBatch('trashProducts', state.data.trashProducts);
-      if (state.data.timesheets) await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets);
-      if (state.data.ownerProfile) await AirbnbCloudSync.saveDocument('settings', 'ownerProfile', state.data.ownerProfile);
-    } catch (e) {
-      console.warn('[CloudSync] Falha na sincronização debounced:', e);
+    // 1. Produtos (permitido para Gestor e Equipe)
+    if (state.data.products) {
+      try { await AirbnbCloudSync.syncCollectionBatch('products', state.data.products); }
+      catch (e) { console.warn('[CloudSync] Falha ao sincronizar products:', e); }
+    }
+
+    // 2. Compras / Comprovantes (permitido para Gestor e Equipe)
+    if (state.data.purchases) {
+      try { await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases); }
+      catch (e) { console.warn('[CloudSync] Falha ao sincronizar purchases:', e); }
+    }
+
+    // 3. Notas / Mural de Recados (permitido para Gestor e Equipe)
+    if (state.data.notes) {
+      try { await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes); }
+      catch (e) { console.warn('[CloudSync] Falha ao sincronizar notes:', e); }
+    }
+
+    // 4. Registro de Horas / Timesheets (permitido para Gestor e Equipe)
+    if (state.data.timesheets) {
+      try { await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets); }
+      catch (e) { console.warn('[CloudSync] Falha ao sincronizar timesheets:', e); }
+    }
+
+    // 5. Calendário de Escalas (permitido para Gestor e Equipe)
+    if (state.data.calendar) {
+      try { await AirbnbCloudSync.syncCollectionBatch('calendar', state.data.calendar); }
+      catch (e) { console.warn('[CloudSync] Falha ao sincronizar calendar:', e); }
+    }
+
+    // 6. Lixeira de Produtos (permitido para Gestor e Equipe)
+    if (state.data.trashProducts) {
+      try { await AirbnbCloudSync.syncCollectionBatch('trashProducts', state.data.trashProducts); }
+      catch (e) { console.warn('[CloudSync] Falha ao sincronizar trashProducts:', e); }
+    }
+
+    // Coleções restritas exclusivamente ao Gestor / Proprietário
+    if (isOwner) {
+      if (state.data.staff) {
+        try { await AirbnbCloudSync.syncCollectionBatch('staff', state.data.staff); }
+        catch (e) { console.warn('[CloudSync] Falha ao sincronizar staff:', e); }
+      }
+      if (state.data.ownerProfile) {
+        try { await AirbnbCloudSync.saveDocument('settings', 'ownerProfile', state.data.ownerProfile); }
+        catch (e) { console.warn('[CloudSync] Falha ao sincronizar ownerProfile:', e); }
+      }
     }
   }, 1200);
 }
@@ -5128,6 +5166,24 @@ function handlePurchaseSubmit(e) {
 
   state.data.purchases.unshift(newPurchase);
   saveData();
+
+  // Salva imediatamente no Firestore tanto a compra quanto os produtos com estoque alterado
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.saveDocument('purchases', newPurchase.id, newPurchase).catch(err => {
+      console.warn('[CloudSync] Falha no salvamento imediato da compra no Firestore:', err);
+    });
+
+    items.forEach(item => {
+      const targetProduct = state.data.products.find(p => 
+        p.propertyId === propId && (p.catalogId === item.catalogId || p.id === `${propId}_${item.catalogId}`)
+      );
+      if (targetProduct) {
+        AirbnbCloudSync.saveDocument('products', targetProduct.id, targetProduct).catch(e => {
+          console.warn('[CloudSync] Falha no salvamento imediato do estoque do produto:', e);
+        });
+      }
+    });
+  }
 
   closePurchaseModal();
   renderAll();
