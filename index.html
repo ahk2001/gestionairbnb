@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=88">
-  <script src="i18n.js?v=88"></script>
+  <link rel="stylesheet" href="styles.css?v=89">
+  <script src="i18n.js?v=89"></script>
 </head>
 <body>
 
@@ -430,9 +430,11 @@
               <span id="timesheet-section-title" data-i18n="timesheet.titleStaff">Mis Horas</span>
               <small class="timesheet-section-sub" id="timesheet-section-sub" data-i18n="timesheet.subStaff">Registra inicio, pausa y fin de tu jornada de trabajo</small>
             </div>
-            <button id="btn-open-timesheet-modal" class="timesheet-add-btn" type="button">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span data-i18n="timesheet.btnAdd">Registrar Día</span>
+            <button id="btn-open-timesheet-modal" class="timesheet-add-btn" type="button" data-i18n-title="timesheet.btnAdd" data-i18n-aria="timesheet.btnAdd" title="Registrar Día" aria-label="Registrar Día">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
             </button>
           </div>
           <div class="timesheet-staff-filter" id="timesheet-staff-filter" style="display: none;"></div>
@@ -1601,6 +1603,6 @@
   <script src="cloud-sync.js?v=83"></script>
   <script src="touch-scroll.js?v=83"></script>
   <script src="initialData.js?v=83"></script>
-  <script src="app.js?v=88"></script>
+  <script src="app.js?v=89"></script>
 </body>
 </html>

@@ -5717,26 +5717,27 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .timesheet-add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 12px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 9px;
   background: var(--primary-dark, #0B0D11);
   color: #FFFFFF;
-  font-size: 0.78rem;
-  font-weight: 700;
   border: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(11, 13, 17, 0.15);
+  box-shadow: 0 2px 6px rgba(11, 13, 17, 0.15);
+  flex-shrink: 0;
 }
 
 .timesheet-add-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.05);
   filter: brightness(1.15);
 }
 
 .timesheet-add-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
 
 /* Filtro de Colaboradoras na Visão do Gestor */
