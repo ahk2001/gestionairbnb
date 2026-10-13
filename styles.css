@@ -3307,43 +3307,54 @@ body.modal-open #main-scroll {
    ========================================================================== */
 #gate-screen {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(11, 14, 20, 0.40) 0%, rgba(11, 14, 20, 0.60) 45%, rgba(11, 14, 20, 0.88) 100%),
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 25%, rgba(15, 23, 42, 0.60) 0%, rgba(10, 14, 23, 0.82) 55%, rgba(5, 7, 12, 0.94) 100%),
               url('assets/valencia_bg.jpg') no-repeat center center / cover;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 42px 24px calc(var(--safe-bottom, 20px) + 26px);
-  max-width: 440px;
-  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px calc(var(--safe-bottom, 20px) + 20px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
+.gate-inner {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto 0;
+  animation: gateCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .gate-brand-box {
   text-align: center;
-  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .gate-logo-icon {
-  width: 68px;
-  height: 68px;
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: #FFFFFF;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.40);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.6);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .gate-logo-icon:hover {
@@ -3352,55 +3363,56 @@ body.modal-open #main-scroll {
 
 .gate-location-tag {
   display: inline-block;
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #FCD34D;
-  background: rgba(252, 211, 77, 0.16);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(252, 211, 77, 0.35);
-  padding: 4px 12px;
+  background: rgba(252, 211, 77, 0.14);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(252, 211, 77, 0.3);
+  padding: 3px 10px;
   border-radius: var(--radius-full);
-  margin-bottom: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .gate-title {
-  font-size: 1.7rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: #FFFFFF;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  line-height: 1.2;
 }
 
 .gate-subtitle {
-  font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.88);
-  font-weight: 600;
-  margin-top: 6px;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  margin-top: 5px;
+  margin-bottom: 12px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
 }
 
 .gate-properties-pills {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-top: 18px;
+  gap: 6px;
 }
 
 .gate-prop-pill {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  padding: 5px 14px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #FFFFFF;
 }
 
@@ -3413,15 +3425,15 @@ body.modal-open #main-scroll {
 
 .gate-btn {
   width: 100%;
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-radius: var(--radius-full);
-  font-size: 0.94rem;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   border: none;
 }
@@ -3458,132 +3470,163 @@ body.modal-open #main-scroll {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
-.gate-footer-hint {
-  text-align: center;
-  font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.75);
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
-  font-weight: 500;
-}
-
 .gate-auth-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border-radius: 28px;
-  padding: 28px 22px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-  margin: auto 0;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   text-align: center;
-  animation: gateCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.gate-auth-security-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #0284C7;
-  background: rgba(2, 132, 199, 0.10);
-  border: 1px solid rgba(2, 132, 199, 0.25);
-  padding: 5px 12px;
-  border-radius: var(--radius-full);
-  margin-bottom: 12px;
-}
-
-.gate-auth-title {
-  font-size: 1.18rem;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
-}
-
-.gate-auth-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.45;
-  margin-bottom: 20px;
+  transition: all 0.25s ease;
 }
 
 .gate-google-btn {
-  margin-bottom: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 1px solid #E2E8F0;
-  font-size: 0.94rem;
+  width: 100%;
+  height: 46px;
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  margin: 0;
+}
+
+.gate-google-btn:hover {
+  background: #F8FAFC;
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 22px rgba(255, 255, 255, 0.18);
+}
+
+.gate-google-btn:active {
+  transform: scale(0.98);
+}
+
+.gate-auth-subtext {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 10px;
+  letter-spacing: 0.01em;
+}
+
+.gate-auth-subtext svg {
+  opacity: 0.75;
 }
 
 .gate-config-hint {
-  margin-top: 14px;
-  font-size: 0.72rem;
-  color: #D97706;
-  background: #FEF3C7;
-  border: 1px solid #FCD34D;
-  border-radius: 12px;
-  padding: 8px 12px;
-  line-height: 1.4;
+  margin-top: 10px;
+  font-size: 0.7rem;
+  color: #FCD34D;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 10px;
+  padding: 6px 10px;
+  line-height: 1.35;
   text-align: center;
 }
 
 .auth-spinner {
-  width: 38px;
-  height: 38px;
-  border: 3px solid rgba(15, 39, 68, 0.15);
-  border-top-color: var(--accent-navy, #0F2744);
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #FFFFFF;
   border-radius: 50%;
   animation: authSpin 0.8s linear infinite;
-  margin: 0 auto 12px;
-}
-
-@keyframes authSpin {
-  to { transform: rotate(360deg); }
+  margin: 0 auto 10px;
 }
 
 .gate-auth-loading-text {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-main);
+  color: #FFFFFF;
 }
 
 .gate-denied-icon {
-  width: 54px;
-  height: 54px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: #FEE2E2;
-  color: #DC2626;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #F87171;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 12px;
+  margin: 0 auto 10px;
 }
 
 .gate-denied-title {
-  font-size: 1.08rem;
+  font-size: 0.96rem;
   font-weight: 800;
-  color: #991B1B;
-  margin-bottom: 6px;
+  color: #FCA5A5;
+  margin-bottom: 4px;
 }
 
 .gate-denied-desc {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.45;
-  margin-bottom: 10px;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.4;
+  margin-bottom: 8px;
 }
 
 .gate-denied-email {
   display: inline-block;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  color: var(--text-main);
-  background: #F1F5F9;
-  border: 1px solid #CBD5E1;
-  padding: 5px 14px;
-  border-radius: 12px;
-  font-family: inherit;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 8px;
   margin-bottom: 6px;
+}
+
+.gate-btn-try-another {
+  width: 100%;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+}
+
+.gate-btn-try-another:hover {
+  background: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.gate-footer-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  font-weight: 500;
+  margin-top: 20px;
+  letter-spacing: 0.04em;
 }
 
 /* Indicador de Nuvem na Barra Superior */

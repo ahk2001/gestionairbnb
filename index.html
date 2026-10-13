@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=60">
+  <link rel="stylesheet" href="styles.css?v=69">
 </head>
 <body>
 
@@ -38,79 +38,78 @@
          Portão de Entrada / Boas-Vindas (Splash Gate)
          ==================================================================== -->
     <div id="gate-screen">
-      <div class="gate-brand-box">
-        <div class="gate-logo-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-        </div>
-        <div class="gate-location-tag">VALÈNCIA • ESPANHA</div>
-        <h1 class="gate-title">AIRBNB CONTROL</h1>
-        <p class="gate-subtitle">Gestão Operacional de Estoque & Escalas</p>
-        <div class="gate-properties-pills">
-          <span class="gate-prop-pill">JB</span>
-          <span class="gate-prop-pill">VN</span>
-          <span class="gate-prop-pill">HN</span>
-        </div>
-      </div>
-
-      <!-- CARD DE LOGIN UNIFICADO COM O GOOGLE -->
-      <div id="gate-card-auth" class="gate-auth-card">
-        <div id="gate-auth-idle">
-          <div class="gate-auth-security-badge">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      <div class="gate-inner">
+        <div class="gate-brand-box">
+          <div class="gate-logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <span>Autenticação Oficial Google</span>
           </div>
-          <h2 class="gate-auth-title">Acesso Seguro</h2>
-          <p class="gate-auth-desc">
-            Acesso restrito para proprietários e colaboradoras autorizadas dos 3 apartamentos.
-          </p>
-
-          <button id="btn-google-login-gate" class="google-oauth-btn gate-google-btn" type="button">
-            <svg width="20" height="20" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.78l7.98-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            </svg>
-            <span>Continuar com o Google</span>
-          </button>
-
-          <div id="gate-config-hint" class="gate-config-hint" style="display: none;">
-            <span>ℹ️ Firebase aguardando credenciais em <code>firebase-config.js</code>.</span>
+          <div class="gate-location-tag">VALÈNCIA • ESPANHA</div>
+          <h1 class="gate-title">AIRBNB CONTROL</h1>
+          <p class="gate-subtitle">Gestão de Estoque & Escalas</p>
+          <div class="gate-properties-pills">
+            <span class="gate-prop-pill">JB</span>
+            <span class="gate-prop-pill">VN</span>
+            <span class="gate-prop-pill">HN</span>
           </div>
         </div>
 
-        <!-- ESTADO: CARREGANDO / VALIDANDO -->
-        <div id="gate-auth-loading" style="display: none; text-align: center; padding: 20px 0;">
-          <div class="auth-spinner"></div>
-          <p class="gate-auth-loading-text">Conectando e verificando permissões...</p>
-        </div>
+        <!-- CARD MINIMALISTA E COMPACTO DE LOGIN COM O GOOGLE -->
+        <div id="gate-card-auth" class="gate-auth-card">
+          <div id="gate-auth-idle">
+            <button id="btn-google-login-gate" class="google-oauth-btn gate-google-btn" type="button">
+              <svg width="18" height="18" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.78l7.98-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+              <span>Continuar com o Google</span>
+            </button>
 
-        <!-- ESTADO: ACESSO NEGADO / NÃO AUTORIZADO -->
-        <div id="gate-auth-denied" style="display: none; text-align: center;">
-          <div class="gate-denied-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-            </svg>
+            <div class="gate-auth-subtext">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <span>Acesso restrito para equipe e gestor</span>
+            </div>
+
+            <div id="gate-config-hint" class="gate-config-hint" style="display: none;">
+              <span>ℹ️ Firebase aguardando credenciais em <code>firebase-config.js</code>.</span>
+            </div>
           </div>
-          <h3 class="gate-denied-title">Acesso Não Autorizado</h3>
-          <p id="gate-denied-message" class="gate-denied-desc">
-            Sua conta Google não está cadastrada na lista de acesso autorizada.
-          </p>
-          <div id="gate-denied-email-badge" class="gate-denied-email"></div>
-          <button id="btn-gate-try-another" class="gate-btn gate-btn-staff" type="button" style="margin-top: 14px;">
-            <span>Entrar com outra conta Google</span>
-          </button>
-        </div>
-      </div>
 
-      <div class="gate-footer-hint">
-        Autenticação com Google • Proteção de dados no servidor
+          <!-- ESTADO: CARREGANDO / VALIDANDO -->
+          <div id="gate-auth-loading" style="display: none; padding: 12px 0;">
+            <div class="auth-spinner"></div>
+            <p class="gate-auth-loading-text">Conectando ao Google...</p>
+          </div>
+
+          <!-- ESTADO: ACESSO NEGADO / NÃO AUTORIZADO -->
+          <div id="gate-auth-denied" style="display: none; padding: 8px 0;">
+            <div class="gate-denied-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+            </div>
+            <h3 class="gate-denied-title">Acesso Não Autorizado</h3>
+            <p id="gate-denied-message" class="gate-denied-desc">
+              Sua conta Google não está na lista de acesso autorizada.
+            </p>
+            <div id="gate-denied-email-badge" class="gate-denied-email"></div>
+            <button id="btn-gate-try-another" class="gate-btn gate-btn-try-another" type="button">
+              <span>Entrar com outra conta Google</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="gate-footer-hint">
+          Autenticação Oficial Google • València
+        </div>
       </div>
     </div>
 
@@ -1585,11 +1584,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=68"></script>
-  <script src="auth.js?v=68"></script>
-  <script src="cloud-sync.js?v=68"></script>
-  <script src="touch-scroll.js?v=68"></script>
-  <script src="initialData.js?v=68"></script>
-  <script src="app.js?v=68"></script>
+  <script src="firebase-config.js?v=69"></script>
+  <script src="auth.js?v=69"></script>
+  <script src="cloud-sync.js?v=69"></script>
+  <script src="touch-scroll.js?v=69"></script>
+  <script src="initialData.js?v=69"></script>
+  <script src="app.js?v=69"></script>
 </body>
 </html>
