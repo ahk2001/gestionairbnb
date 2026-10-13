@@ -6964,6 +6964,151 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* ==========================================================================
+   TOTALIZADOR DE HORAS NÃO PAGAS (FUNCIONÁRIO & GESTOR)
+   ========================================================================== */
+.ts-unpaid-summary-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #FFFBEB;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+
+.ts-unpaid-summary-banner.is-all-paid {
+  background: #ECFDF5;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ts-unpaid-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ts-unpaid-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ts-unpaid-title {
+  font-size: 0.80rem;
+  font-weight: 800;
+  color: var(--text-main, #0F172A);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ts-unpaid-sub {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ts-unpaid-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ts-unpaid-hours-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.ts-unpaid-hours-badge.is-paid {
+  background: #D1FAE5;
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.btn-mgr-view-unpaid-list {
+  background: #0F172A;
+  color: #FFFFFF;
+  border: none;
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn-mgr-view-unpaid-list:hover {
+  background: #1E293B;
+  transform: translateY(-1px);
+}
+
+.btn-mgr-view-unpaid-list:active {
+  transform: scale(0.96);
+}
+
+.mgr-ts-summary-banner-wrap {
+  margin-bottom: 10px;
+}
+
+/* Pílula de horas não pagas no card de cada colaboradora (lista do gestor) */
+.ts-staff-picker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ts-staff-picker-sub {
+  font-size: 0.70rem;
+  color: var(--text-muted, #64748B);
+  font-weight: 600;
+}
+
+.ts-staff-unpaid-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.ts-staff-unpaid-pill.is-unpaid {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.ts-staff-unpaid-pill.is-paid {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+/* ==========================================================================
    PERFIL DO USUÁRIO & FOTO DE PERFIL (EQUIPE & GESTOR)
    ========================================================================== */
 .user-profile-box {

@@ -3238,6 +3238,49 @@ function formatTimesheetShortDate(dateStr) {
   return dayMonth;
 }
 
+function getTimesheetMinutes(t) {
+  if (!t) return 0;
+  if (t.totalMinutes !== null && t.totalMinutes !== undefined && !isNaN(Number(t.totalMinutes))) {
+    return Number(t.totalMinutes);
+  }
+  if (t.startTime && t.endTime) {
+    const calc = calculateTimesheetTotalMinutes(t.startTime, t.breakStartTime, t.breakEndTime, t.endTime);
+    return calc || 0;
+  }
+  return 0;
+}
+
+function getStaffTimesheetStats(staffId, staffEmail, staffName) {
+  const emailLower = (staffEmail || '').trim().toLowerCase();
+  const nameLower = (staffName || '').trim().toLowerCase();
+  const idStr = String(staffId || '').trim();
+
+  const staffRecords = (state.data.timesheets || []).filter(t => {
+    if (!t) return false;
+    if (idStr && String(t.staffId) === idStr) return true;
+    if (emailLower && t.staffEmail && t.staffEmail.toLowerCase() === emailLower) return true;
+    if (nameLower && t.staffName && t.staffName.toLowerCase().trim() === nameLower) return true;
+    return false;
+  });
+
+  const unpaidRecords = staffRecords.filter(t => !t.isPaid && Boolean(t.endTime));
+  const unpaidMinutes = unpaidRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
+
+  const paidRecords = staffRecords.filter(t => Boolean(t.isPaid) && Boolean(t.endTime));
+  const paidMinutes = paidRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
+
+  return {
+    allRecords: staffRecords,
+    unpaidRecords,
+    unpaidCount: unpaidRecords.length,
+    unpaidMinutes,
+    unpaidFormatted: minutesToFormatted(unpaidMinutes),
+    paidCount: paidRecords.length,
+    paidMinutes,
+    paidFormatted: minutesToFormatted(paidMinutes)
+  };
+}
+
 function renderTimesheets() {
   const isOwner = state.currentUser?.type === 'owner';
   const sectionTitle = document.getElementById('timesheet-section-title');
@@ -3268,8 +3311,8 @@ function renderTimesheets() {
   }
 
   // =========================================================================
-  // VISÃO DO GESTOR: LISTA LIMPA DE FUNCIONÁRIOS (SEM CARGO, SEM CONTADOR DE DIAS)
-  // AO CLICAR EM UM FUNCIONÁRIO, ABRE O POPUP APENAS COM SELETOR DE DATA
+  // VISÃO DO GESTOR: LISTA LIMPA DE FUNCIONÁRIOS COM TOTALIZADOR DE HORAS
+  // AO CLICAR EM UM FUNCIONÁRIO, ABRE O POPUP COM CALENDÁRIO E TOTAL PENDENTE
   // =========================================================================
   if (isOwner) {
     const rawStaffList = state.data.staff || [];
@@ -3312,6 +3355,18 @@ function renderTimesheets() {
         ${staffList.map(staff => {
           const photoUrl = staff.photo || '';
           const initials = staff.avatar || getInitials(staff.name, 'EQ');
+          const stats = getStaffTimesheetStats(staff.id, staff.email, staff.name);
+          const hasUnpaid = stats.unpaidMinutes > 0;
+          const unpaidBadge = hasUnpaid
+            ? `<span class="ts-staff-unpaid-pill is-unpaid" title="Total pendente de pagamento">
+                <span class="ts-status-dot is-unpaid"></span>
+                <span>${stats.unpaidFormatted} a pagar</span>
+              </span>`
+            : `<span class="ts-staff-unpaid-pill is-paid" title="Todas as horas pagas">
+                <span class="ts-status-dot is-paid"></span>
+                <span>Tudo pago</span>
+              </span>`;
+
           return `
           <div class="ts-staff-picker-card" data-staff-id="${staff.id}" role="button" tabindex="0">
             <div class="ts-staff-picker-left">
@@ -3321,10 +3376,14 @@ function renderTimesheets() {
                   : initials
                 }
               </div>
-              <div class="ts-staff-picker-name">${escapeHtml(staff.name)}</div>
+              <div class="ts-staff-picker-info">
+                <div class="ts-staff-picker-name">${escapeHtml(staff.name)}</div>
+                <div class="ts-staff-picker-sub">${stats.unpaidCount > 0 ? `${stats.unpaidCount} expediente(s) pendente(s)` : 'Nenhuma pendência'}</div>
+              </div>
             </div>
             <div class="ts-staff-picker-right">
-              <svg class="ts-staff-picker-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              ${unpaidBadge}
+              <svg class="ts-staff-picker-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </div>
@@ -3333,7 +3392,7 @@ function renderTimesheets() {
       </div>
     `;
 
-    // Event listener: ao clicar no funcionário, abre o popup apenas com o seletor de data
+    // Event listener: ao clicar no funcionário, abre o popup com calendário e totalizador
     listContainer.querySelectorAll('.ts-staff-picker-card').forEach(card => {
       card.addEventListener('click', () => {
         openManagerStaffTimesheetModal(card.dataset.staffId);
@@ -3344,7 +3403,7 @@ function renderTimesheets() {
   }
 
   // =========================================================================
-  // VISÃO DA EQUIPE (FUNCIONÁRIA): MINHAS HORAS, REGISTRAR DIA E EDITAR
+  // VISÃO DA EQUIPE (FUNCIONÁRIA): MINHAS HORAS, TOTALIZADOR A RECEBER E REGISTRO
   // =========================================================================
   const currentId = state.currentUser?.id;
   const currentName = (state.currentUser?.name || '').trim().toLowerCase();
@@ -3390,7 +3449,29 @@ function renderTimesheets() {
     return;
   }
 
+  // Totalizador de horas pendentes de pagamento para a colaboradora
+  const unpaidTimesheets = timesheets.filter(t => !t.isPaid && Boolean(t.endTime));
+  const unpaidMinutes = unpaidTimesheets.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
+  const unpaidFormatted = minutesToFormatted(unpaidMinutes);
+  const isAllPaid = unpaidMinutes === 0;
+
+  const summaryBannerHtml = `
+    <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
+      <div class="ts-unpaid-banner-content">
+        <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
+        <div class="ts-unpaid-texts">
+          <span class="ts-unpaid-title">${isAllPaid ? 'Todas as Horas Pagas' : 'Total a Receber (Não Pago)'}</span>
+          <span class="ts-unpaid-sub">${unpaidTimesheets.length > 0 ? `${unpaidTimesheets.length} expediente(s) pendente(s)` : 'Nenhum valor pendente'}</span>
+        </div>
+      </div>
+      <div class="ts-unpaid-banner-right">
+        <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${unpaidFormatted}</span>
+      </div>
+    </div>
+  `;
+
   listContainer.innerHTML = `
+    ${summaryBannerHtml}
     <div class="timesheet-list-wrap">
       ${timesheets.map(t => {
         const dateFormatted = formatTimesheetDateNoYear(t.date);
@@ -3732,6 +3813,9 @@ function openManagerStaffTimesheetModal(staffId) {
     }
   }
 
+  // Renderiza o totalizador de horas pendentes da colaboradora no topo do modal
+  renderManagerStaffSummaryBanner(staff);
+
   // Inicializa mostrando o Passo 1 (calendário embutido)
   if (stepDate) stepDate.style.display = 'block';
   if (stepHours) stepHours.style.display = 'none';
@@ -3742,6 +3826,37 @@ function openManagerStaffTimesheetModal(staffId) {
 
   if (modal) {
     modal.classList.add('active');
+  }
+}
+
+function renderManagerStaffSummaryBanner(staff) {
+  const container = document.getElementById('mgr-ts-unpaid-summary-box');
+  if (!container || !staff) return;
+
+  const stats = getStaffTimesheetStats(staff.id, staff.email, staff.name);
+  const isAllPaid = stats.unpaidMinutes === 0;
+
+  container.innerHTML = `
+    <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
+      <div class="ts-unpaid-banner-content">
+        <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
+        <div class="ts-unpaid-texts">
+          <span class="ts-unpaid-title">${isAllPaid ? 'Todas as Horas Pagas' : 'Total a Pagar (Não Pago)'}</span>
+          <span class="ts-unpaid-sub">${stats.unpaidCount > 0 ? `${stats.unpaidCount} expediente(s) pendente(s)` : 'Nenhuma pendência financeira'}</span>
+        </div>
+      </div>
+      <div class="ts-unpaid-banner-right">
+        <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${stats.unpaidFormatted}</span>
+        ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="Ver todos os expedientes pendentes da colaboradora">Ver Pendentes</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  const btnView = container.querySelector('#btn-mgr-view-all-unpaid');
+  if (btnView) {
+    btnView.addEventListener('click', () => {
+      showManagerTimesheetHours(staff.id, 'unpaid');
+    });
   }
 }
 
@@ -3766,6 +3881,10 @@ function showManagerTimesheetHours(staffId, dateStr) {
 
   state.activeManagerStaffDate = dateStr;
 
+  // Atualiza banner no topo caso tenha sofrido alterações
+  renderManagerStaffSummaryBanner(staff);
+
+  const isUnpaidMode = (dateStr === 'unpaid');
   const stepDate = document.getElementById('mgr-ts-step-date');
   const stepHours = document.getElementById('mgr-ts-step-hours');
   const subtitleEl = document.getElementById('mgr-ts-modal-subtitle');
@@ -3777,29 +3896,44 @@ function showManagerTimesheetHours(staffId, dateStr) {
   if (stepHours) stepHours.style.display = 'block';
 
   if (subtitleEl) {
-    subtitleEl.textContent = 'Horas trabalhadas';
+    subtitleEl.textContent = isUnpaidMode ? 'Expedientes Pendentes' : 'Horas trabalhadas';
   }
 
   if (activeDateTxt) {
-    activeDateTxt.textContent = formatTimesheetDateNoYear(dateStr);
+    activeDateTxt.textContent = isUnpaidMode ? 'Pendentes' : formatTimesheetDateNoYear(dateStr);
   }
 
   if (!hoursContainer) return;
 
-  // Filtrar registros do funcionário nesta data específica
+  // Filtrar registros do funcionário (nesta data específica ou todos não pagos)
   const staffEmail = (staff.email || '').toLowerCase().trim();
   const staffName = (staff.name || '').toLowerCase().trim();
   const records = (state.data.timesheets || []).filter(t => {
-    if (!t || t.date !== dateStr) return false;
-    if (t.staffId === staff.id) return true;
-    if (staffEmail && t.staffEmail && t.staffEmail.toLowerCase() === staffEmail) return true;
-    if (staffName && t.staffName && t.staffName.toLowerCase().trim() === staffName) return true;
-    return false;
+    if (!t) return false;
+    const matchStaff = (t.staffId === staff.id) ||
+      (staffEmail && t.staffEmail && t.staffEmail.toLowerCase() === staffEmail) ||
+      (staffName && t.staffName && t.staffName.toLowerCase().trim() === staffName);
+    if (!matchStaff) return false;
+
+    if (isUnpaidMode) {
+      return !t.isPaid;
+    }
+    return t.date === dateStr;
   });
 
-  records.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  if (isUnpaidMode) {
+    records.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  } else {
+    records.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  }
 
   if (records.length === 0) {
+    const emptyTitle = isUnpaidMode ? 'Nenhuma pendência' : 'Nenhum horário registrado';
+    const emptySub = isUnpaidMode
+      ? `Todas as horas de ${escapeHtml(staff.name)} estão confirmadas como pagas!`
+      : `${escapeHtml(staff.name)} não registrou horas em ${formatTimesheetDateNoYear(dateStr)}.`;
+    const btnLabel = isUnpaidMode ? 'Voltar ao calendário' : 'Escolher outro dia';
+
     hoursContainer.innerHTML = `
       <div class="mgr-ts-empty-day">
         <div class="mgr-ts-empty-icon">
@@ -3808,8 +3942,8 @@ function showManagerTimesheetHours(staffId, dateStr) {
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
         </div>
-        <div class="mgr-ts-empty-title">Nenhum horário registrado</div>
-        <div class="mgr-ts-empty-sub">${escapeHtml(staff.name)} não registrou horas em ${formatTimesheetDateNoYear(dateStr)}.</div>
+        <div class="mgr-ts-empty-title">${emptyTitle}</div>
+        <div class="mgr-ts-empty-sub">${emptySub}</div>
         <button type="button" class="mgr-ts-btn-other-date" id="btn-mgr-ts-retry-date">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
@@ -3817,7 +3951,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
             <line x1="8" x2="8" y1="2" y2="6"></line>
             <line x1="3" x2="21" y1="10" y2="10"></line>
           </svg>
-          <span>Escolher outro dia</span>
+          <span>${btnLabel}</span>
         </button>
       </div>
     `;
