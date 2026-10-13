@@ -5214,6 +5214,28 @@ function renderAllPurchasesCalendarPopover(year, month) {
   });
 }
 
+function toggleAllPurchasesDatePicker(e) {
+  if (e) {
+    if (e.target && e.target.closest && e.target.closest('#btn-all-purchases-clear-icon')) return;
+    e.stopPropagation();
+  }
+  const wrap = document.getElementById('all-purchases-date-picker-wrap');
+  const trigger = document.getElementById('btn-all-purchases-date-trigger');
+  if (!wrap || !trigger) return;
+
+  const isOpen = wrap.classList.contains('open');
+  closeAllCustomControls();
+  if (!isOpen) {
+    renderAllPurchasesCalendarPopover(_allPurchasesCalYear, _allPurchasesCalMonth);
+    wrap.classList.add('open');
+    trigger.setAttribute('aria-expanded', 'true');
+  } else {
+    wrap.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+}
+window.toggleAllPurchasesDatePicker = toggleAllPurchasesDatePicker;
+
 function initAllPurchasesDatePicker() {
   const wrap = document.getElementById('all-purchases-date-picker-wrap');
   const trigger = document.getElementById('btn-all-purchases-date-trigger');
@@ -5221,42 +5243,32 @@ function initAllPurchasesDatePicker() {
   const presetsRow = document.getElementById('all-purchases-presets-row');
 
   if (trigger && wrap) {
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (e.target.closest('#btn-all-purchases-clear-icon')) return;
-      const isOpen = wrap.classList.contains('open');
-      closeAllCustomControls();
-      if (!isOpen) {
-        wrap.classList.add('open');
-        trigger.setAttribute('aria-expanded', 'true');
-      } else {
-        wrap.classList.remove('open');
-        trigger.setAttribute('aria-expanded', 'false');
-      }
-    });
+    trigger.onclick = (e) => {
+      toggleAllPurchasesDatePicker(e);
+    };
 
-    trigger.addEventListener('keydown', (e) => {
+    trigger.onkeydown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        trigger.click();
+        toggleAllPurchasesDatePicker(e);
       }
-    });
+    };
   }
 
   if (clearIcon) {
-    clearIcon.addEventListener('click', (e) => {
+    clearIcon.onclick = (e) => {
       e.stopPropagation();
       _allPurchasesFilterDate = '';
       _allPurchasesFilterPreset = 'todos';
       closeAllPurchasesDatePickerPopover();
       syncAllPurchasesDateFilterUI();
       renderAllPurchasesModalContent();
-    });
+    };
   }
 
   if (presetsRow) {
     presetsRow.querySelectorAll('.purchase-pill').forEach(pill => {
-      pill.addEventListener('click', (e) => {
+      pill.onclick = (e) => {
         e.stopPropagation();
         const preset = pill.dataset.allPreset;
         _allPurchasesFilterPreset = preset;
@@ -5264,7 +5276,7 @@ function initAllPurchasesDatePicker() {
         closeAllPurchasesDatePickerPopover();
         syncAllPurchasesDateFilterUI();
         renderAllPurchasesModalContent();
-      });
+      };
     });
   }
 }
@@ -5289,6 +5301,7 @@ function openAllPurchasesModal(selectedDate = '') {
     _allPurchasesCalMonth = now.getMonth();
   }
 
+  initAllPurchasesDatePicker();
   closeAllPurchasesDatePickerPopover();
   syncAllPurchasesDateFilterUI();
   renderAllPurchasesModalContent();

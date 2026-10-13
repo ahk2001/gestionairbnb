@@ -5710,6 +5710,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .all-purchases-date-picker-wrap {
   position: relative;
   width: 100%;
+  z-index: 60;
+}
+
+.all-purchases-date-picker-wrap.open {
+  z-index: 10000;
 }
 
 .all-purchases-date-trigger {
@@ -5729,6 +5734,17 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: var(--text-main);
   outline: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.all-purchases-date-trigger * {
+  pointer-events: none;
+}
+
+.all-purchases-trigger-actions,
+.all-purchases-trigger-clear-btn {
+  pointer-events: auto !important;
 }
 
 .all-purchases-date-trigger:hover {
@@ -5777,7 +5793,17 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .all-purchases-calendar-popover {
   width: 290px;
   max-width: calc(100vw - 32px);
-  z-index: 9999;
+  z-index: 10001 !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(-8px) scale(0.98);
+}
+
+.all-purchases-date-picker-wrap.open .all-purchases-calendar-popover {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) translateY(0) scale(1) !important;
 }
 
 /* Indicador pontual de dias com compras registradas no calendário */
