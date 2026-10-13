@@ -1083,6 +1083,19 @@ async function performGoogleLogin() {
 }
 
 async function logout() {
+  if (cloudSyncDebounceTimer) {
+    clearTimeout(cloudSyncDebounceTimer);
+    cloudSyncDebounceTimer = null;
+  }
+  // Sincroniza eventuais alterações pendentes de recados ou compras antes de desconectar
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured() && state.currentUser) {
+    try {
+      if (state.data.notes) await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes);
+      if (state.data.purchases) await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases);
+    } catch (e) {
+      console.warn('[CloudSync] Falha ao descarregar pendências antes do logout:', e);
+    }
+  }
   if (window.AirbnbCloudSync) {
     AirbnbCloudSync.stopSync();
   }
@@ -2160,6 +2173,14 @@ function addNote() {
 
   state.data.notes.unshift(newNote);
   saveData();
+
+  // Salva imediatamente no Firestore para sincronização instantânea com o gestor
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.saveDocument('notes', newNote.id, newNote).catch(err => {
+      console.warn('[CloudSync] Falha no salvamento imediato do recado no Firestore:', err);
+    });
+  }
+
   textarea.value = '';
   renderNotes();
   showToast('Recado publicado com sucesso.');
@@ -2170,12 +2191,28 @@ function toggleNoteDone(noteId) {
   if (!note) return;
   note.isDone = !note.isDone;
   saveData();
+
+  // Atualiza imediatamente o status resolvido/aberto no Firestore
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.saveDocument('notes', note.id, note).catch(err => {
+      console.warn('[CloudSync] Falha ao atualizar status do recado no Firestore:', err);
+    });
+  }
+
   renderNotes();
 }
 
 function deleteNote(noteId) {
   state.data.notes = state.data.notes.filter(n => n.id !== noteId);
   saveData();
+
+  // Exclui imediatamente do Firestore para não retornar no snapshot
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.deleteDocument('notes', noteId).catch(err => {
+      console.warn('[CloudSync] Falha ao excluir recado no Firestore:', err);
+    });
+  }
+
   renderNotes();
   showToast('Recado excluído.');
 }
@@ -2580,6 +2617,13 @@ function renderCalendar() {
       if (ev) {
         ev.status = ev.status === 'concluido' ? 'pendente' : 'concluido';
         saveData();
+
+        if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+          AirbnbCloudSync.saveDocument('calendar', ev.id, ev).catch(e => {
+            console.warn('[CloudSync] Falha ao atualizar status da escala no Firestore:', e);
+          });
+        }
+
         renderCalendar();
         showToast(ev.status === 'concluido' ? 'Escala marcada como concluída.' : 'Escala reaberta.');
       }
@@ -2601,6 +2645,13 @@ function renderCalendar() {
       if (confirmed) {
         state.data.calendar = state.data.calendar.filter(e => e.id !== btn.dataset.id);
         saveData();
+
+        if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+          AirbnbCloudSync.deleteDocument('calendar', btn.dataset.id).catch(e => {
+            console.warn('[CloudSync] Falha ao excluir escala no Firestore:', e);
+          });
+        }
+
         renderCalendar();
         showToast('Escala removida.');
       }
@@ -5274,6 +5325,13 @@ function handleProductNoteSubmit(e) {
   }
 
   saveData();
+
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.saveDocument('products', product.id, product).catch(e => {
+      console.warn('[CloudSync] Falha no salvamento imediato da nota do produto:', e);
+    });
+  }
+
   closeProductNoteModal();
   renderProducts();
 }
@@ -5289,6 +5347,13 @@ function handleProductNoteDelete() {
   product.noteUpdatedAt = null;
 
   saveData();
+
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.saveDocument('products', product.id, product).catch(e => {
+      console.warn('[CloudSync] Falha no salvamento imediato da remoção da nota do produto:', e);
+    });
+  }
+
   closeProductNoteModal();
   renderProducts();
   showToast(`Nota removida: ${product.name}`);
@@ -5830,6 +5895,12 @@ function handleNewEventSubmit(e) {
 
   state.data.calendar.push(newEvent);
   saveData();
+
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.saveDocument('calendar', newEvent.id, newEvent).catch(e => {
+      console.warn('[CloudSync] Falha no salvamento imediato da nova escala no Firestore:', e);
+    });
+  }
 
   const eventDateParts = date.split('-');
   if (eventDateParts.length === 3) {

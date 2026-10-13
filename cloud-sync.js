@@ -91,6 +91,18 @@
               const remoteIds = new Set(items.map(it => String(it.id)));
               const localPending = (appState.data.purchases || []).filter(p => p && p.id && !remoteIds.has(String(p.id)));
               appState.data.purchases = [...localPending, ...items];
+            } else if (colName === 'notes') {
+              // Garante que recados locais recém-criados não sejam descartados antes da confirmação da nuvem
+              const remoteIds = new Set(items.map(it => String(it.id)));
+              const localPending = (appState.data.notes || []).filter(n => n && n.id && !remoteIds.has(String(n.id)));
+              const combined = [...localPending, ...items];
+              combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+              appState.data.notes = combined;
+            } else if (colName === 'calendar') {
+              // Garante que escalas locais recém-criadas não sejam descartadas antes da confirmação da nuvem
+              const remoteIds = new Set(items.map(it => String(it.id)));
+              const localPending = (appState.data.calendar || []).filter(e => e && e.id && !remoteIds.has(String(e.id)));
+              appState.data.calendar = [...localPending, ...items];
             } else {
               // Se o Firestore retornou dados para essa coleção, substitui no estado
               if (items.length > 0) {
@@ -246,6 +258,26 @@
         if (!purSnap || purSnap.empty) {
           console.log('[CloudSync] Coleção de compras vazia no Firestore. Inicializando compras...');
           await syncCollectionBatch('purchases', initialData.purchases);
+        }
+      }
+
+      // Se produtos já existirem mas a coleção de recados estiver vazia na nuvem, inicializa recados
+      if (initialData.notes && initialData.notes.length > 0) {
+        const notesCol = firestoreMod.collection(firestoreDb, 'notes');
+        const notesSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(notesCol) : null;
+        if (!notesSnap || notesSnap.empty) {
+          console.log('[CloudSync] Coleção de recados vazia no Firestore. Inicializando recados...');
+          await syncCollectionBatch('notes', initialData.notes);
+        }
+      }
+
+      // Se produtos já existirem mas a coleção de escalas estiver vazia na nuvem, inicializa escalas
+      if (initialData.calendar && initialData.calendar.length > 0) {
+        const calCol = firestoreMod.collection(firestoreDb, 'calendar');
+        const calSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(calCol) : null;
+        if (!calSnap || calSnap.empty) {
+          console.log('[CloudSync] Coleção de escalas vazia no Firestore. Inicializando escalas...');
+          await syncCollectionBatch('calendar', initialData.calendar);
         }
       }
 
