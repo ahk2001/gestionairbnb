@@ -3798,32 +3798,52 @@ function exportTimesheetToWhatsApp(recordId) {
   const record = (state.data.timesheets || []).find(t => t.id === recordId);
   if (!record) return;
 
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
   const staffObj = (state.data.staff || []).find(s => s.id === record.staffId);
-  const staffName = record.staffName || (staffObj ? staffObj.name : 'Colaboradora');
+  const defaultStaff = isEs ? 'Colaboradora' : 'Colaboradora';
+  const staffName = record.staffName || (staffObj ? staffObj.name : defaultStaff);
   const dateFormatted = formatTimesheetDate(record.date);
 
-  let breakText = 'Não houve pausa';
+  let breakText = isEs ? 'Sin pausa' : 'Não houve pausa';
   if (record.breakStartTime && record.breakEndTime) {
     const bMin = calculateBreakMinutes(record.breakStartTime, record.breakEndTime);
-    breakText = `${record.breakStartTime} às ${record.breakEndTime}` + (bMin > 0 ? ` (${minutesToFormatted(bMin)})` : '');
+    const sep = isEs ? ' a las ' : ' às ';
+    breakText = `${record.breakStartTime}${sep}${record.breakEndTime}` + (bMin > 0 ? ` (${minutesToFormatted(bMin)})` : '');
   } else if (record.breakStartTime) {
-    breakText = `Iniciada às ${record.breakStartTime}`;
+    breakText = isEs ? `Iniciada a las ${record.breakStartTime}` : `Iniciada às ${record.breakStartTime}`;
   }
 
+  const inProgressText = isEs ? 'En curso' : 'Em andamento';
+  const calculatingText = isEs ? 'Calculando' : 'Calculando';
   const totalText = (record.endTime && record.totalMinutes !== null && record.totalMinutes !== undefined)
     ? minutesToFormatted(record.totalMinutes)
-    : (record.endTime ? 'Calculando' : 'Em andamento');
+    : (record.endTime ? calculatingText : inProgressText);
 
-  const paymentStatusText = record.isPaid ? 'Horas Pagas ✅' : 'Pendente de Pagamento ⏳';
+  const paymentStatusText = isEs
+    ? (record.isPaid ? 'Horas Pagadas ✅' : 'Pendiente de Pago ⏳')
+    : (record.isPaid ? 'Horas Pagas ✅' : 'Pendente de Pagamento ⏳');
 
-  const textLines = [
+  const textLines = isEs ? [
+    `📋 *Registro de Horas Trabajadas*`,
+    `👤 *Colaboradora:* ${staffName}`,
+    `📅 *Fecha:* ${dateFormatted}`,
+    ``,
+    `⏰ *Inicio:* ${record.startTime || '--:--'}`,
+    `☕ *Pausa:* ${breakText}`,
+    `🏁 *Fin:* ${record.endTime || inProgressText}`,
+    ``,
+    `⏱️ *Total Trabajado:* ${totalText}`,
+    `💰 *Estado de Pago:* ${paymentStatusText}`,
+    ``,
+    `🏢 _Airbnb Gestión & Control_`
+  ] : [
     `📋 *Registro de Horas Trabalhadas*`,
     `👤 *Colaboradora:* ${staffName}`,
     `📅 *Data:* ${dateFormatted}`,
     ``,
     `⏰ *Início:* ${record.startTime || '--:--'}`,
     `☕ *Pausa:* ${breakText}`,
-    `🏁 *Término:* ${record.endTime || 'Em andamento'}`,
+    `🏁 *Término:* ${record.endTime || inProgressText}`,
     ``,
     `⏱️ *Total Trabalhado:* ${totalText}`,
     `💰 *Status Pagamento:* ${paymentStatusText}`,
@@ -3840,7 +3860,10 @@ function exportTimesheetToWhatsApp(recordId) {
   const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
   window.open(waUrl, '_blank');
 
-  showToast('Registro de horas exportado para o WhatsApp!');
+  const toastMsg = window.I18N
+    ? window.I18N.t('toast.whatsappExported')
+    : (isEs ? '¡Registro exportado a WhatsApp!' : 'Registro de horas exportado para o WhatsApp!');
+  showToast(toastMsg);
 }
 
 // ==========================================================================
@@ -4900,7 +4923,16 @@ function copyFinancialReportToWhatsApp() {
     if (p.propertyId === 'HN') totalHN += cost;
   });
 
-  const filterNames = {
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+
+  const filterNames = isEs ? {
+    todos: 'Historial General',
+    hoje: 'Hoy',
+    ontem: 'Ayer',
+    semana: 'Esta Semana',
+    este_mes: 'Este Mes',
+    mes_especifico: state.purchaseSelectedMonth || 'Mes Seleccionado'
+  } : {
     todos: 'Histórico Geral',
     hoje: 'Hoje',
     ontem: 'Ontem',
@@ -4909,29 +4941,50 @@ function copyFinancialReportToWhatsApp() {
     mes_especifico: state.purchaseSelectedMonth || 'Mês Selecionado'
   };
 
-  const periodLabel = filterNames[state.purchaseDateFilter] || 'Período Selecionado';
+  const periodLabel = filterNames[state.purchaseDateFilter] || (isEs ? 'Período Seleccionado' : 'Período Selecionado');
+  const issueDate = new Date().toLocaleDateString(isEs ? 'es-ES' : 'pt-BR');
+  const countLabel = isEs
+    ? `${filteredPurchases.length} ${filteredPurchases.length === 1 ? 'compra' : 'compras'}`
+    : `${filteredPurchases.length} ${filteredPurchases.length === 1 ? 'compra' : 'compras'}`;
 
-  const text = `RELATÓRIO FINANCEIRO • AIRBNB CONTROL
+  const text = isEs ? `RELACIÓN DE GASTOS Y COMPRAS • AIRBNB CONTROL
 Período: ${periodLabel}
-Data de emissão: ${new Date().toLocaleDateString('pt-BR')}
+Fecha de emisión: ${issueDate}
 
 Gastos por Apartamento:
 • JB: ${formatMoney(totalJB)}
 • VN: ${formatMoney(totalVN)}
 • HN: ${formatMoney(totalHN)}
 
-TOTAL CONSOLIDADO: ${formatMoney(totalConsolidado)} (${filteredPurchases.length} compras)
+TOTAL CONSOLIDADO: ${formatMoney(totalConsolidado)} (${countLabel})
+
+Rendición de cuentas generada por el sistema de gestión Airbnb.`
+  : `RELATÓRIO FINANCEIRO • AIRBNB CONTROL
+Período: ${periodLabel}
+Data de emissão: ${issueDate}
+
+Gastos por Apartamento:
+• JB: ${formatMoney(totalJB)}
+• VN: ${formatMoney(totalVN)}
+• HN: ${formatMoney(totalHN)}
+
+TOTAL CONSOLIDADO: ${formatMoney(totalConsolidado)} (${countLabel})
 
 Prestação de contas gerada pelo sistema de gestão Airbnb.`;
 
   navigator.clipboard.writeText(text).then(() => {
-    showToast(`Relatório (${periodLabel}) copiado para a área de transferência.`);
+    const toastCopied = window.I18N
+      ? window.I18N.t('toast.reportCopied')
+      : (isEs ? '¡Informe copiado al portapapeles!' : `Relatório (${periodLabel}) copiado para a área de transferência.`);
+    showToast(toastCopied);
   }).catch(() => {
     showPromptDialog({
-      title: 'Copiar Relatório',
-      message: 'Seu navegador não permitiu cópia automática. Copie o texto abaixo:',
+      title: isEs ? 'Copiar Informe' : 'Copiar Relatório',
+      message: isEs
+        ? 'Tu navegador no permitió la copia automática. Copia el texto a continuación:'
+        : 'Seu navegador não permitiu cópia automática. Copie o texto abaixo:',
       defaultValue: text,
-      confirmText: 'Fechar'
+      confirmText: isEs ? 'Cerrar' : 'Fechar'
     });
   });
 }
@@ -4957,32 +5010,47 @@ function generateWhatsAppShortagesMessage() {
     return null;
   }
 
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+  const locale = isEs ? 'es-ES' : 'pt-BR';
   const now = new Date();
-  const dateStr = now.toLocaleDateString('pt-BR');
-  const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString(locale);
+  const timeStr = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  const timeSep = isEs ? ' a las ' : ' às ';
+
+  const itemWord = isEs
+    ? (missingProducts.length === 1 ? 'artículo' : 'artículos')
+    : (missingProducts.length === 1 ? 'item' : 'itens');
+
+  const stockWord = isEs ? 'Stock' : 'Estoque';
+  const obsWord = isEs ? 'Obs' : 'Obs';
+  const footerWord = isEs ? '📲 _Generado vía Airbnb Control_' : '📲 _Gerado via Airbnb Control_';
 
   let text = '';
 
   if (!isAll) {
-    // Lista exclusiva do Airbnb selecionado
-    text += `🛒 *LISTA DE REPOSIÇÃO - AIRBNB ${selectedProp}*\n`;
-    text += `📅 *Data:* ${dateStr} às ${timeStr}\n`;
-    text += `⚠️ *Total em falta:* ${missingProducts.length} ${missingProducts.length === 1 ? 'item' : 'itens'}\n`;
+    const titleWord = isEs
+      ? `🛒 *LISTA DE REPOSICIÓN - AIRBNB ${selectedProp}*`
+      : `🛒 *LISTA DE REPOSIÇÃO - AIRBNB ${selectedProp}*`;
+    const dateLabel = isEs ? 'Fecha' : 'Data';
+    const totalLabel = isEs ? 'Total faltante' : 'Total em falta';
+
+    text += `${titleWord}\n`;
+    text += `📅 *${dateLabel}:* ${dateStr}${timeSep}${timeStr}\n`;
+    text += `⚠️ *${totalLabel}:* ${missingProducts.length} ${itemWord}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     missingProducts.forEach(it => {
       const brandStr = it.brand ? ` (${it.brand})` : '';
-      const qtyStr = `${it.quantity || 0} ${it.unit || 'un'}`;
-      text += `• *${it.name}*${brandStr} — Estoque: ${qtyStr}\n`;
+      const qtyStr = `${it.quantity || 0} ${it.unit || (isEs ? 'ud' : 'un')}`;
+      text += `• *${it.name}*${brandStr} — ${stockWord}: ${qtyStr}\n`;
       if (it.note && String(it.note).trim() !== '') {
-        text += `  ↳ _Obs: ${it.note.trim()}_\n`;
+        text += `  ↳ _${obsWord}: ${it.note.trim()}_\n`;
       }
     });
 
     text += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `📲 _Gerado via Airbnb Control_`;
+    text += `${footerWord}`;
   } else {
-    // Caso 'ALL' esteja selecionado: agrupa todos os Airbnbs com itens em falta
     let propertyOrder = (state.data.properties || []).map(pr => pr.id);
     if (!propertyOrder || propertyOrder.length === 0) {
       propertyOrder = ['JB', 'VN', 'HN'];
@@ -4994,36 +5062,49 @@ function generateWhatsAppShortagesMessage() {
     });
 
     missingProducts.forEach(item => {
-      const propId = item.propertyId || 'Outro';
+      const propId = item.propertyId || (isEs ? 'Otro' : 'Outro');
       if (!grouped[propId]) grouped[propId] = [];
       grouped[propId].push(item);
     });
 
-    text += `🛒 *LISTA DE REPOSIÇÃO - TODOS OS AIRBNBS*\n`;
-    text += `📅 *Data:* ${dateStr} às ${timeStr}\n`;
-    text += `⚠️ *Total em falta:* ${missingProducts.length} ${missingProducts.length === 1 ? 'item' : 'itens'}\n`;
+    const titleWord = isEs
+      ? `🛒 *LISTA DE REPOSICIÓN - TODOS LOS AIRBNBS*`
+      : `🛒 *LISTA DE REPOSIÇÃO - TODOS OS AIRBNBS*`;
+    const dateLabel = isEs ? 'Fecha' : 'Data';
+    const totalLabel = isEs ? 'Total faltante' : 'Total em falta';
+
+    text += `${titleWord}\n`;
+    text += `📅 *${dateLabel}:* ${dateStr}${timeSep}${timeStr}\n`;
+    text += `⚠️ *${totalLabel}:* ${missingProducts.length} ${itemWord}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     propertyOrder.forEach(propId => {
       const items = grouped[propId] || [];
       if (items.length > 0) {
-        text += `🏠 *AIRBNB ${propId}* (${items.length} ${items.length === 1 ? 'item' : 'itens'} em falta)\n`;
+        const propItemWord = isEs
+          ? `${items.length} ${items.length === 1 ? 'artículo faltante' : 'artículos faltantes'}`
+          : `${items.length} ${items.length === 1 ? 'item em falta' : 'itens em falta'}`;
+
+        text += `🏠 *AIRBNB ${propId}* (${propItemWord})\n`;
         items.forEach(it => {
           const brandStr = it.brand ? ` (${it.brand})` : '';
-          const qtyStr = `${it.quantity || 0} ${it.unit || 'un'}`;
-          text += `• *${it.name}*${brandStr} — Estoque: ${qtyStr}\n`;
+          const qtyStr = `${it.quantity || 0} ${it.unit || (isEs ? 'ud' : 'un')}`;
+          text += `• *${it.name}*${brandStr} — ${stockWord}: ${qtyStr}\n`;
           if (it.note && String(it.note).trim() !== '') {
-            text += `  ↳ _Obs: ${it.note.trim()}_\n`;
+            text += `  ↳ _${obsWord}: ${it.note.trim()}_\n`;
           }
         });
         text += `\n`;
       } else {
-        text += `🏠 *AIRBNB ${propId}* — ✅ Estoque abastecido (nada em falta)\n\n`;
+        const stockedMsg = isEs
+          ? `🏠 *AIRBNB ${propId}* — ✅ Stock abastecido (nada faltante)\n\n`
+          : `🏠 *AIRBNB ${propId}* — ✅ Estoque abastecido (nada em falta)\n\n`;
+        text += stockedMsg;
       }
     });
 
     text += `━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `📲 _Gerado via Airbnb Control_`;
+    text += `${footerWord}`;
   }
 
   return { text, totalCount: missingProducts.length, propertyId: selectedProp };
@@ -5031,24 +5112,35 @@ function generateWhatsAppShortagesMessage() {
 
 function shareShortagesToWhatsApp() {
   const selectedProp = state.selectedProperty || 'JB';
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
   const result = generateWhatsAppShortagesMessage();
   if (!result || result.totalCount === 0) {
-    showToast(selectedProp === 'ALL'
-      ? 'Nenhum produto em falta no estoque geral.'
-      : `Nenhum produto em falta no Airbnb ${selectedProp}.`
-    );
+    const emptyMsg = isEs
+      ? (selectedProp === 'ALL'
+          ? 'Ningún producto faltante en el stock general.'
+          : `Ningún producto faltante en Airbnb ${selectedProp}.`)
+      : (selectedProp === 'ALL'
+          ? 'Nenhum produto em falta no estoque geral.'
+          : `Nenhum produto em falta no Airbnb ${selectedProp}.`);
+    showToast(emptyMsg);
     return;
   }
 
   const text = result.text;
   const encodedText = encodeURIComponent(text);
   const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-  const propLabel = selectedProp === 'ALL' ? 'Todos os Airbnbs' : `Airbnb ${selectedProp}`;
+  const propLabel = selectedProp === 'ALL'
+    ? (isEs ? 'Todos los Airbnbs' : 'Todos os Airbnbs')
+    : `Airbnb ${selectedProp}`;
+  const itemWord = isEs ? 'artículos' : 'itens';
 
   // Copia o texto para a área de transferência
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
-      showToast(`Lista (${propLabel} - ${result.totalCount} itens) copiada! Abrindo WhatsApp...`);
+      const toastMsg = isEs
+        ? `¡Lista (${propLabel} - ${result.totalCount} ${itemWord}) copiada! Abriendo WhatsApp...`
+        : `Lista (${propLabel} - ${result.totalCount} ${itemWord}) copiada! Abrindo WhatsApp...`;
+      showToast(toastMsg);
       window.open(whatsappUrl, '_blank');
     }).catch(() => {
       window.open(whatsappUrl, '_blank');
@@ -5066,6 +5158,7 @@ function updateWhatsappShortageButton() {
   const products = state.data.products || [];
   const selectedProp = state.selectedProperty || 'JB';
   const isAll = selectedProp === 'ALL';
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
 
   // Filtra itens em falta para o imóvel atualmente selecionado
   const targetProducts = isAll
@@ -5077,9 +5170,17 @@ function updateWhatsappShortageButton() {
 
   if (count > 0) {
     btn.style.display = 'inline-flex';
-    btn.title = isAll
-      ? `Compartilhar lista de falta no WhatsApp (Geral - ${count} itens)`
-      : `Compartilhar lista de falta no WhatsApp (Airbnb ${selectedProp} - ${count} itens)`;
+    const itemWord = isEs ? 'artículos' : 'itens';
+    const titleText = isEs
+      ? (isAll
+          ? `Compartir lista faltante por WhatsApp (General - ${count} ${itemWord})`
+          : `Compartir lista faltante por WhatsApp (Airbnb ${selectedProp} - ${count} ${itemWord})`)
+      : (isAll
+          ? `Compartilhar lista de falta no WhatsApp (Geral - ${count} ${itemWord})`
+          : `Compartilhar lista de falta no WhatsApp (Airbnb ${selectedProp} - ${count} ${itemWord})`);
+
+    btn.title = titleText;
+    btn.setAttribute('aria-label', titleText);
     if (badge) {
       badge.textContent = count;
     }
