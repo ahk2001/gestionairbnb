@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -27,7 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=83">
+  <link rel="stylesheet" href="styles.css?v=85">
+  <script src="i18n.js?v=85"></script>
 </head>
 <body>
 
@@ -46,13 +47,25 @@
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
           </div>
-          <div class="gate-location-tag">VALÈNCIA • ESPANHA</div>
-          <h1 class="gate-title">AIRBNB CONTROL</h1>
-          <p class="gate-subtitle">Gestão de Estoque & Escalas</p>
+          <div class="gate-location-tag" data-i18n="gate.location">VALÈNCIA • ESPAÑA</div>
+          <h1 class="gate-title" data-i18n="gate.title">AIRBNB CONTROL</h1>
+          <p class="gate-subtitle" data-i18n="gate.subtitle">Gestión de Stock y Turnos</p>
           <div class="gate-properties-pills">
             <span class="gate-prop-pill">JB</span>
             <span class="gate-prop-pill">VN</span>
             <span class="gate-prop-pill">HN</span>
+          </div>
+        </div>
+
+        <!-- SELETOR DE IDIOMA NO PORTÃO DE ENTRADA -->
+        <div class="gate-lang-wrapper">
+          <div class="gate-lang-switch" role="group" aria-label="Selección de Idioma">
+            <button type="button" class="gate-lang-btn active" data-lang-btn="es" title="Español">
+              <span>🇪🇸 Español</span>
+            </button>
+            <button type="button" class="gate-lang-btn" data-lang-btn="pt" title="Português">
+              <span>🇧🇷 Português</span>
+            </button>
           </div>
         </div>
 
@@ -66,7 +79,7 @@
                 <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.55 10.78l7.98-6.19z"/>
                 <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
               </svg>
-              <span>Continuar com o Google</span>
+              <span data-i18n="gate.btnGoogle">Continuar con Google</span>
             </button>
 
             <div class="gate-auth-subtext">
@@ -74,18 +87,18 @@
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
-              <span>Acesso restrito para equipe e gestor</span>
+              <span data-i18n="gate.restricted">Acceso restringido para equipo y gestor</span>
             </div>
 
             <div id="gate-config-hint" class="gate-config-hint" style="display: none;">
-              <span>ℹ️ Firebase aguardando credenciais em <code>firebase-config.js</code>.</span>
+              <span>ℹ️ Firebase aguardando credenciales en <code>firebase-config.js</code>.</span>
             </div>
           </div>
 
           <!-- ESTADO: CARREGANDO / VALIDANDO -->
           <div id="gate-auth-loading" style="display: none; padding: 12px 0;">
             <div class="auth-spinner"></div>
-            <p class="gate-auth-loading-text">Conectando ao Google...</p>
+            <p class="gate-auth-loading-text" data-i18n="gate.connecting">Conectando con Google...</p>
           </div>
 
           <!-- ESTADO: ACESSO NEGADO / NÃO AUTORIZADO -->
@@ -96,19 +109,19 @@
                 <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
               </svg>
             </div>
-            <h3 class="gate-denied-title">Acesso Não Autorizado</h3>
-            <p id="gate-denied-message" class="gate-denied-desc">
-              Sua conta Google não está na lista de acesso autorizada.
+            <h3 class="gate-denied-title" data-i18n="gate.deniedTitle">Acceso No Autorizado</h3>
+            <p id="gate-denied-message" class="gate-denied-desc" data-i18n="gate.deniedDesc">
+              Tu cuenta de Google no está en la lista de acceso autorizada.
             </p>
             <div id="gate-denied-email-badge" class="gate-denied-email"></div>
             <button id="btn-gate-try-another" class="gate-btn gate-btn-try-another" type="button">
-              <span>Entrar com outra conta Google</span>
+              <span data-i18n="gate.tryAnother">Entrar con otra cuenta Google</span>
             </button>
           </div>
         </div>
 
-        <div class="gate-footer-hint">
-          Autenticação Oficial Google • València
+        <div class="gate-footer-hint" data-i18n="gate.footerHint">
+          Autenticación Oficial Google • València
         </div>
       </div>
     </div>
@@ -120,17 +133,29 @@
       <div class="topbar-user" id="topbar-user-btn">
         <div class="user-avatar-badge" id="topbar-avatar">EQ</div>
         <div class="user-info">
-          <span class="user-greeting">Olá,</span>
+          <span class="user-greeting" data-i18n="topbar.greeting">Hola,</span>
           <span class="user-info-name">
-            <span id="topbar-username">Equipe</span>
+            <span id="topbar-username">Equipo</span>
           </span>
-          <span class="user-info-role" id="topbar-role" style="display: none;">Equipe Operacional</span>
+          <span class="user-info-role" id="topbar-role" style="display: none;" data-i18n="topbar.roleStaff">Equipo Operativo</span>
         </div>
       </div>
 
       <div class="topbar-actions">
+        <!-- SELETOR DE IDIOMA ULTRA COMPACTO E ELEGANTE (ES | PT) -->
+        <div class="topbar-lang-picker" role="group" aria-label="Selector de Idioma">
+          <button type="button" class="topbar-lang-btn active" data-lang-btn="es" title="Español" aria-pressed="true">
+            <span class="lang-flag">🇪🇸</span>
+            <span class="lang-text">ES</span>
+          </button>
+          <button type="button" class="topbar-lang-btn" data-lang-btn="pt" title="Português" aria-pressed="false">
+            <span class="lang-flag">🇧🇷</span>
+            <span class="lang-text">PT</span>
+          </button>
+        </div>
+
         <button id="btn-switch-user" class="topbar-btn" type="button">
-          <span>Sair</span>
+          <span data-i18n="topbar.logout">Cerrar Sesión</span>
         </button>
       </div>
     </header>
@@ -138,7 +163,7 @@
     <!-- ====================================================================
          Seletor Fixo dos Imóveis (JB • VN • HN • Todos)
          ==================================================================== -->
-    <nav class="property-tabs-wrapper" id="property-tabs-wrapper" aria-label="Seleção de Imóvel">
+    <nav class="property-tabs-wrapper" id="property-tabs-wrapper" aria-label="Selección de Inmueble">
       <div class="property-tabs" id="property-tabs-container">
         <button class="property-tab-btn active" data-prop="JB" type="button">
           <span class="prop-code">JB</span>
@@ -150,7 +175,7 @@
           <span class="prop-code">HN</span>
         </button>
         <button class="property-tab-btn" data-prop="ALL" type="button">
-          <span class="prop-code">TODOS</span>
+          <span class="prop-code" data-i18n="prop.all">TODOS</span>
         </button>
       </div>
     </nav>
@@ -167,29 +192,29 @@
         <!-- Cabeçalho da Aba Produtos -->
         <div class="products-tab-header">
           <div class="products-header-info">
-            <h3 class="products-header-title">Catálogo de Produtos</h3>
-            <p class="products-header-sub">Gerencie dados, cadastro e recuperação de produtos</p>
+            <h3 class="products-header-title" data-i18n="products.headerTitle">Catálogo de Productos</h3>
+            <p class="products-header-sub" data-i18n="products.headerSub">Gestiona datos, catálogo y recuperación de productos</p>
           </div>
           <button type="button" id="btn-open-add-product" class="btn-new-product-action">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            <span>Novo Produto</span>
+            <span data-i18n="products.btnNew">Nuevo Producto</span>
           </button>
         </div>
 
         <!-- Seletor de Sub-Abas: Ativos vs Lixeira (1 mês) -->
         <div class="products-subtab-bar">
           <button type="button" class="products-subtab-btn active" data-subtab="active">
-            <span>Produtos Ativos</span>
+            <span data-i18n="products.subtabActive">Productos Activos</span>
             <span class="subtab-badge" id="count-products-active">0</span>
           </button>
           <button type="button" class="products-subtab-btn" data-subtab="trash">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
             </svg>
-            <span>Lixeira (30 dias)</span>
+            <span data-i18n="products.subtabTrash">Papelera (30 días)</span>
             <span class="subtab-badge subtab-badge-trash" id="count-products-trash">0</span>
           </button>
         </div>
@@ -201,7 +226,7 @@
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
             </svg>
           </span>
-          <input type="text" id="catalog-search-input" class="search-input" placeholder="Buscar no catálogo por nome ou marca...">
+          <input type="text" id="catalog-search-input" class="search-input" placeholder="Buscar en catálogo por nombre o marca..." data-i18n-placeholder="products.searchPlaceholder">
           <button type="button" id="btn-clear-catalog-search" class="clear-search-btn" style="display: none;">✕</button>
         </div>
 
@@ -218,7 +243,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <span>Produtos excluídos ficam guardados por <strong>30 dias</strong>. Você pode restaurá-los com 1 clique para voltarem imediatamente aos estoques.</span>
+            <span data-i18n="products.trashBanner">Los productos eliminados se guardan durante <strong>30 días</strong>. Puedes restaurarlos con 1 clic para devolverlos al stock.</span>
           </div>
           <div id="trash-products-container" class="trash-cards-list">
             <!-- Renderizado dinamicamente via JS -->
@@ -234,7 +259,7 @@
         <section class="property-overview-card" id="property-overview-card">
           <div class="prop-header-row">
             <div>
-              <div class="prop-kicker">ESTOQUE ATUAL</div>
+              <div class="prop-kicker" data-i18n="inventory.kicker">STOCK ACTUAL</div>
               <h2 class="prop-title" id="overview-prop-title">JB</h2>
               <p class="prop-subtitle" id="overview-prop-subtitle" style="display: none;"></p>
             </div>
@@ -245,17 +270,17 @@
             <div class="stat-chip stat-red" data-filter-status="falta" role="button" tabindex="0" title="Ver itens em falta">
               <span class="stat-chip-dot solid-dot"></span>
               <span class="stat-chip-num" id="stat-count-falta">0</span>
-              <span class="stat-chip-label">Falta</span>
+              <span class="stat-chip-label" data-i18n="inventory.statFalta">Falta</span>
             </div>
             <div class="stat-chip stat-yellow" data-filter-status="acabando" role="button" tabindex="0" title="Ver itens acabando">
               <span class="stat-chip-dot mid-dot"></span>
               <span class="stat-chip-num" id="stat-count-acabando">0</span>
-              <span class="stat-chip-label">Atenção</span>
+              <span class="stat-chip-label" data-i18n="inventory.statAtencao">Atención</span>
             </div>
             <div class="stat-chip stat-green" data-filter-status="suficiente" role="button" tabindex="0" title="Ver itens suficientes">
               <span class="stat-chip-dot ring-dot"></span>
               <span class="stat-chip-num" id="stat-count-suficiente">0</span>
-              <span class="stat-chip-label">Suficiente</span>
+              <span class="stat-chip-label" data-i18n="inventory.statSuficiente">Suficiente</span>
             </div>
           </div>
         </section>
@@ -269,8 +294,8 @@
               </svg>
             </div>
             <div class="action-card-texts">
-              <h4 class="action-card-title">Registrar Nova Compra</h4>
-              <p class="action-card-sub">Lançar comprovante e repor estoque</p>
+              <h4 class="action-card-title" data-i18n="inventory.quickBuyTitle">Registrar Nueva Compra</h4>
+              <p class="action-card-sub" data-i18n="inventory.quickBuySub">Subir ticket y reponer stock</p>
             </div>
           </div>
           <button class="action-card-plus-btn" type="button" id="btn-banner-quick-buy" title="Registrar Compra">+</button>
@@ -287,7 +312,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="whatsapp-pill-icon">
               <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.04 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.11 7.44C8.95 7.44 8.68 7.5 8.46 7.74C8.24 7.97 7.62 8.56 7.62 9.76C7.62 10.96 8.5 12.11 8.62 12.28C8.75 12.44 10.33 14.88 12.76 15.93C13.34 16.18 13.79 16.33 14.14 16.44C14.72 16.63 15.25 16.6 15.67 16.54C16.14 16.47 17.11 15.95 17.31 15.38C17.52 14.81 17.52 14.33 17.45 14.22C17.39 14.12 17.23 14.06 17 13.94C16.76 13.83 15.6 13.25 15.38 13.17C15.17 13.09 15.01 13.05 14.86 13.28C14.7 13.51 14.26 14.03 14.12 14.18C13.99 14.34 13.85 14.36 13.62 14.24C13.38 14.13 12.61 13.88 11.7 13.07C10.99 12.44 10.51 11.66 10.38 11.43C10.24 11.2 10.36 11.08 10.48 10.96C10.59 10.85 10.72 10.67 10.84 10.53C10.96 10.39 11 10.29 11.08 10.13C11.15 9.97 11.11 9.83 11.05 9.71C11 9.59 10.54 8.46 10.35 8C10.16 7.56 9.97 7.62 9.83 7.61C9.7 7.61 9.54 7.61 9.38 7.61L9.11 7.44Z"/>
             </svg>
-            <span>Lista no WhatsApp</span>
+            <span data-i18n="inventory.whatsappPill">Lista en WhatsApp</span>
             <span class="inventory-whatsapp-pill-badge" id="whatsapp-shortage-badge">0</span>
           </button>
         </div>
@@ -300,15 +325,15 @@
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
               </svg>
             </span>
-            <input type="text" id="inventory-search-input" class="search-input" placeholder="Buscar produto, marca ou categoria...">
+            <input type="text" id="inventory-search-input" class="search-input" placeholder="Buscar producto, marca o categoría..." data-i18n-placeholder="inventory.searchPlaceholder">
             <button id="btn-clear-search" class="clear-search-btn" style="display: none;" type="button">✕</button>
           </div>
 
           <div class="category-pills" id="category-pills">
-            <button class="cat-pill active" data-cat="all" type="button">Todos (24)</button>
-            <button class="cat-pill" data-cat="limpeza" type="button">Limpeza</button>
-            <button class="cat-pill" data-cat="amenities" type="button">Amenities</button>
-            <button class="cat-pill" data-cat="comida" type="button">Alimentos & Bebidas</button>
+            <button class="cat-pill active" data-cat="all" type="button" data-i18n="inventory.catAll">Todos (24)</button>
+            <button class="cat-pill" data-cat="limpeza" type="button" data-i18n="inventory.catLimpeza">Limpieza</button>
+            <button class="cat-pill" data-cat="amenities" type="button" data-i18n="inventory.catAmenities">Amenities</button>
+            <button class="cat-pill" data-cat="comida" type="button" data-i18n="inventory.catComida">Alimentos y Bebidas</button>
           </div>
         </div>
 
@@ -330,10 +355,10 @@
            ================================================================ -->
       <section id="view-notes" class="tab-view" style="display: none;">
         <div class="notes-input-card">
-          <label for="new-note-textarea" class="form-label" style="margin-bottom: 6px;">Deixar Recado para o Imóvel</label>
-          <textarea id="new-note-textarea" placeholder="Ex: Torneira gotejando, hóspede pediu toalhas extras, reposição feita..."></textarea>
+          <label for="new-note-textarea" class="form-label" style="margin-bottom: 6px;" data-i18n="notes.title">Dejar Nota para el Inmueble</label>
+          <textarea id="new-note-textarea" placeholder="Ej: Grifo goteando, huésped pidió toallas extra, reposición hecha..." data-i18n-placeholder="notes.placeholder"></textarea>
           <div class="notes-btn-row">
-            <button id="btn-post-note" class="btn-post-note" type="button">Publicar Recado</button>
+            <button id="btn-post-note" class="btn-post-note" type="button" data-i18n="notes.btnPost">Publicar Nota</button>
           </div>
         </div>
 
@@ -348,11 +373,11 @@
       <section id="view-calendar" class="tab-view" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <div>
-            <h3 style="font-size: 1.10rem; font-weight: 800; letter-spacing: -0.02em;">Escalas e Limpezas</h3>
-            <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;">Cronograma operacional e controle de diárias</p>
+            <h3 style="font-size: 1.10rem; font-weight: 800; letter-spacing: -0.02em;" data-i18n="calendar.title">Turnos y Limpiezas</h3>
+            <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;" data-i18n="calendar.subtitle">Cronograma operativo y control de estancias</p>
           </div>
-          <button id="btn-open-new-event-modal" class="topbar-btn" style="background: var(--primary-dark); color: white;" type="button">
-            + Agendar
+          <button id="btn-open-new-event-modal" class="topbar-btn" style="background: var(--primary-dark); color: white;" type="button" data-i18n="calendar.btnNew">
+            + Programar
           </button>
         </div>
 
@@ -392,8 +417,8 @@
                 </div>
               </div>
               <div class="user-profile-info-col">
-                <div class="user-profile-name" id="user-profile-name-display">Equipe</div>
-                <div class="user-profile-role-tag" id="user-profile-role-display">Colaboradora</div>
+                <div class="user-profile-name" id="user-profile-name-display">Equipo</div>
+                <div class="user-profile-role-tag" id="user-profile-role-display" data-i18n="owner.profileRole">Colaboradora</div>
               </div>
             </div>
             <button type="button" class="btn-open-edit-profile" id="btn-open-edit-profile">
@@ -401,7 +426,40 @@
                 <path d="M12 20h9"/>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
               </svg>
-              <span>Editar Perfil</span>
+              <span data-i18n="owner.btnEditProfile">Editar Perfil</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card de Preferência de Idioma (Visível para Funcionário e Gestor) -->
+        <div class="owner-section-box lang-settings-box" id="lang-settings-section">
+          <div class="owner-section-title">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="lang-globe-icon">🌐</span>
+              <span data-i18n="owner.langSettingsTitle">Idioma del Sistema</span>
+            </div>
+            <small class="timesheet-section-sub" data-i18n="owner.langSettingsSub" style="margin: 0; font-size: 0.72rem;">Selecciona el idioma de la aplicación para tu sesión</small>
+          </div>
+          <div class="lang-options-grid">
+            <button type="button" class="lang-option-card active" data-lang-btn="es">
+              <div class="lang-option-flag">🇪🇸</div>
+              <div class="lang-option-info">
+                <span class="lang-option-name" data-i18n="owner.langEs">Español</span>
+                <span class="lang-option-badge" data-i18n="owner.langDefault">Predeterminado</span>
+              </div>
+              <div class="lang-option-check">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+            </button>
+
+            <button type="button" class="lang-option-card" data-lang-btn="pt">
+              <div class="lang-option-flag">🇧🇷</div>
+              <div class="lang-option-info">
+                <span class="lang-option-name" data-i18n="owner.langPt">Português</span>
+              </div>
+              <div class="lang-option-check">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
             </button>
           </div>
         </div>
@@ -410,12 +468,12 @@
         <div class="owner-section-box timesheet-section" id="timesheet-section">
           <div class="owner-section-title">
             <div class="timesheet-title-wrap">
-              <span id="timesheet-section-title">Minhas Horas</span>
-              <small class="timesheet-section-sub" id="timesheet-section-sub">Registre início, pausa e fim do seu dia</small>
+              <span id="timesheet-section-title" data-i18n="timesheet.titleStaff">Mis Horas</span>
+              <small class="timesheet-section-sub" id="timesheet-section-sub" data-i18n="timesheet.subStaff">Registra inicio, pausa y fin de tu jornada de trabajo</small>
             </div>
             <button id="btn-open-timesheet-modal" class="timesheet-add-btn" type="button">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>Registrar Dia</span>
+              <span data-i18n="timesheet.btnAdd">Registrar Día</span>
             </button>
           </div>
           <div class="timesheet-staff-filter" id="timesheet-staff-filter" style="display: none;"></div>
@@ -427,20 +485,20 @@
         <!-- Resumo Consolidado de Gastos (Exclusivo do Gestor) -->
         <div class="owner-section-box owner-only-section" id="owner-finance-section">
           <div class="owner-section-title">
-            <span>Prestação de Contas & Gastos</span>
-            <button id="btn-share-report" class="topbar-btn" type="button" title="Copiar relatório formatado para WhatsApp">
-              Copiar Relatório
+            <span data-i18n="finance.title">Rendición de Cuentas y Gastos</span>
+            <button id="btn-share-report" class="topbar-btn" type="button" title="Copiar relatório formatado para WhatsApp" data-i18n="finance.btnShareReport">
+              Copiar Informe
             </button>
           </div>
 
           <!-- Filtros de Período de Compras -->
           <div class="purchase-filter-container">
             <div class="purchase-filter-scroll" id="purchase-date-filters">
-              <button type="button" class="purchase-pill active" data-date-filter="todos">Todas</button>
-              <button type="button" class="purchase-pill" data-date-filter="hoje">Hoje</button>
-              <button type="button" class="purchase-pill" data-date-filter="ontem">Ontem</button>
-              <button type="button" class="purchase-pill" data-date-filter="semana">Esta Semana</button>
-              <button type="button" class="purchase-pill" data-date-filter="este_mes">Este Mês</button>
+              <button type="button" class="purchase-pill active" data-date-filter="todos" data-i18n="finance.filterAll">Todas</button>
+              <button type="button" class="purchase-pill" data-date-filter="hoje" data-i18n="finance.filterToday">Hoy</button>
+              <button type="button" class="purchase-pill" data-date-filter="ontem" data-i18n="finance.filterYesterday">Ayer</button>
+              <button type="button" class="purchase-pill" data-date-filter="semana" data-i18n="finance.filterWeek">Esta Semana</button>
+              <button type="button" class="purchase-pill" data-date-filter="este_mes" data-i18n="finance.filterMonth">Este Mes</button>
             </div>
 
             <!-- Seletor de Cada Mês Específico (Sem seletor nativo) -->
@@ -449,25 +507,25 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
                 </svg>
-                Filtrar por mês:
+                <span data-i18n="finance.filterMonthLabel">Filtrar por mes:</span>
               </span>
               <div class="purchase-month-select-wrap">
                 <select id="purchase-month-select" class="form-input custom-luxury-select">
-                  <option value="">Todos os meses...</option>
+                  <option value="" data-i18n="finance.filterAllMonths">Todos los meses...</option>
                 </select>
               </div>
             </div>
 
             <!-- Resumo Informativo do Período Filtrado -->
             <div class="purchase-filter-summary-bar" id="purchase-filter-summary-bar">
-              <span id="purchase-filter-info-text">Exibindo todas as compras</span>
+              <span id="purchase-filter-info-text" data-i18n="finance.summaryInfo">Mostrando todas las compras</span>
               <strong id="purchase-filter-sum-val">€ 0,00</strong>
             </div>
           </div>
 
           <div class="financial-summary-grid">
             <div class="fin-card fin-card-total">
-              <span class="fin-label">Gasto Total Consolidado</span>
+              <span class="fin-label" data-i18n="finance.totalConsolidated">Gasto Total Consolidado</span>
               <div class="fin-val" id="fin-total-consolidado">€ 0,00</div>
             </div>
             <div class="fin-card">
@@ -488,13 +546,13 @@
         <!-- Gestão da Equipe (Exclusivo do Dono) -->
         <div class="owner-section-box owner-only-section" id="owner-staff-management-section">
           <div class="owner-section-title">
-            <span>Colaboradoras</span>
-            <button id="btn-open-new-staff-modal" class="topbar-btn" style="background: var(--primary-dark); color: white;" type="button">
-              + Nova Colaboradora
+            <span data-i18n="staff.title">Colaboradoras</span>
+            <button id="btn-open-new-staff-modal" class="topbar-btn" style="background: var(--primary-dark); color: white;" type="button" data-i18n="staff.btnNew">
+              + Nueva Colaboradora
             </button>
           </div>
-          <p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 12px;">
-            Cadastre os e-mails Google das colaboradoras para liberar acesso seguro ao sistema.
+          <p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 12px;" data-i18n="staff.description">
+            Registra los correos Google de las colaboradoras para darles acceso seguro al sistema.
           </p>
 
           <div id="staff-members-list-container">
@@ -505,7 +563,7 @@
         <!-- Histórico Recente de Compras & Recibos (Exclusivo do Gestor) -->
         <div class="owner-section-box owner-only-section" id="owner-purchases-section">
           <div class="owner-section-title">
-            <span>Comprovantes Recentes</span>
+            <span data-i18n="purchases.title">Comprobantes Recientes</span>
             <span class="owner-section-badge" id="purchases-total-count-badge">0 compras</span>
           </div>
 
@@ -528,7 +586,7 @@
             <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
           </svg>
         </span>
-        <span class="nav-label">Produtos</span>
+        <span class="nav-label" data-i18n="nav.products">Productos</span>
       </button>
 
       <button class="nav-item active" data-tab="inventory" type="button">
@@ -537,7 +595,7 @@
             <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
           </svg>
         </span>
-        <span class="nav-label">Estoque</span>
+        <span class="nav-label" data-i18n="nav.inventory">Stock</span>
       </button>
 
       <button class="nav-item" data-tab="notes" type="button">
@@ -546,7 +604,7 @@
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
         </span>
-        <span class="nav-label">Recados</span>
+        <span class="nav-label" data-i18n="nav.notes">Notas</span>
       </button>
 
       <button class="nav-item" data-tab="calendar" type="button">
@@ -555,7 +613,7 @@
             <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
           </svg>
         </span>
-        <span class="nav-label">Escalas</span>
+        <span class="nav-label" data-i18n="nav.calendar">Turnos</span>
       </button>
 
       <button class="nav-item" data-tab="owner" type="button" id="nav-item-owner">
@@ -564,7 +622,7 @@
             <line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>
           </svg>
         </span>
-        <span class="nav-label">Gestão</span>
+        <span class="nav-label" data-i18n="nav.owner">Gestión</span>
       </button>
     </nav>
 
@@ -582,14 +640,14 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title">Registrar Compra</h3>
+        <h3 class="sheet-title" data-i18n="modalPurchase.title">Registrar Compra</h3>
         <button class="sheet-close-btn" id="btn-close-purchase-modal" type="button">✕</button>
       </div>
 
       <form id="purchase-form" class="purchase-form">
         <!-- Imóvel de Destino da Compra -->
         <div class="form-group">
-          <label for="purchase-property-select" class="form-label">Apartamento de Destino</label>
+          <label for="purchase-property-select" class="form-label" data-i18n="modalPurchase.propertyLabel">Apartamento de Destino</label>
           <select id="purchase-property-select" class="form-input" required>
             <option value="JB">JB</option>
             <option value="VN">VN</option>
@@ -600,20 +658,20 @@
         <!-- Lista Dinâmica de Produtos Comprados -->
         <div class="form-group">
           <div class="purchase-items-header">
-            <label class="form-label" style="margin-bottom: 0;">Produtos Comprados no Cupom</label>
+            <label class="form-label" style="margin-bottom: 0;" data-i18n="modalPurchase.itemsLabel">Productos Comprados en el Ticket</label>
             <span class="purchase-items-count-badge" id="purchase-items-count-badge">1 item</span>
           </div>
           <div id="purchase-items-container" class="purchase-items-container">
             <!-- Renderizado dinamicamente pelo renderPurchaseItems() -->
             <div class="purchase-item-card purchase-item-row" data-index="0">
               <div class="purchase-item-card-header">
-                <span class="purchase-item-tag">Item 1</span>
+                <span class="purchase-item-tag">Artículo 1</span>
               </div>
               <select id="purchase-product-select" class="form-input purchase-item-product-select" required>
                 <!-- Preenchido via JS com os 24 itens -->
               </select>
               <div class="purchase-item-stepper-wrap">
-                <span class="purchase-stepper-label">Qtd Adicionada</span>
+                <span class="purchase-stepper-label" data-i18n="modalPurchase.qtyLabel">Cant. Añadida</span>
                 <div class="purchase-stepper-controls">
                   <button type="button" class="purchase-stepper-btn btn-step-minus">–</button>
                   <input type="number" id="purchase-quantity-input" class="purchase-stepper-input purchase-item-qty-input" min="1" step="1" value="2" required>
@@ -629,32 +687,32 @@
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            <span>+ Adicionar Outro Produto ao Cupom</span>
+            <span data-i18n="modalPurchase.btnAddItem">+ Añadir Otro Producto al Ticket</span>
           </button>
         </div>
 
         <!-- Grid Total Gasto no Cupom e Data -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
-            <label for="purchase-cost-input" class="form-label" id="purchase-cost-label">Total do Cupom (€)</label>
-            <input type="number" id="purchase-cost-input" class="form-input" min="0.01" step="0.01" placeholder="Ex: 24.50" required>
+            <label for="purchase-cost-input" class="form-label" id="purchase-cost-label" data-i18n="modalPurchase.costLabel">Total del Ticket (€)</label>
+            <input type="number" id="purchase-cost-input" class="form-input" min="0.01" step="0.01" placeholder="Ej: 24.50" required>
           </div>
 
           <div class="form-group">
-            <label for="purchase-date-input" class="form-label">Data da Compra</label>
+            <label for="purchase-date-input" class="form-label" data-i18n="modalPurchase.dateLabel">Fecha de Compra</label>
             <input type="date" id="purchase-date-input" class="form-input" required>
           </div>
         </div>
 
         <!-- Quem Comprou -->
         <div class="form-group">
-          <label for="purchase-buyer-input" class="form-label">Registrado / Comprado por</label>
+          <label for="purchase-buyer-input" class="form-label" data-i18n="modalPurchase.buyerLabel">Registrado / Comprado por</label>
           <input type="text" id="purchase-buyer-input" class="form-input" readonly>
         </div>
 
         <!-- Foto Opcional do Cupom Fiscal / Recibo -->
         <div class="form-group">
-          <label class="form-label">Comprovante / Cupom Fiscal (Opcional)</label>
+          <label class="form-label" data-i18n="modalPurchase.receiptLabel">Comprobante / Ticket de Compra (Opcional)</label>
           <div class="receipt-upload-box" id="receipt-upload-box">
             <div style="display: flex; justify-content: center; margin-bottom: 4px; color: var(--text-muted);">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -662,7 +720,7 @@
                 <circle cx="12" cy="13" r="4"/>
               </svg>
             </div>
-            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;">Tirar Foto ou Carregar Cupom</p>
+            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;" data-i18n="modalPurchase.receiptUpload">Tomar Foto o Subir Ticket</p>
             <input type="file" id="purchase-receipt-file" accept="image/*" style="display: none;">
             <img id="purchase-receipt-preview" class="receipt-preview-img" style="display: none;" alt="Preview Recibo">
           </div>
@@ -670,12 +728,12 @@
 
         <!-- Observações -->
         <div class="form-group">
-          <label for="purchase-notes-input" class="form-label">Observação (Opcional)</label>
-          <input type="text" id="purchase-notes-input" class="form-input" placeholder="Ex: Mercadona Centro - Caixa 3">
+          <label for="purchase-notes-input" class="form-label" data-i18n="modalPurchase.notesLabel">Observación (Opcional)</label>
+          <input type="text" id="purchase-notes-input" class="form-input" placeholder="Ej: Mercadona Centro - Caja 3" data-i18n-placeholder="modalPurchase.notesPlaceholder">
         </div>
 
         <button type="submit" class="btn-submit-primary">
-          <span>Salvar Compra e Atualizar Estoque</span>
+          <span data-i18n="modalPurchase.btnSubmit">Guardar Compra y Actualizar Stock</span>
         </button>
       </form>
     </div>
@@ -692,7 +750,7 @@
       <div class="sheet-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="prop-badge-small" id="view-purchase-prop-badge">JB</span>
-          <h3 class="sheet-title" id="view-purchase-title">Detalhes da Compra</h3>
+          <h3 class="sheet-title" id="view-purchase-title" data-i18n="modalViewPurchase.title">Detalles de la Compra</h3>
         </div>
         <button class="sheet-close-btn" id="btn-close-view-purchase" type="button">✕</button>
       </div>
@@ -701,24 +759,24 @@
         <!-- Hero Card com Valor Total e Informações Principais -->
         <div class="purchase-detail-hero">
           <div class="purchase-detail-total-box">
-            <span class="purchase-detail-total-lbl">Total Pago</span>
+            <span class="purchase-detail-total-lbl" data-i18n="modalViewPurchase.totalPaid">Total Pagado</span>
             <div class="purchase-detail-total-val" id="view-purchase-total-val">€ 0,00</div>
           </div>
           <div class="purchase-detail-info-grid">
             <div class="detail-info-item">
-              <span class="detail-info-lbl">Data da Compra</span>
+              <span class="detail-info-lbl" data-i18n="modalViewPurchase.purchaseDate">Fecha de Compra</span>
               <span class="detail-info-txt" id="view-purchase-date-txt">-</span>
             </div>
             <div class="detail-info-item">
-              <span class="detail-info-lbl">Comprado por</span>
+              <span class="detail-info-lbl" data-i18n="modalViewPurchase.buyer">Comprado por</span>
               <span class="detail-info-txt" id="view-purchase-buyer-txt">-</span>
             </div>
             <div class="detail-info-item">
-              <span class="detail-info-lbl">Imóvel de Destino</span>
+              <span class="detail-info-lbl" data-i18n="modalViewPurchase.property">Inmueble de Destino</span>
               <span class="detail-info-txt" id="view-purchase-property-txt">-</span>
             </div>
             <div class="detail-info-item">
-              <span class="detail-info-lbl">Qtd Total Itens</span>
+              <span class="detail-info-lbl" data-i18n="modalViewPurchase.totalItems">Cant. Total Artículos</span>
               <span class="detail-info-txt" id="view-purchase-units-txt">-</span>
             </div>
           </div>
@@ -730,7 +788,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
             </svg>
-            <span>Produtos no Cupom</span>
+            <span data-i18n="modalViewPurchase.productsInReceipt">Productos en el Ticket</span>
           </h4>
           <div id="view-purchase-items-list" class="view-purchase-items-list">
             <!-- Renderizado dinamicamente via JS -->
@@ -743,7 +801,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span>Observações</span>
+            <span data-i18n="modalViewPurchase.notes">Observaciones</span>
           </h4>
           <p class="purchase-notes-content" id="view-purchase-notes-txt">-</p>
         </div>
@@ -754,15 +812,15 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
             </svg>
-            <span>Comprovante / Nota Fiscal</span>
+            <span data-i18n="modalViewPurchase.receipt">Comprobante / Ticket Fiscal</span>
           </h4>
           <div id="view-purchase-receipt-container">
             <!-- Injetado dinamicamente via JS -->
           </div>
         </div>
 
-        <button type="button" class="form-submit-btn" id="btn-close-view-purchase-bottom" style="margin-top: 14px;">
-          Fechar Detalhes
+        <button type="button" class="form-submit-btn" id="btn-close-view-purchase-bottom" style="margin-top: 14px;" data-i18n="modalViewPurchase.btnClose">
+          Cerrar Detalles
         </button>
       </div>
     </div>
@@ -777,7 +835,7 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title" id="zoom-title">Foto do Produto</h3>
+        <h3 class="sheet-title" id="zoom-title" data-i18n="modalZoom.title">Foto del Producto</h3>
         <button class="sheet-close-btn" id="btn-close-zoom-modal" type="button">✕</button>
       </div>
 
@@ -797,7 +855,7 @@
       <div class="sheet-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="orange-pulse-dot"></span>
-          <h3 class="sheet-title">Nota do Produto</h3>
+          <h3 class="sheet-title" data-i18n="modalNote.title">Nota del Producto</h3>
         </div>
         <button class="sheet-close-btn" id="btn-close-product-note-modal" type="button">✕</button>
       </div>
@@ -810,13 +868,13 @@
           <img id="product-note-target-img" src="" alt="Produto" class="product-note-target-thumb">
           <div style="flex: 1; min-width: 0;">
             <h4 id="product-note-target-name" class="product-note-target-title">Nome do Produto</h4>
-            <p id="product-note-target-prop" class="product-note-target-sub">Imóvel: JB</p>
+            <p id="product-note-target-prop" class="product-note-target-sub">Inmueble: JB</p>
           </div>
         </div>
 
         <div class="form-group" style="margin-top: 14px;">
-          <label for="product-note-textarea" class="form-label">Anotação / Observação Operacional</label>
-          <textarea id="product-note-textarea" class="form-input" rows="3" placeholder="Ex: Priorizar compra sem perfume, guardar no armário alto..." required style="resize: none; font-size: 0.86rem; line-height: 1.4;"></textarea>
+          <label for="product-note-textarea" class="form-label" data-i18n="modalNote.label">Anotación / Observación Operativa</label>
+          <textarea id="product-note-textarea" class="form-input" rows="3" placeholder="Ej: Priorizar compra sin perfume, guardar en armario alto..." data-i18n-placeholder="modalNote.placeholder" required style="resize: none; font-size: 0.86rem; line-height: 1.4;"></textarea>
         </div>
 
         <div id="product-note-meta-info" style="display: none; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 12px;">
@@ -824,11 +882,11 @@
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 6px;">
-          <button type="submit" class="btn-submit-primary" style="flex: 2;">
-            Salvar Nota
+          <button type="submit" class="btn-submit-primary" style="flex: 2;" data-i18n="modalNote.btnSave">
+            Guardar Nota
           </button>
-          <button type="button" id="btn-remove-product-note" class="btn-remove-note" style="display: none;">
-            Remover
+          <button type="button" id="btn-remove-product-note" class="btn-remove-note" style="display: none;" data-i18n="modalNote.btnRemove">
+            Eliminar
           </button>
         </div>
       </form>
@@ -844,56 +902,56 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title">Cadastrar Novo Produto</h3>
+        <h3 class="sheet-title" data-i18n="modalAddProduct.title">Registrar Nuevo Producto</h3>
         <button class="sheet-close-btn" id="btn-close-add-product-modal" type="button">✕</button>
       </div>
 
       <form id="add-product-form" class="purchase-form">
         <!-- Nome do Produto -->
         <div class="form-group">
-          <label for="new-product-name" class="form-label">Nome do Produto</label>
-          <input type="text" id="new-product-name" class="form-input" placeholder="Ex: Papel Toalha Jumbo (2 rolos)" required>
+          <label for="new-product-name" class="form-label" data-i18n="modalAddProduct.nameLabel">Nombre del Producto</label>
+          <input type="text" id="new-product-name" class="form-input" placeholder="Ej: Papel de Cocina Jumbo (2 rollos)" data-i18n-placeholder="modalAddProduct.namePlaceholder" required>
         </div>
 
         <!-- Marca e Categoria (Grid) -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
-            <label for="new-product-brand" class="form-label">Marca</label>
-            <input type="text" id="new-product-brand" class="form-input" placeholder="Ex: Bosque Verde">
+            <label for="new-product-brand" class="form-label" data-i18n="modalAddProduct.brandLabel">Marca</label>
+            <input type="text" id="new-product-brand" class="form-input" placeholder="Ej: Bosque Verde" data-i18n-placeholder="modalAddProduct.brandPlaceholder">
           </div>
 
           <div class="form-group">
-            <label for="new-product-category" class="form-label">Categoria</label>
+            <label for="new-product-category" class="form-label" data-i18n="modalAddProduct.catLabel">Categoría</label>
             <select id="new-product-category" class="form-input" required>
-              <option value="limpeza">Limpeza</option>
-              <option value="amenities">Amenities</option>
-              <option value="comida">Alimentos & Bebidas</option>
+              <option value="limpeza" data-i18n="modalAddProduct.catLimpeza">Limpieza</option>
+              <option value="amenities" data-i18n="modalAddProduct.catAmenities">Amenities</option>
+              <option value="comida" data-i18n="modalAddProduct.catComida">Alimentos y Bebidas</option>
             </select>
           </div>
         </div>
 
         <!-- Imóvel Destino (Linha Inteira - sem comprimir outros campos) -->
         <div class="form-group">
-          <label for="new-product-property" class="form-label">Cadastrar no Imóvel</label>
+          <label for="new-product-property" class="form-label" data-i18n="modalAddProduct.propLabel">Registrar en el Inmueble</label>
           <select id="new-product-property" class="form-input" required>
-            <option value="CURRENT">Imóvel Atual</option>
-            <option value="ALL">Todos os Imóveis (JB, VN, HN)</option>
-            <option value="JB">Apenas JB</option>
-            <option value="VN">Apenas VN</option>
-            <option value="HN">Apenas HN</option>
+            <option value="CURRENT" data-i18n="modalAddProduct.propCurrent">Inmueble Actual</option>
+            <option value="ALL" data-i18n="modalAddProduct.propAll">Todos los Inmuebles (JB, VN, HN)</option>
+            <option value="JB" data-i18n="modalAddProduct.propJB">Solo JB</option>
+            <option value="VN" data-i18n="modalAddProduct.propVN">Solo VN</option>
+            <option value="HN" data-i18n="modalAddProduct.propHN">Solo HN</option>
           </select>
         </div>
 
         <!-- Unidade e Quantidade Inicial (Grid Equilibrado) -->
         <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
           <div class="form-group" style="min-width: 0;">
-            <label for="new-product-unit" class="form-label">Unidade</label>
-            <input type="text" id="new-product-unit" class="form-input" placeholder="Ex: un, pct, frasco...">
+            <label for="new-product-unit" class="form-label" data-i18n="modalAddProduct.unitLabel">Unidad</label>
+            <input type="text" id="new-product-unit" class="form-input" placeholder="Ej: un, paq, bote..." data-i18n-placeholder="modalAddProduct.unitPlaceholder">
           </div>
 
           <div class="form-group" style="min-width: 0;">
-            <label for="new-product-quantity" class="form-label">Qtd Inicial</label>
-            <input type="number" id="new-product-quantity" class="form-input" min="0" step="1" placeholder="Ex: 2">
+            <label for="new-product-quantity" class="form-label" data-i18n="modalAddProduct.qtyLabel">Cant. Inicial</label>
+            <input type="number" id="new-product-quantity" class="form-input" min="0" step="1" placeholder="Ej: 2">
           </div>
         </div>
 
@@ -901,20 +959,20 @@
         <!-- Regras do Semáforo no Estoque -->
         <div class="form-group" style="background: rgba(15, 39, 68, 0.035); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px;">
           <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-            <span>Regras do Semáforo</span>
-            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">Quantidades para mudar cor</span>
+            <span data-i18n="modalAddProduct.rulesTitle">Reglas del Semáforo</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;" data-i18n="modalAddProduct.rulesSub">Cantidades para cambiar de color</span>
           </label>
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
             <div style="text-align: center;">
-              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #DC2626; margin-bottom: 4px;">🔴 Falta (até)</span>
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #DC2626; margin-bottom: 4px;" data-i18n="modalAddProduct.faltaLabel">🔴 Falta (hasta)</span>
               <input type="number" id="new-product-falta" class="form-input" min="0" placeholder="Ex: 0" style="text-align: center; font-weight: 700;">
             </div>
             <div style="text-align: center;">
-              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #D97706; margin-bottom: 4px;">🟡 Atenção (até)</span>
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #D97706; margin-bottom: 4px;" data-i18n="modalAddProduct.atencaoLabel">🟡 Atención (hasta)</span>
               <input type="number" id="new-product-atencao" class="form-input" min="0" placeholder="Ex: 1" style="text-align: center; font-weight: 700;">
             </div>
             <div style="text-align: center;">
-              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #16A34A; margin-bottom: 4px;">🟢 Suficiente (≥)</span>
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #16A34A; margin-bottom: 4px;" data-i18n="modalAddProduct.suficienteLabel">🟢 Suficiente (≥)</span>
               <input type="number" id="new-product-suficiente" class="form-input" min="0" placeholder="Ex: 2" style="text-align: center; font-weight: 700;">
             </div>
           </div>
@@ -922,7 +980,7 @@
 
         <!-- Foto do Produto (Upload ou Câmera) -->
         <div class="form-group">
-          <label class="form-label">Foto do Produto (Opcional)</label>
+          <label class="form-label" data-i18n="modalAddProduct.photoLabel">Foto del Producto (Opcional)</label>
           <div class="receipt-upload-box" id="new-product-photo-box">
             <div style="display: flex; justify-content: center; margin-bottom: 4px; color: var(--text-muted);">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -931,7 +989,7 @@
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
               </svg>
             </div>
-            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;">Tirar Foto ou Escolher Imagem</p>
+            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;" data-i18n="modalAddProduct.photoUpload">Tomar Foto o Elegir Imagen</p>
             <input type="file" id="new-product-photo-file" accept="image/*" style="display: none;">
             <img id="new-product-photo-preview" class="receipt-preview-img" style="display: none;" alt="Preview Foto">
           </div>
@@ -939,12 +997,12 @@
 
         <!-- Anotação Inicial Opcional -->
         <div class="form-group">
-          <label for="new-product-note" class="form-label">Nota Operacional Inicial (Opcional)</label>
-          <input type="text" id="new-product-note" class="form-input" placeholder="Ex: Local onde fica guardado, aviso...">
+          <label for="new-product-note" class="form-label" data-i18n="modalAddProduct.noteLabel">Nota Operativa Inicial (Opcional)</label>
+          <input type="text" id="new-product-note" class="form-input" placeholder="Ej: Lugar donde se guarda, aviso..." data-i18n-placeholder="modalAddProduct.notePlaceholder">
         </div>
 
         <button type="submit" class="btn-submit-primary">
-          <span>Cadastrar Produto no Estoque</span>
+          <span data-i18n="modalAddProduct.btnSubmit">Registrar Producto en el Stock</span>
         </button>
       </form>
     </div>
@@ -958,7 +1016,7 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title">Editar Produto</h3>
+        <h3 class="sheet-title" data-i18n="modalEditProduct.title">Editar Producto</h3>
         <button class="sheet-close-btn" id="btn-close-edit-product-modal" type="button">✕</button>
       </div>
 
@@ -967,50 +1025,50 @@
 
         <!-- Nome do Produto -->
         <div class="form-group">
-          <label for="edit-product-name" class="form-label">Nome do Produto</label>
-          <input type="text" id="edit-product-name" class="form-input" placeholder="Ex: Amaciante Concentrado Violets" required>
+          <label for="edit-product-name" class="form-label" data-i18n="modalAddProduct.nameLabel">Nombre del Producto</label>
+          <input type="text" id="edit-product-name" class="form-input" placeholder="Ej: Suavizante Concentrado Violets" data-i18n-placeholder="modalAddProduct.namePlaceholder" required>
         </div>
 
         <!-- Marca e Categoria (Grid) -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
-            <label for="edit-product-brand" class="form-label">Marca</label>
-            <input type="text" id="edit-product-brand" class="form-input" placeholder="Ex: Bosque Verde">
+            <label for="edit-product-brand" class="form-label" data-i18n="modalAddProduct.brandLabel">Marca</label>
+            <input type="text" id="edit-product-brand" class="form-input" placeholder="Ej: Bosque Verde" data-i18n-placeholder="modalAddProduct.brandPlaceholder">
           </div>
 
           <div class="form-group">
-            <label for="edit-product-category" class="form-label">Categoria</label>
+            <label for="edit-product-category" class="form-label" data-i18n="modalAddProduct.catLabel">Categoría</label>
             <select id="edit-product-category" class="form-input" required>
-              <option value="limpeza">Limpeza</option>
-              <option value="amenities">Amenities</option>
-              <option value="comida">Alimentos & Bebidas</option>
+              <option value="limpeza" data-i18n="modalAddProduct.catLimpeza">Limpieza</option>
+              <option value="amenities" data-i18n="modalAddProduct.catAmenities">Amenities</option>
+              <option value="comida" data-i18n="modalAddProduct.catComida">Alimentos y Bebidas</option>
             </select>
           </div>
         </div>
 
         <!-- Unidade de Medida -->
         <div class="form-group">
-          <label for="edit-product-unit" class="form-label">Unidade</label>
-          <input type="text" id="edit-product-unit" class="form-input" placeholder="un, frasco, pct, cx..." value="un" required>
+          <label for="edit-product-unit" class="form-label" data-i18n="modalAddProduct.unitLabel">Unidad</label>
+          <input type="text" id="edit-product-unit" class="form-input" placeholder="un, bote, paq, caja..." data-i18n-placeholder="modalAddProduct.unitPlaceholder" value="un" required>
         </div>
 
         <!-- Regras do Semáforo no Estoque -->
         <div class="form-group" style="background: rgba(15, 39, 68, 0.035); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px;">
           <label class="form-label" style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-            <span>Regras do Semáforo</span>
-            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">Quantidades para mudar cor</span>
+            <span data-i18n="modalAddProduct.rulesTitle">Reglas del Semáforo</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;" data-i18n="modalAddProduct.rulesSub">Cantidades para cambiar de color</span>
           </label>
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
             <div style="text-align: center;">
-              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #DC2626; margin-bottom: 4px;">🔴 Falta (até)</span>
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #DC2626; margin-bottom: 4px;" data-i18n="modalAddProduct.faltaLabel">🔴 Falta (hasta)</span>
               <input type="number" id="edit-product-falta" class="form-input" min="0" placeholder="Ex: 0" style="text-align: center; font-weight: 700;">
             </div>
             <div style="text-align: center;">
-              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #D97706; margin-bottom: 4px;">🟡 Atenção (até)</span>
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #D97706; margin-bottom: 4px;" data-i18n="modalAddProduct.atencaoLabel">🟡 Atención (hasta)</span>
               <input type="number" id="edit-product-atencao" class="form-input" min="0" placeholder="Ex: 1" style="text-align: center; font-weight: 700;">
             </div>
             <div style="text-align: center;">
-              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #16A34A; margin-bottom: 4px;">🟢 Suficiente (≥)</span>
+              <span style="display: block; font-size: 0.70rem; font-weight: 700; color: #16A34A; margin-bottom: 4px;" data-i18n="modalAddProduct.suficienteLabel">🟢 Suficiente (≥)</span>
               <input type="number" id="edit-product-suficiente" class="form-input" min="0" placeholder="Ex: 2" style="text-align: center; font-weight: 700;">
             </div>
           </div>
@@ -1018,7 +1076,7 @@
 
         <!-- Foto do Produto (Upload ou Câmera) -->
         <div class="form-group">
-          <label class="form-label">Foto do Produto</label>
+          <label class="form-label" data-i18n="modalEditProduct.photoLabel">Foto del Producto</label>
           <div class="receipt-upload-box" id="edit-product-photo-box">
             <div style="display: flex; justify-content: center; margin-bottom: 4px; color: var(--text-muted);">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1027,14 +1085,14 @@
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
               </svg>
             </div>
-            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;">Alterar Foto do Produto</p>
+            <p style="font-size: 0.78rem; font-weight: 600; margin-top: 4px;" data-i18n="modalEditProduct.photoChange">Cambiar Foto del Producto</p>
             <input type="file" id="edit-product-photo-file" accept="image/*" style="display: none;">
             <img id="edit-product-photo-preview" class="receipt-preview-img" style="display: none;" alt="Preview Foto">
           </div>
         </div>
 
         <button type="submit" class="btn-submit-primary">
-          <span>Salvar Alterações do Produto</span>
+          <span data-i18n="modalEditProduct.btnSubmit">Guardar Cambios del Producto</span>
         </button>
       </form>
     </div>
@@ -1049,9 +1107,9 @@
 
       <div class="sheet-header">
         <div>
-          <h3 class="sheet-title">Regras do Semáforo</h3>
-          <p id="thresholds-product-subtitle" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
-            Defina as quantidades para cada status
+          <h3 class="sheet-title" data-i18n="modalThresholds.title">Reglas del Semáforo</h3>
+          <p id="thresholds-product-subtitle" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;" data-i18n="modalThresholds.sub">
+            Define las cantidades para cada estado
           </p>
         </div>
         <button class="sheet-close-btn" id="btn-close-thresholds-modal" type="button">✕</button>
@@ -1064,8 +1122,8 @@
         <div style="display: flex; align-items: center; gap: 12px; background: rgba(11, 13, 17, 0.035); padding: 10px 12px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid var(--border-light);">
           <img id="thresholds-product-img" src="" style="width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: #fff; border: 1px solid var(--border-subtle);" alt="">
           <div style="flex: 1; min-width: 0;">
-            <h4 id="thresholds-product-name" style="font-size: 0.86rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Produto</h4>
-            <span id="thresholds-current-qty-badge" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Estoque Atual: 0</span>
+            <h4 id="thresholds-product-name" style="font-size: 0.86rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Producto</h4>
+            <span id="thresholds-current-qty-badge" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Stock Actual: 0</span>
           </div>
         </div>
 
@@ -1074,15 +1132,15 @@
           <!-- Falta -->
           <div style="background: rgba(239, 68, 68, 0.06); border: 1.5px solid rgba(239, 68, 68, 0.25); border-radius: 14px; padding: 10px; text-align: center;">
             <span style="font-size: 0.70rem; font-weight: 800; color: #DC2626; display: block; margin-bottom: 4px;">🔴 FALTA</span>
-            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Até</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Hasta</span>
             <input type="number" id="threshold-input-falta" class="form-input" min="0" step="1" placeholder="Ex: 0" style="text-align: center; font-weight: 800; font-size: 1.15rem; padding: 8px 4px;">
             <span style="font-size: 0.62rem; color: var(--text-muted); display: block; margin-top: 4px;">unidades</span>
           </div>
 
           <!-- Atenção -->
           <div style="background: rgba(245, 158, 11, 0.08); border: 1.5px solid rgba(245, 158, 11, 0.28); border-radius: 14px; padding: 10px; text-align: center;">
-            <span style="font-size: 0.70rem; font-weight: 800; color: #D97706; display: block; margin-bottom: 4px;">🟡 ATENÇÃO</span>
-            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Até</span>
+            <span style="font-size: 0.70rem; font-weight: 800; color: #D97706; display: block; margin-bottom: 4px;">🟡 ATENCIÓN</span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Hasta</span>
             <input type="number" id="threshold-input-atencao" class="form-input" min="0" step="1" placeholder="Ex: 1" style="text-align: center; font-weight: 800; font-size: 1.15rem; padding: 8px 4px;">
             <span style="font-size: 0.62rem; color: var(--text-muted); display: block; margin-top: 4px;">unidades</span>
           </div>
@@ -1099,12 +1157,12 @@
         <div style="margin-bottom: 14px; padding: 10px 12px; background: rgba(15, 39, 68, 0.035); border-radius: 10px; border: 1px solid var(--border-light);">
           <label style="display: flex; align-items: center; gap: 8px; font-size: 0.76rem; color: var(--text-main); cursor: pointer;">
             <input type="checkbox" id="thresholds-apply-all" checked style="width: 16px; height: 16px; accent-color: var(--primary-dark);">
-            <span>Aplicar estas regras para <strong>todos os imóveis</strong> (JB, VN, HN)</span>
+            <span data-i18n="modalThresholds.applyAll">Aplicar estas reglas a <strong>todos los inmuebles</strong> (JB, VN, HN)</span>
           </label>
         </div>
 
         <button type="submit" class="btn-submit-primary">
-          <span>Salvar Regras de Quantidade</span>
+          <span data-i18n="modalThresholds.btnSubmit">Guardar Reglas de Cantidad</span>
         </button>
       </form>
     </div>
@@ -1119,26 +1177,26 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title">Nova Colaboradora</h3>
+        <h3 class="sheet-title" data-i18n="modalStaff.titleNew">Nueva Colaboradora</h3>
         <button class="sheet-close-btn" id="btn-close-staff-form" type="button">✕</button>
       </div>
 
       <form id="new-staff-form" class="purchase-form">
         <div class="form-group">
-          <label for="new-staff-name" class="form-label">Nome da Colaboradora</label>
-          <input type="text" id="new-staff-name" class="form-input" placeholder="Ex: Ana Silva" required>
+          <label for="new-staff-name" class="form-label" data-i18n="modalStaff.nameLabel">Nombre de la Colaboradora</label>
+          <input type="text" id="new-staff-name" class="form-input" placeholder="Ej: Ana Silva" data-i18n-placeholder="modalStaff.namePlaceholder" required>
         </div>
 
         <div class="form-group">
-          <label for="new-staff-email" class="form-label">E-mail Google da Colaboradora</label>
-          <input type="email" id="new-staff-email" class="form-input" placeholder="exemplo@gmail.com" required autocomplete="email">
-          <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;">
-            A colaboradora usará este e-mail para fazer login seguro com o Google.
+          <label for="new-staff-email" class="form-label" data-i18n="modalStaff.emailLabel">Correo Google de la Colaboradora</label>
+          <input type="email" id="new-staff-email" class="form-input" placeholder="ejemplo@gmail.com" required autocomplete="email">
+          <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;" data-i18n="modalStaff.emailHint">
+            La colaboradora usará este correo para iniciar sesión segura con Google.
           </small>
         </div>
 
-        <button type="submit" class="btn-submit-primary">
-          Salvar e Autorizar Acesso
+        <button type="submit" class="btn-submit-primary" data-i18n="modalStaff.btnSubmitNew">
+          Guardar y Autorizar Acceso
         </button>
       </form>
     </div>
@@ -1152,7 +1210,7 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title">Editar Colaboradora</h3>
+        <h3 class="sheet-title" data-i18n="modalStaff.titleEdit">Editar Colaboradora</h3>
         <button class="sheet-close-btn" id="btn-close-edit-staff-form" type="button">✕</button>
       </div>
 
@@ -1160,24 +1218,24 @@
         <input type="hidden" id="edit-staff-id">
 
         <div class="form-group">
-          <label for="edit-staff-name" class="form-label">Nome da Colaboradora</label>
-          <input type="text" id="edit-staff-name" class="form-input" placeholder="Ex: Ana Silva" required>
+          <label for="edit-staff-name" class="form-label" data-i18n="modalStaff.nameLabel">Nombre de la Colaboradora</label>
+          <input type="text" id="edit-staff-name" class="form-input" placeholder="Ej: Ana Silva" data-i18n-placeholder="modalStaff.namePlaceholder" required>
         </div>
 
         <div class="form-group">
-          <label for="edit-staff-email" class="form-label">E-mail Google da Colaboradora</label>
-          <input type="email" id="edit-staff-email" class="form-input" placeholder="exemplo@gmail.com" required autocomplete="email">
-          <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;">
-            Este e-mail é utilizado para liberação de acesso seguro com o Google.
+          <label for="edit-staff-email" class="form-label" data-i18n="modalStaff.emailLabel">Correo Google de la Colaboradora</label>
+          <input type="email" id="edit-staff-email" class="form-input" placeholder="ejemplo@gmail.com" required autocomplete="email">
+          <small style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;" data-i18n="modalStaff.emailHint">
+            Este correo se utiliza para la autorización de acceso seguro con Google.
           </small>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Status de Acesso ao Sistema</label>
+          <label class="form-label" data-i18n="modalStaff.statusLabel">Estado de Acceso al Sistema</label>
           <div class="edit-staff-status-toggle-row">
             <div>
-              <div id="edit-staff-status-label" style="font-size: 0.84rem; font-weight: 700; color: #15803D;">Acesso Ativo</div>
-              <small style="font-size: 0.70rem; color: var(--text-muted);">Quando suspenso, o acesso ao app é bloqueado.</small>
+              <div id="edit-staff-status-label" style="font-size: 0.84rem; font-weight: 700; color: #15803D;" data-i18n="modalStaff.statusActive">Acceso Activo</div>
+              <small style="font-size: 0.70rem; color: var(--text-muted);" data-i18n="modalStaff.statusHint">Cuando está suspendido, el acceso a la app queda bloqueado.</small>
             </div>
             <label class="toggle-switch" style="margin: 0;">
               <input type="checkbox" id="edit-staff-active-toggle" checked>
@@ -1187,8 +1245,8 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
-          <button type="submit" class="btn-submit-primary">
-            Salvar Alterações
+          <button type="submit" class="btn-submit-primary" data-i18n="modalStaff.btnSubmitEdit">
+            Guardar Cambios
           </button>
 
           <button type="button" id="btn-delete-staff-modal" class="btn-delete-staff-full">
@@ -1196,7 +1254,7 @@
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            <span>Excluir Colaboradora</span>
+            <span data-i18n="modalStaff.btnDelete">Eliminar Colaboradora</span>
           </button>
         </div>
       </form>
@@ -1212,13 +1270,13 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title">Agendar Escala ou Limpeza</h3>
+        <h3 class="sheet-title" data-i18n="modalEvent.title">Programar Turno o Limpieza</h3>
         <button class="sheet-close-btn" id="btn-close-event-modal" type="button">✕</button>
       </div>
 
       <form id="new-event-form" class="purchase-form">
         <div class="form-group">
-          <label for="event-property-select" class="form-label">Imóvel</label>
+          <label for="event-property-select" class="form-label" data-i18n="modalEvent.propertyLabel">Inmueble</label>
           <select id="event-property-select" class="form-input" required>
             <option value="JB">JB</option>
             <option value="VN">VN</option>
@@ -1227,36 +1285,36 @@
         </div>
 
         <div class="form-group">
-          <label for="event-title-input" class="form-label">Título da Atividade</label>
-          <input type="text" id="event-title-input" class="form-input" placeholder="Ex: Faxina Pós Check-out Família Rossi" required>
+          <label for="event-title-input" class="form-label" data-i18n="modalEvent.titleLabel">Título de la Actividad</label>
+          <input type="text" id="event-title-input" class="form-input" placeholder="Ej: Limpieza Post Check-out Familia Rossi" data-i18n-placeholder="modalEvent.titlePlaceholder" required>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
-            <label for="event-date-input" class="form-label">Data</label>
+            <label for="event-date-input" class="form-label" data-i18n="modalEvent.dateLabel">Fecha</label>
             <input type="date" id="event-date-input" class="form-input" required>
           </div>
 
           <div class="form-group">
-            <label for="event-time-input" class="form-label">Horário de Início</label>
+            <label for="event-time-input" class="form-label" data-i18n="modalEvent.timeLabel">Hora de Inicio</label>
             <input type="time" id="event-time-input" class="form-input" value="11:00" required>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div class="form-group">
-            <label for="event-type-select" class="form-label">Tipo de Tarefa</label>
+            <label for="event-type-select" class="form-label" data-i18n="modalEvent.typeLabel">Tipo de Tarea</label>
             <select id="event-type-select" class="form-input" required>
-              <option value="limpeza">Limpeza</option>
-              <option value="checking">Checking</option>
-              <option value="checkout">Checkout</option>
-              <option value="manutencao">Manutenção</option>
-              <option value="compras">Compras</option>
+              <option value="limpeza" data-i18n="calendar.typeLimpeza">Limpieza</option>
+              <option value="checking" data-i18n="calendar.typeChecking">Check-in</option>
+              <option value="checkout" data-i18n="calendar.typeCheckout">Check-out</option>
+              <option value="manutencao" data-i18n="calendar.typeManutencao">Mantenimiento</option>
+              <option value="compras" data-i18n="calendar.typeCompras">Compras</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label for="event-staff-select" class="form-label">Responsável Designada</label>
+            <label for="event-staff-select" class="form-label" data-i18n="modalEvent.staffLabel">Responsable Asignada</label>
             <select id="event-staff-select" class="form-input" required>
               <!-- Preenchido via JS com colaboradoras -->
             </select>
@@ -1264,12 +1322,12 @@
         </div>
 
         <div class="form-group">
-          <label for="event-notes-input" class="form-label">Orientações Especiais</label>
-          <input type="text" id="event-notes-input" class="form-input" placeholder="Ex: Troca de enxoval e deixar chave na caixa secreta">
+          <label for="event-notes-input" class="form-label" data-i18n="modalEvent.notesLabel">Indicaciones Especiales</label>
+          <input type="text" id="event-notes-input" class="form-input" placeholder="Ej: Cambio de sábanas y dejar llave en cajetín" data-i18n-placeholder="modalEvent.notesPlaceholder">
         </div>
 
-        <button type="submit" class="btn-submit-primary">
-          Confirmar Agendamento
+        <button type="submit" class="btn-submit-primary" data-i18n="modalEvent.btnSubmit">
+          Confirmar Programación
         </button>
       </form>
     </div>
@@ -1284,7 +1342,7 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title" id="timesheet-modal-title">Registrar Horas do Dia</h3>
+        <h3 class="sheet-title" id="timesheet-modal-title" data-i18n="modalTs.title">Registrar Horas del Día</h3>
         <button class="sheet-close-btn" id="btn-close-timesheet-modal" type="button">✕</button>
       </div>
 
@@ -1292,72 +1350,72 @@
         <input type="hidden" id="timesheet-edit-id" value="">
 
         <div class="form-group">
-          <label for="timesheet-date-input" class="form-label">Dia trabalhado</label>
+          <label for="timesheet-date-input" class="form-label" data-i18n="modalTs.dateLabel">Día trabajado</label>
           <input type="date" id="timesheet-date-input" class="form-input" required>
         </div>
 
-        <span class="form-label">Horários</span>
+        <span class="form-label" data-i18n="modalTs.timesLabel">Horarios</span>
         <div class="ts-field-list">
           <button type="button" class="ts-time-field" data-field="start" id="ts-field-start">
             <span class="ts-field-dot ts-dot-start"></span>
             <span class="ts-field-text">
-              <span class="ts-field-label">Início do trabalho</span>
-              <span class="ts-field-hint">Obrigatório</span>
+              <span class="ts-field-label" data-i18n="modalTs.startLabel">Inicio de la jornada</span>
+              <span class="ts-field-hint" data-i18n="modalTs.startHint">Obligatorio</span>
             </span>
             <span class="ts-field-value">--:--</span>
           </button>
           <button type="button" class="ts-time-field" data-field="breakStart" id="ts-field-breakStart">
             <span class="ts-field-dot ts-dot-break"></span>
             <span class="ts-field-text">
-              <span class="ts-field-label">Início da pausa</span>
-              <span class="ts-field-hint">Opcional</span>
+              <span class="ts-field-label" data-i18n="modalTs.breakStartLabel">Inicio de la pausa</span>
+              <span class="ts-field-hint" data-i18n="modalTs.breakStartHint">Opcional</span>
             </span>
             <span class="ts-field-value">--:--</span>
           </button>
           <button type="button" class="ts-time-field" data-field="breakEnd" id="ts-field-breakEnd">
             <span class="ts-field-dot ts-dot-break"></span>
             <span class="ts-field-text">
-              <span class="ts-field-label">Fim da pausa</span>
-              <span class="ts-field-hint">Opcional</span>
+              <span class="ts-field-label" data-i18n="modalTs.breakEndLabel">Fin de la pausa</span>
+              <span class="ts-field-hint" data-i18n="modalTs.breakEndHint">Opcional</span>
             </span>
             <span class="ts-field-value">--:--</span>
           </button>
           <button type="button" class="ts-time-field" data-field="end" id="ts-field-end">
             <span class="ts-field-dot ts-dot-end"></span>
             <span class="ts-field-text">
-              <span class="ts-field-label">Fim do trabalho</span>
-              <span class="ts-field-hint">Pode preencher depois</span>
+              <span class="ts-field-label" data-i18n="modalTs.endLabel">Fin de la jornada</span>
+              <span class="ts-field-hint" data-i18n="modalTs.endHint">Se puede completar después</span>
             </span>
             <span class="ts-field-value">--:--</span>
           </button>
         </div>
 
         <div class="ts-total-preview">
-          <span>Total trabalhado</span>
+          <span data-i18n="modalTs.totalWorked">Total trabajado</span>
           <strong id="timesheet-total-preview">--</strong>
         </div>
 
         <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
-          <label class="form-label">Status de Pagamento das Horas</label>
+          <label class="form-label" data-i18n="modalTs.paymentStatus">Estado de Pago de las Horas</label>
           <div class="ts-payment-toggle-wrap">
             <button type="button" class="ts-payment-opt-btn active opt-unpaid" id="ts-modal-btn-unpaid" data-status="unpaid">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>Não Pagas</span>
+              <span data-i18n="modalTs.unpaid">No Pagadas</span>
             </button>
             <button type="button" class="ts-payment-opt-btn opt-paid" id="ts-modal-btn-paid" data-status="paid">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Horas Pagas</span>
+              <span data-i18n="modalTs.paid">Horas Pagadas</span>
             </button>
           </div>
           <input type="hidden" id="timesheet-is-paid-input" value="false">
         </div>
 
-        <button type="submit" class="btn-submit-primary">Salvar Registro</button>
-        <button type="button" id="btn-delete-timesheet" class="ts-delete-btn" style="display: none;">Excluir este registro</button>
+        <button type="submit" class="btn-submit-primary" data-i18n="modalTs.btnSubmit">Guardar Registro</button>
+        <button type="button" id="btn-delete-timesheet" class="ts-delete-btn" style="display: none;" data-i18n="modalTs.btnDelete">Eliminar este registro</button>
       </form>
     </div>
   </div>
@@ -1370,7 +1428,7 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-header">
-        <h3 class="sheet-title" id="time-picker-title">Início do trabalho</h3>
+        <h3 class="sheet-title" id="time-picker-title" data-i18n="modalTimePicker.title">Seleccionar Horario</h3>
         <button class="sheet-close-btn" id="btn-close-time-picker" type="button">✕</button>
       </div>
 
@@ -1379,22 +1437,22 @@
       <div class="time-wheel-wrap">
         <div class="time-wheel-highlight"></div>
         <div class="time-wheel-col">
-          <span class="time-wheel-caption">Hora</span>
+          <span class="time-wheel-caption" data-i18n="modalTimePicker.hour">Hora</span>
           <div class="time-wheel" id="time-wheel-hours" aria-label="Horas"></div>
         </div>
         <span class="time-wheel-sep">:</span>
         <div class="time-wheel-col">
-          <span class="time-wheel-caption">Min</span>
+          <span class="time-wheel-caption" data-i18n="modalTimePicker.min">Min</span>
           <div class="time-wheel" id="time-wheel-minutes" aria-label="Minutos"></div>
         </div>
       </div>
 
       <div class="time-picker-chips">
-        <button type="button" class="time-chip" id="btn-time-now">Agora</button>
-        <button type="button" class="time-chip time-chip-muted" id="btn-time-clear">Limpar horário</button>
+        <button type="button" class="time-chip" id="btn-time-now" data-i18n="modalTimePicker.now">Ahora</button>
+        <button type="button" class="time-chip time-chip-muted" id="btn-time-clear" data-i18n="modalTimePicker.clear">Borrar horario</button>
       </div>
 
-      <button type="button" class="btn-submit-primary" id="btn-time-confirm">Confirmar Horário</button>
+      <button type="button" class="btn-submit-primary" id="btn-time-confirm" data-i18n="modalTimePicker.confirm">Confirmar Horario</button>
     </div>
   </div>
 
@@ -1411,7 +1469,7 @@
           <div class="ts-user-avatar" id="mgr-ts-modal-avatar">MA</div>
           <div>
             <h3 class="sheet-title" id="mgr-ts-modal-title" style="margin: 0; line-height: 1.2;">Maria</h3>
-            <span class="mgr-ts-subtitle" id="mgr-ts-modal-subtitle">Toque no dia para consultar</span>
+            <span class="mgr-ts-subtitle" id="mgr-ts-modal-subtitle" data-i18n="modalMgrTs.subtitle">Toca en el día para consultar</span>
           </div>
         </div>
         <button class="sheet-close-btn" id="btn-close-mgr-ts-modal" type="button">✕</button>
@@ -1429,7 +1487,7 @@
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
             </button>
-            <span class="mgr-ts-cal-month-title" id="mgr-ts-cal-month-title">Outubro 2026</span>
+            <span class="mgr-ts-cal-month-title" id="mgr-ts-cal-month-title">Octubre 2026</span>
             <button type="button" class="mgr-ts-cal-arrow-btn" id="btn-mgr-ts-cal-next" aria-label="Próximo Mês">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -1438,7 +1496,7 @@
           </div>
 
           <div class="mgr-ts-cal-weekdays">
-            <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+            <span>D</span><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span>
           </div>
 
           <div class="mgr-ts-cal-grid" id="mgr-ts-cal-grid">
@@ -1446,8 +1504,8 @@
           </div>
 
           <div class="mgr-ts-cal-quick-actions">
-            <button type="button" class="mgr-ts-cal-quick-btn" data-action="today">Hoje</button>
-            <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday">Ontem</button>
+            <button type="button" class="mgr-ts-cal-quick-btn" data-action="today" data-i18n="modalMgrTs.today">Hoy</button>
+            <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday" data-i18n="modalMgrTs.yesterday">Ayer</button>
           </div>
         </div>
       </div>
@@ -1460,7 +1518,7 @@
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            <span>Trocar data</span>
+            <span data-i18n="modalMgrTs.changeDate">Cambiar fecha</span>
           </button>
           <span class="mgr-ts-active-date-badge" id="mgr-ts-active-date-txt">12/10/2026</span>
         </div>
@@ -1480,7 +1538,7 @@
       <div class="sheet-handle"></div>
       <div class="sheet-header">
         <button class="sheet-close-btn" id="btn-close-edit-profile-modal" type="button" title="Fechar">✕</button>
-        <h3 class="sheet-title">Editar Meu Perfil</h3>
+        <h3 class="sheet-title" data-i18n="modalProfile.title">Editar Mi Perfil</h3>
       </div>
       <form id="edit-profile-form" class="sheet-form">
         <div class="profile-photo-picker-wrap">
@@ -1503,25 +1561,25 @@
           <div class="profile-photo-actions-row">
             <button type="button" class="btn-choose-profile-photo" id="btn-choose-profile-photo">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              <span>Escolher Foto</span>
+              <span data-i18n="modalProfile.choosePhoto">Elegir Foto</span>
             </button>
-            <button type="button" class="btn-remove-profile-photo" id="btn-remove-profile-photo" style="display: none;">
-              Remover Foto
+            <button type="button" class="btn-remove-profile-photo" id="btn-remove-profile-photo" style="display: none;" data-i18n="modalProfile.removePhoto">
+              Eliminar Foto
             </button>
           </div>
-          <small style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; text-align: center;">
-            Sua foto aparecerá nos seus recados, registros de horas e compras.
+          <small style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; text-align: center;" data-i18n="modalProfile.photoHint">
+            Tu foto aparecerá en tus notas, registros de horas y compras.
           </small>
         </div>
 
         <div class="form-group" style="margin-top: 14px;">
-          <label for="edit-profile-name" class="form-label">Nome Completo</label>
-          <input type="text" id="edit-profile-name" class="form-input" placeholder="Seu nome" required maxlength="40">
+          <label for="edit-profile-name" class="form-label" data-i18n="modalProfile.nameLabel">Nombre Completo</label>
+          <input type="text" id="edit-profile-name" class="form-input" placeholder="Tu nombre" data-i18n-placeholder="modalProfile.namePlaceholder" required maxlength="40">
         </div>
 
         <div class="modal-form-actions" style="margin-top: 18px;">
-          <button type="button" class="modal-btn-cancel" id="btn-cancel-edit-profile">Cancelar</button>
-          <button type="submit" class="modal-btn-save">Salvar Alterações</button>
+          <button type="button" class="modal-btn-cancel" id="btn-cancel-edit-profile" data-i18n="modalProfile.btnCancel">Cancelar</button>
+          <button type="submit" class="modal-btn-save" data-i18n="modalProfile.btnSave">Guardar Cambios</button>
         </div>
       </form>
     </div>
@@ -1534,13 +1592,13 @@
     <div class="bottom-sheet confirm-dialog-sheet">
       <div class="sheet-handle"></div>
       <div id="confirm-dialog-icon-wrap"></div>
-      <h3 class="confirm-dialog-title" id="confirm-dialog-title">Confirmar Ação</h3>
+      <h3 class="confirm-dialog-title" id="confirm-dialog-title" data-i18n="dialog.confirmTitle">Confirmar Acción</h3>
       <p class="confirm-dialog-desc" id="confirm-dialog-message"></p>
       <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button type="button" class="confirm-dialog-btn-confirm" id="btn-confirm-dialog-ok">
+        <button type="button" class="confirm-dialog-btn-confirm" id="btn-confirm-dialog-ok" data-i18n="dialog.confirmBtn">
           Confirmar
         </button>
-        <button type="button" class="confirm-dialog-btn-cancel" id="btn-confirm-dialog-cancel">
+        <button type="button" class="confirm-dialog-btn-cancel" id="btn-confirm-dialog-cancel" data-i18n="dialog.cancelBtn">
           Cancelar
         </button>
       </div>
@@ -1563,11 +1621,11 @@
           <input type="text" id="prompt-dialog-input" class="form-input" style="font-size: 1.05rem; font-weight: 700; text-align: center; letter-spacing: 0.1em;" required>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
-          <button type="button" class="confirm-dialog-btn-cancel" id="btn-prompt-dialog-cancel">
+          <button type="button" class="confirm-dialog-btn-cancel" id="btn-prompt-dialog-cancel" data-i18n="dialog.cancelBtn">
             Cancelar
           </button>
-          <button type="submit" class="confirm-dialog-btn-confirm" id="btn-prompt-dialog-ok" style="margin-bottom: 0; background: var(--accent-navy);">
-            Salvar
+          <button type="submit" class="confirm-dialog-btn-confirm" id="btn-prompt-dialog-ok" style="margin-bottom: 0; background: var(--accent-navy);" data-i18n="dialog.saveBtn">
+            Guardar
           </button>
         </div>
       </form>
@@ -1584,6 +1642,6 @@
   <script src="cloud-sync.js?v=83"></script>
   <script src="touch-scroll.js?v=83"></script>
   <script src="initialData.js?v=83"></script>
-  <script src="app.js?v=83"></script>
+  <script src="app.js?v=85"></script>
 </body>
 </html>

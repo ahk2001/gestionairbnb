@@ -106,6 +106,12 @@ function updateTabElementsVisibility(targetTab) {
 
 function initApp() {
   loadData();
+
+  // Aplica as traduções corretas do idioma ativo (padrão 'es' na inicialização)
+  if (window.I18N && typeof window.I18N.updateDomTranslations === 'function') {
+    window.I18N.updateDomTranslations();
+  }
+
   setupEventListeners();
   updateTabElementsVisibility(state.activeTab);
 
@@ -812,14 +818,19 @@ function updateTopbarUser() {
       }
     }
 
-    if (state.currentUser.type === 'owner') {
-      if (roleEl) roleEl.textContent = 'Proprietário';
+    const isOwner = state.currentUser.type === 'owner';
+    const roleText = window.I18N
+      ? (isOwner ? window.I18N.t('topbar.roleOwner') : window.I18N.t('topbar.roleStaff'))
+      : (isOwner ? 'Propietario / Gestor' : 'Equipo Operativo');
+
+    if (isOwner) {
+      if (roleEl) roleEl.textContent = roleText;
       if (avatarEl) avatarEl.className = 'user-avatar-badge is-owner';
       if (navOwnerItem) navOwnerItem.style.display = 'flex';
       if (ownerStaffSec) ownerStaffSec.style.display = 'block';
       document.querySelectorAll('.owner-only-section').forEach(sec => sec.style.display = 'block');
     } else {
-      if (roleEl) roleEl.textContent = 'Equipe Operacional';
+      if (roleEl) roleEl.textContent = roleText;
       if (avatarEl) avatarEl.className = 'user-avatar-badge is-staff';
       // Na área do funcionário, a aba Gestão é liberada para controle de horas trabalhadas
       if (navOwnerItem) navOwnerItem.style.display = 'flex';
@@ -849,9 +860,16 @@ function renderUserProfileSection() {
   const avatarBox = document.getElementById('user-profile-avatar-display');
 
   const isOwner = state.currentUser.type === 'owner';
-  if (nameEl) nameEl.textContent = state.currentUser.name || (isOwner ? 'Gestor' : 'Equipe');
+  const defaultName = isOwner
+    ? (window.I18N ? window.I18N.t('topbar.userManager') : 'Gestor')
+    : (window.I18N ? window.I18N.t('topbar.userTeam') : 'Equipo');
+  const roleText = window.I18N
+    ? (isOwner ? window.I18N.t('topbar.roleOwner') : window.I18N.t('topbar.roleStaff'))
+    : (isOwner ? 'Propietario / Gestor' : 'Equipo Operativo');
+
+  if (nameEl) nameEl.textContent = state.currentUser.name || defaultName;
   if (roleEl) {
-    roleEl.textContent = isOwner ? 'Proprietário / Gestor' : 'Equipe Operacional';
+    roleEl.textContent = roleText;
     if (isOwner) {
       roleEl.classList.add('is-owner');
     } else {
@@ -1411,8 +1429,8 @@ function updateOverviewCard() {
   });
 
   if (state.selectedProperty === 'ALL') {
-    titleEl.textContent = 'Todos os Imóveis';
-    subEl.textContent = 'Visão Consolidada: JB • VN • HN';
+    titleEl.textContent = window.I18N ? window.I18N.t('inventory.allPropsTitle') : 'Todos os Imóveis';
+    subEl.textContent = window.I18N ? window.I18N.t('inventory.allPropsSubtitle') : 'Visão Consolidada: JB • VN • HN';
     subEl.style.display = 'block';
     badgeEl.textContent = 'GLOBAL';
     badgeEl.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -1599,23 +1617,38 @@ function renderProducts() {
   const countBadge = document.getElementById('inventory-count-display');
   if (countBadge) {
     const totalCount = list.length;
-    countBadge.textContent = `${totalCount} ${totalCount === 1 ? 'produto' : 'produtos'}`;
+    if (window.I18N) {
+      countBadge.textContent = totalCount === 1
+        ? window.I18N.t('inventory.countBadgeSingular')
+        : window.I18N.t('inventory.countBadge', { count: totalCount });
+    } else {
+      countBadge.textContent = `${totalCount} ${totalCount === 1 ? 'producto' : 'productos'}`;
+    }
   }
 
   // Atualiza botão/banner de produtos em falta no WhatsApp
   updateWhatsappShortageButton();
 
   if (list.length === 0) {
+    const emptyTitle = window.I18N ? window.I18N.t('inventory.emptyTitle') : 'Ningún producto encontrado';
+    const emptySub = window.I18N ? window.I18N.t('inventory.emptySub') : 'Prueba a cambiar los términos de búsqueda o selecciona otra categoría.';
     container.innerHTML = `
       <div style="text-align: center; padding: 40px 16px; background: white; border-radius: var(--radius-lg); border: 1px dashed var(--border-light);">
-        <h4 style="font-weight: 700; color: var(--text-main);">Nenhum produto encontrado</h4>
+        <h4 style="font-weight: 700; color: var(--text-main);">${emptyTitle}</h4>
         <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
-          Tente alterar os termos da busca ou selecionar outra categoria.
+          ${emptySub}
         </p>
       </div>
     `;
     return;
   }
+
+  const lblZoom = window.I18N ? window.I18N.t('inventory.zoom') : 'Zoom';
+  const lblSuficiente = window.I18N ? window.I18N.t('inventory.statSuficiente') : 'Suficiente';
+  const lblAtencao = window.I18N ? window.I18N.t('inventory.statAtencao') : 'Atención';
+  const lblFalta = window.I18N ? window.I18N.t('inventory.statFalta') : 'Falta';
+  const lblCardNote = window.I18N ? window.I18N.t('inventory.btnCardNote') : '+ Nota';
+  const lblCardBuy = window.I18N ? window.I18N.t('inventory.btnCardBuy') : 'Registrar Compra';
 
   container.innerHTML = list.map(item => {
     const isGreen = item.status === 'suficiente';
@@ -1641,7 +1674,7 @@ function renderProducts() {
         <div class="product-top-row">
           <div class="product-img-wrapper" data-zoom-src="${item.photo}" data-zoom-title="${encodeURIComponent(item.name)}" data-zoom-desc="${encodeURIComponent(item.description || '')}">
             <img class="product-img" src="${item.photo}" alt="${item.name}" loading="lazy" onerror="this.src='https://placehold.co/160x160?text=Produto'">
-            <span class="zoom-hint-badge">Zoom</span>
+            <span class="zoom-hint-badge">${lblZoom}</span>
           </div>
 
           <div class="product-details">
@@ -1670,17 +1703,17 @@ function renderProducts() {
         <div class="traffic-light-container status-display-only" aria-label="Status do Estoque">
           <div class="traffic-pill status-green-btn ${isGreen ? 'active' : ''}">
             <span class="indicator-dot"></span>
-            <span>Suficiente</span>
+            <span>${lblSuficiente}</span>
           </div>
 
           <div class="traffic-pill status-yellow-btn ${isYellow ? 'active' : ''}">
             <span class="indicator-dot"></span>
-            <span>Atenção</span>
+            <span>${lblAtencao}</span>
           </div>
 
           <div class="traffic-pill status-red-btn ${isRed ? 'active' : ''}">
             <span class="indicator-dot"></span>
-            <span>Falta</span>
+            <span>${lblFalta}</span>
           </div>
         </div>
 
@@ -1693,7 +1726,7 @@ function renderProducts() {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                 </svg>
-                <span>+ Nota</span>
+                <span>${lblCardNote}</span>
               </button>
             ` : ''}
 
@@ -1714,7 +1747,7 @@ function renderProducts() {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
             </svg>
-            <span>Registrar Compra</span>
+            <span>${lblCardBuy}</span>
           </button>
         </div>
       </div>
@@ -1884,15 +1917,19 @@ function renderProductsTab() {
     }
 
     if (filtered.length === 0) {
+      const emptyTitle = window.I18N ? window.I18N.t('products.emptyTitle') : 'Nenhum produto encontrado';
+      const emptySub = state.catalogSearchQuery
+        ? (window.I18N ? window.I18N.t('products.emptySubSearch') : 'Tente buscar com outros termos.')
+        : (window.I18N ? window.I18N.t('products.emptySubNew') : 'Toque em "+ Novo Produto" para cadastrar.');
       activeContainer.innerHTML = `
         <div style="text-align: center; padding: 36px 16px; background: white; border-radius: var(--radius-lg); border: 1px dashed var(--border-light);">
-          <h4 style="font-weight: 700; color: var(--text-main);">Nenhum produto encontrado</h4>
-          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
-            ${state.catalogSearchQuery ? 'Tente buscar com outros termos.' : 'Toque em "+ Novo Produto" para cadastrar.'}
-          </p>
+          <h4 style="font-weight: 700; color: var(--text-main);">${emptyTitle}</h4>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">${emptySub}</p>
         </div>
       `;
     } else {
+      const btnEditTxt = window.I18N ? window.I18N.t('products.btnEdit') : 'Editar';
+      const btnDeleteTxt = window.I18N ? window.I18N.t('products.btnDelete') : 'Excluir';
       activeContainer.innerHTML = filtered.map(item => `
         <div class="catalog-item-card" data-catalog-id="${item.id}">
           <img class="catalog-item-thumb" src="${item.photo}" alt="${item.name}" loading="lazy" onerror="this.src='https://placehold.co/100x100?text=Produto'">
@@ -1904,17 +1941,17 @@ function renderProductsTab() {
             </div>
           </div>
           <div class="catalog-actions-group">
-            <button type="button" class="btn-catalog-action btn-catalog-edit" data-id="${item.id}" title="Editar informações do produto">
+            <button type="button" class="btn-catalog-action btn-catalog-edit" data-id="${item.id}" title="${btnEditTxt}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
               </svg>
-              <span>Editar</span>
+              <span>${btnEditTxt}</span>
             </button>
-            <button type="button" class="btn-catalog-action btn-catalog-delete" data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" title="Mover para a lixeira">
+            <button type="button" class="btn-catalog-action btn-catalog-delete" data-id="${item.id}" data-name="${encodeURIComponent(item.name)}" title="${btnDeleteTxt}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
               </svg>
-              <span>Excluir</span>
+              <span>${btnDeleteTxt}</span>
             </button>
           </div>
         </div>
@@ -1925,20 +1962,22 @@ function renderProductsTab() {
   // Renderiza sub-aba de Lixeira (30 dias)
   if (trashContainer) {
     if (trashList.length === 0) {
+      const trashEmptyTitle = window.I18N ? window.I18N.t('products.trashEmptyTitle') : 'Lixeira vazia';
+      const trashEmptyDesc = window.I18N ? window.I18N.t('products.trashEmptyDesc') : 'Quando você excluir produtos do catálogo, eles ficarão guardados aqui por 30 dias para você restaurar quando quiser.';
       trashContainer.innerHTML = `
         <div style="text-align: center; padding: 36px 16px; background: white; border-radius: var(--radius-lg); border: 1px dashed var(--border-light);">
-          <h4 style="font-weight: 700; color: var(--text-main);">Lixeira vazia</h4>
-          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
-            Quando você excluir produtos do catálogo, eles ficarão guardados aqui por 30 dias para você restaurar quando quiser.
-          </p>
+          <h4 style="font-weight: 700; color: var(--text-main);">${trashEmptyTitle}</h4>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">${trashEmptyDesc}</p>
         </div>
       `;
     } else {
       const nowMs = Date.now();
+      const btnRestoreTxt = window.I18N ? window.I18N.t('products.btnRestore') : 'Restaurar';
       trashContainer.innerHTML = trashList.map(item => {
         const deletedTime = item.deletedAt ? new Date(item.deletedAt).getTime() : nowMs;
         const diffDays = Math.floor((nowMs - deletedTime) / (24 * 60 * 60 * 1000));
         const daysLeft = Math.max(1, 30 - diffDays);
+        const trashDaysTxt = window.I18N ? window.I18N.t('products.badgeTrashRemaining', { days: daysLeft }) : `Restam ${daysLeft} dias`;
 
         return `
           <div class="trash-item-card" data-trash-id="${item.id}">
@@ -1947,17 +1986,17 @@ function renderProductsTab() {
               <h4 class="trash-item-name" title="${item.name}">${item.name}</h4>
               <div class="trash-item-meta">
                 <span class="brand-badge">${item.brand || 'BOSQUE VERDE'}</span>
-                <span class="trash-days-left">Restam ${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'}</span>
+                <span class="trash-days-left">${trashDaysTxt}</span>
               </div>
             </div>
             <div class="trash-actions-group">
-              <button type="button" class="btn-catalog-action btn-trash-restore" data-id="${item.id}" title="Restaurar de volta para o catálogo e estoque">
+              <button type="button" class="btn-catalog-action btn-trash-restore" data-id="${item.id}" title="${btnRestoreTxt}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
                 </svg>
-                <span>Restaurar</span>
+                <span>${btnRestoreTxt}</span>
               </button>
-              <button type="button" class="btn-catalog-action btn-trash-purge" data-id="${item.id}" title="Excluir definitivamente">
+              <button type="button" class="btn-catalog-action btn-trash-purge" data-id="${item.id}" title="✕">
                 ✕
               </button>
             </div>
@@ -2242,16 +2281,23 @@ function renderUrgentItems() {
   list.sort((a, b) => (a.status === 'falta' ? -1 : 1));
 
   if (list.length === 0) {
+    const stockedTitle = window.I18N ? window.I18N.t('inventory.stockedTitle') : 'Estoque Abastecido';
+    const stockedDesc = window.I18N ? window.I18N.t('inventory.stockedDesc') : 'Nenhum produto está em falta ou acabando neste momento.';
     container.innerHTML = `
       <div style="text-align: center; padding: 36px 16px; background: white; border-radius: var(--radius-lg); border: 1px dashed var(--border-light);">
-        <h4 style="font-weight: 800; color: var(--text-main);">Estoque Abastecido</h4>
+        <h4 style="font-weight: 800; color: var(--text-main);">${stockedTitle}</h4>
         <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
-          Nenhum produto está em falta ou acabando neste momento.
+          ${stockedDesc}
         </p>
       </div>
     `;
     return;
   }
+
+  const stockLabel = window.I18N ? window.I18N.t('inventory.stockQty') : 'Estoque';
+  const buyBtnLabel = window.I18N ? window.I18N.t('inventory.btnBuy') : 'Comprar';
+  const faltaLabel = window.I18N ? window.I18N.t('inventory.statFalta') : 'Falta';
+  const atencaoLabel = window.I18N ? window.I18N.t('inventory.statAtencao') : 'Atenção';
 
   container.innerHTML = list.map(item => {
     const isFalta = item.status === 'falta';
@@ -2262,16 +2308,16 @@ function renderUrgentItems() {
           <h4 class="urgent-item-title">${item.name}</h4>
           <div class="urgent-item-meta">
             <span class="status-badge-inline ${isFalta ? 'falta' : 'acabando'}">
-              ${isFalta ? 'Falta' : 'Atenção'}
+              ${isFalta ? faltaLabel : atencaoLabel}
             </span>
             <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">
-              Estoque: ${item.quantity} ${item.unit}
+              ${stockLabel}: ${item.quantity} ${item.unit}
             </span>
             <span class="prop-badge-small prop-badge-${(item.propertyId || '').toLowerCase()}" data-prop="${item.propertyId}">${item.propertyId}</span>
           </div>
         </div>
         <button type="button" class="urgent-buy-btn" data-id="${item.id}" data-prop="${item.propertyId}">
-          Comprar
+          ${buyBtnLabel}
         </button>
       </div>
     `;
@@ -2300,13 +2346,20 @@ function renderNotes() {
   list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   if (list.length === 0) {
+    const emptyNotesMsg = window.I18N ? window.I18N.t('notes.empty') : 'Nenhum recado cadastrado para este imóvel. Deixe uma mensagem acima!';
     container.innerHTML = `
       <div style="text-align: center; padding: 30px; background: white; border-radius: var(--radius-md); border: 1px dashed var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
-        Nenhum recado cadastrado para este imóvel. Deixe uma mensagem acima!
+        ${emptyNotesMsg}
       </div>
     `;
     return;
   }
+
+  const reopenTxt = window.I18N ? window.I18N.t('notes.reopen') : 'Reabrir';
+  const doneTxt = window.I18N ? window.I18N.t('notes.markDone') : 'Marcar Resolvido';
+  const deleteTxt = window.I18N ? window.I18N.t('notes.delete') : 'Excluir';
+  const defaultOwnerAuthor = window.I18N ? window.I18N.t('notes.authorOwner') : 'Gestor';
+  const defaultStaffAuthor = window.I18N ? window.I18N.t('notes.authorStaff') : 'Equipe';
 
   container.innerHTML = list.map(note => {
     const isOwner = note.authorType === 'owner';
@@ -2330,7 +2383,7 @@ function renderNotes() {
               : `<span class="note-author-avatar-img" style="background: ${isOwner ? '#D97706' : '#059669'}; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;">${getInitials(note.authorName, isOwner ? 'AD' : 'EQ')}</span>`
             }
             <span class="note-author-tag ${isOwner ? 'is-owner' : 'is-staff'}">
-              <span>${escapeHtml(note.authorName || (isOwner ? 'Gestor' : 'Equipe'))}</span>
+              <span>${escapeHtml(note.authorName || (isOwner ? defaultOwnerAuthor : defaultStaffAuthor))}</span>
               <span class="prop-badge-small prop-badge-${(note.propertyId || '').toLowerCase()}" data-prop="${note.propertyId}">${note.propertyId}</span>
             </span>
           </div>
@@ -2339,10 +2392,10 @@ function renderNotes() {
         <p class="note-body">${note.content}</p>
         <div class="note-footer">
           <button type="button" class="note-action-btn btn-toggle-note-done" data-id="${note.id}">
-            ${note.isDone ? 'Reabrir' : 'Marcar Resolvido'}
+            ${note.isDone ? reopenTxt : doneTxt}
           </button>
           <button type="button" class="note-action-btn btn-delete-note" data-id="${note.id}" style="color: var(--text-muted);">
-            Excluir
+            ${deleteTxt}
           </button>
         </div>
       </div>
@@ -2428,10 +2481,29 @@ function deleteNote(noteId) {
 // ==========================================================================
 // 4. Calendário Operacional Visual & Interativo (Aba Escalas)
 // ==========================================================================
-const CAL_MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
+function getI18nMonths() {
+  if (window.I18N && Array.isArray(window.I18N.t('months'))) {
+    return window.I18N.t('months');
+  }
+  return [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+}
+
+const CAL_MONTH_NAMES = new Proxy([], {
+  get(target, prop) {
+    const list = getI18nMonths();
+    if (prop === 'length') return list.length;
+    if (typeof prop === 'string' && !isNaN(Number(prop))) {
+      return list[Number(prop)];
+    }
+    if (typeof list[prop] === 'function') {
+      return list[prop].bind(list);
+    }
+    return list[prop];
+  }
+});
 
 function getEventColor(type) {
   switch (type) {
@@ -2745,12 +2817,16 @@ function renderCalendar() {
       const d = parseInt(parts[2], 10);
       const m = parseInt(parts[1], 10) - 1;
       const formattedDate = `${d} de ${CAL_MONTH_NAMES[m]}`;
+      const noDayTitle = window.I18N ? window.I18N.t('calendar.noEventsDayTitle', { date: formattedDate }) : `Nenhuma escala agendada para ${formattedDate}`;
+      const noDaySub = window.I18N ? window.I18N.t('calendar.noEventsDaySub') : 'O imóvel está sem atividades programadas neste dia.';
+      const btnScheduleDay = window.I18N ? window.I18N.t('calendar.scheduleDay') : '+ Agendar Escala para este dia';
+
       container.innerHTML = `
         <div style="text-align: center; padding: 28px 18px; background: white; border-radius: 20px; border: 1.5px dashed var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
-          <p style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 4px;">Nenhuma escala agendada para ${formattedDate}</p>
-          <p style="margin-bottom: 14px; font-size: 0.80rem;">O imóvel está sem atividades programadas neste dia.</p>
+          <p style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 4px;">${noDayTitle}</p>
+          <p style="margin-bottom: 14px; font-size: 0.80rem;">${noDaySub}</p>
           <button type="button" class="cal-btn-schedule-day" id="btn-empty-schedule-day" style="padding: 7px 16px; font-size: 0.80rem;">
-            + Agendar Escala para este dia
+            ${btnScheduleDay}
           </button>
         </div>
       `;
@@ -2764,24 +2840,29 @@ function renderCalendar() {
         return matchesProp && e.eventDate && e.eventDate.startsWith(`${year}-${monthPad}`);
       });
       const hasPastEvents = allMonthEvents.some(e => e.eventDate < todayIso);
+      const btnScheduleMonth = window.I18N ? window.I18N.t('calendar.scheduleMonth') : '+ Agendar Escala';
 
       if (hasPastEvents) {
+        const noNextTitle = window.I18N ? window.I18N.t('calendar.noEventsMonth') : 'Nenhuma próxima escala neste mês';
+        const noNextSub = window.I18N ? window.I18N.t('calendar.noEventsMonthSub') : 'As escalas anteriores já passaram. Toque em uma data anterior no calendário para consultar o histórico desse dia.';
         container.innerHTML = `
           <div style="text-align: center; padding: 28px 18px; background: white; border-radius: 20px; border: 1.5px dashed var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
-            <p style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 4px;">Nenhuma próxima escala neste mês</p>
-            <p style="margin-bottom: 14px; font-size: 0.80rem;">As escalas anteriores já passaram. Toque em uma data anterior no calendário para consultar o histórico desse dia.</p>
+            <p style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 4px;">${noNextTitle}</p>
+            <p style="margin-bottom: 14px; font-size: 0.80rem;">${noNextSub}</p>
             <button type="button" class="cal-btn-schedule-day" id="btn-empty-schedule-month" style="padding: 7px 16px; font-size: 0.80rem;">
-              + Agendar Escala
+              ${btnScheduleMonth}
             </button>
           </div>
         `;
       } else {
+        const noEventsAnyTitle = window.I18N ? window.I18N.t('calendar.noEventsAny') : 'Nenhuma escala neste mês';
+        const noEventsAnySub = window.I18N ? window.I18N.t('calendar.noEventsAnySub') : 'Toque em "+ Agendar" para criar um novo checking, checkout ou limpeza.';
         container.innerHTML = `
           <div style="text-align: center; padding: 28px 18px; background: white; border-radius: 20px; border: 1.5px dashed var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
-            <p style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 4px;">Nenhuma escala neste mês</p>
-            <p style="margin-bottom: 14px; font-size: 0.80rem;">Toque em "+ Agendar" para criar um novo checking, checkout ou limpeza.</p>
+            <p style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 4px;">${noEventsAnyTitle}</p>
+            <p style="margin-bottom: 14px; font-size: 0.80rem;">${noEventsAnySub}</p>
             <button type="button" class="cal-btn-schedule-day" id="btn-empty-schedule-month" style="padding: 7px 16px; font-size: 0.80rem;">
-              + Agendar Escala
+              ${btnScheduleMonth}
             </button>
           </div>
         `;
@@ -2792,6 +2873,11 @@ function renderCalendar() {
     }
     return;
   }
+
+  const calDoneTxt = window.I18N ? window.I18N.t('calendar.done') : '✓ Concluído';
+  const calMarkDoneTxt = window.I18N ? window.I18N.t('calendar.markDone') : 'Marcar Feito';
+  const calDeleteTitle = window.I18N ? window.I18N.t('calendar.btnDelete') : 'Excluir agendamento';
+  const defaultStaffName = window.I18N ? window.I18N.t('topbar.userTeam') : 'Equipe';
 
   container.innerHTML = list.map(ev => {
     const isDone = ev.status === 'concluido';
@@ -2820,14 +2906,14 @@ function renderCalendar() {
         <div class="cal-meta">
           <span class="cal-staff" style="display: flex; align-items: center; gap: 4px;">
             ${staffPhoto ? `<img src="${staffPhoto}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">` : ''}
-            <span>${escapeHtml(ev.assignedStaffName || 'Equipe')}</span>
+            <span>${escapeHtml(ev.assignedStaffName || defaultStaffName)}</span>
             <span class="prop-badge-small prop-badge-${(ev.propertyId || '').toLowerCase()}" data-prop="${ev.propertyId}" style="margin-left: 4px;">${ev.propertyId}</span>
           </span>
           <div style="display: flex; align-items: center; gap: 6px;">
             <button type="button" class="topbar-btn btn-toggle-cal-status" data-id="${ev.id}" style="${isDone ? 'background: rgba(16,185,129,0.12); color: #047857; font-weight: 700;' : ''}">
-              ${isDone ? '✓ Concluído' : 'Marcar Feito'}
+              ${isDone ? calDoneTxt : calMarkDoneTxt}
             </button>
-            <button type="button" class="cal-btn-delete-event" data-id="${ev.id}" title="Excluir agendamento" style="background: transparent; border: none; padding: 4px; color: #94A3B8; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+            <button type="button" class="cal-btn-delete-event" data-id="${ev.id}" title="${calDeleteTitle}" style="background: transparent; border: none; padding: 4px; color: #94A3B8; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
             </button>
           </div>
@@ -2981,6 +3067,8 @@ function renderOwnerDashboard() {
     if (state.currentUser?.type !== 'owner') {
       staffContainer.innerHTML = '';
     } else {
+      const suspendedTxt = window.I18N ? window.I18N.t('staff.suspended') : 'Suspensa';
+      const noEmailTxt = window.I18N ? window.I18N.t('staff.noGoogleEmail') : 'Sem e-mail Google';
       staffContainer.innerHTML = state.data.staff.map(staff => `
         <div class="staff-member-card ${staff.isActive === false ? 'is-suspended' : ''}">
           <div class="staff-info-col">
@@ -2996,17 +3084,17 @@ function renderOwnerDashboard() {
             <div class="staff-text-col">
               <div class="staff-name-row">
                 <div class="staff-name-title" title="${escapeHtml(staff.name)}">${escapeHtml(staff.name)}</div>
-                ${staff.isActive === false ? `<span class="staff-suspended-badge">Suspensa</span>` : ''}
+                ${staff.isActive === false ? `<span class="staff-suspended-badge">${suspendedTxt}</span>` : ''}
               </div>
-              <div class="staff-email-badge" title="${escapeHtml(staff.email || 'Sem e-mail Google')}">
+              <div class="staff-email-badge" title="${escapeHtml(staff.email || noEmailTxt)}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                <span>${escapeHtml(staff.email || 'Sem e-mail Google')}</span>
+                <span>${escapeHtml(staff.email || noEmailTxt)}</span>
               </div>
             </div>
           </div>
 
           <div class="staff-actions-col">
-            <button type="button" class="btn-edit-staff" data-id="${staff.id}" title="Editar colaboradora (${escapeHtml(staff.name)})" aria-label="Editar colaboradora">
+            <button type="button" class="btn-edit-staff" data-id="${staff.id}" title="${escapeHtml(staff.name)}" aria-label="Editar colaboradora">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                 <path d="m15 5 4 4"/>
@@ -3037,18 +3125,15 @@ function renderOwnerDashboard() {
       }
     });
 
-    const monthNames = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-
     const sortedMonths = Array.from(monthsSet).sort().reverse();
     const currentSelected = state.purchaseSelectedMonth || '';
+    const allMonthsLabel = window.I18N ? window.I18N.t('purchases.allMonths') : 'Todos os meses...';
 
-    monthSelect.innerHTML = `<option value="">Todos os meses...</option>` +
+    monthSelect.innerHTML = `<option value="">${allMonthsLabel}</option>` +
       sortedMonths.map(ym => {
         const [year, month] = ym.split('-');
-        const monthName = monthNames[parseInt(month, 10) - 1] || month;
+        const monthIndex = parseInt(month, 10) - 1;
+        const monthName = CAL_MONTH_NAMES[monthIndex] || month;
         const label = `${monthName} de ${year}`;
         const isSelected = ym === currentSelected ? 'selected' : '';
         return `<option value="${ym}" ${isSelected}>${label}</option>`;
@@ -3061,19 +3146,22 @@ function renderOwnerDashboard() {
   // Atualizar Indicadores de Filtro
   const totalCountBadge = document.getElementById('purchases-total-count-badge');
   if (totalCountBadge) {
-    totalCountBadge.textContent = `${filteredPurchases.length} ${filteredPurchases.length === 1 ? 'compra' : 'compras'}`;
+    const purchaseUnit = filteredPurchases.length === 1
+      ? (window.I18N ? window.I18N.t('purchases.singleCount') : 'compra')
+      : (window.I18N ? window.I18N.t('purchases.pluralCount') : 'compras');
+    totalCountBadge.textContent = `${filteredPurchases.length} ${purchaseUnit}`;
   }
 
   const filterInfoText = document.getElementById('purchase-filter-info-text');
   const filterSumVal = document.getElementById('purchase-filter-sum-val');
 
   const filterLabels = {
-    todos: 'Todas as compras cadastradas',
-    hoje: 'Compras de Hoje',
-    ontem: 'Compras de Ontem',
-    semana: 'Compras desta Semana',
-    este_mes: 'Compras deste Mês',
-    mes_especifico: `Compras de ${state.purchaseSelectedMonth}`
+    todos: window.I18N ? window.I18N.t('purchases.filterAll') : 'Todas as compras cadastradas',
+    hoje: window.I18N ? window.I18N.t('purchases.filterToday') : 'Compras de Hoje',
+    ontem: window.I18N ? window.I18N.t('purchases.filterYesterday') : 'Compras de Ontem',
+    semana: window.I18N ? window.I18N.t('purchases.filterWeek') : 'Compras desta Semana',
+    este_mes: window.I18N ? window.I18N.t('purchases.filterMonth') : 'Compras deste Mês',
+    mes_especifico: window.I18N ? window.I18N.t('purchases.filterSpecificMonth', { month: state.purchaseSelectedMonth }) : `Compras de ${state.purchaseSelectedMonth}`
   };
 
   if (filterInfoText) {
@@ -3087,13 +3175,15 @@ function renderOwnerDashboard() {
   const purchasesContainer = document.getElementById('recent-purchases-container');
   if (purchasesContainer) {
     if (filteredPurchases.length === 0) {
+      const emptyPurchasesTxt = window.I18N ? window.I18N.t('purchases.emptyPeriod') : 'Nenhuma compra registrada para o período selecionado.';
       purchasesContainer.innerHTML = `
         <div style="text-align: center; padding: 26px 16px; font-size: 0.82rem; color: var(--text-muted); background: #F8FAFC; border: 1px dashed var(--border-light); border-radius: 14px;">
-          Nenhuma compra registrada para o período selecionado.
+          ${emptyPurchasesTxt}
         </div>
       `;
     } else {
       const sortedPurchases = [...filteredPurchases].sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+      const receiptTagTxt = window.I18N ? window.I18N.t('purchases.receiptTag') : 'Nota Fiscal';
       purchasesContainer.innerHTML = sortedPurchases.map(p => {
         const hasReceipt = Boolean(p.receiptPhoto);
         const buyerObj = (state.data.staff || []).find(s => s.id === p.buyerStaffId || s.name === p.buyerName);
@@ -3120,7 +3210,7 @@ function renderOwnerDashboard() {
                   ${hasReceipt ? `
                     <span class="purchase-card-receipt-tag">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg>
-                      Nota Fiscal
+                      ${receiptTagTxt}
                     </span>
                   ` : ''}
                 </div>
@@ -3196,8 +3286,13 @@ function formatTimesheetDate(dateStr) {
   const parts = dateStr.split('-');
   if (parts.length !== 3) return dateStr;
   const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const isPt = window.I18N && window.I18N.getLanguage() === 'pt';
+  const days = isPt
+    ? ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    : ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const months = isPt
+    ? ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    : ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const dayName = days[d.getDay()] || '';
   const monthName = months[d.getMonth()] || '';
   return `${dayName}, ${parts[2]} de ${monthName} de ${parts[0]}`;
@@ -3208,8 +3303,13 @@ function formatTimesheetDateNoYear(dateStr) {
   const parts = dateStr.split('-');
   if (parts.length !== 3) return dateStr;
   const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const isPt = window.I18N && window.I18N.getLanguage() === 'pt';
+  const days = isPt
+    ? ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+    : ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const months = isPt
+    ? ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    : ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const dayName = days[d.getDay()] || '';
   const monthName = months[d.getMonth()] || '';
   return `${dayName}, ${parts[2]} de ${monthName}`;
@@ -3232,9 +3332,13 @@ function formatTimesheetShortDate(dateStr) {
   yesterday.setDate(yesterday.getDate() - 1);
   const yStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
+  const isPt = window.I18N && window.I18N.getLanguage() === 'pt';
+  const todayLabel = isPt ? 'Hoje' : 'Hoy';
+  const yesterdayLabel = isPt ? 'Ontem' : 'Ayer';
+
   const dayMonth = `${parts[2]}/${parts[1]}`;
-  if (dateStr === today) return `Hoje (${dayMonth})`;
-  if (dateStr === yStr) return `Ontem (${dayMonth})`;
+  if (dateStr === today) return `${todayLabel} (${dayMonth})`;
+  if (dateStr === yStr) return `${yesterdayLabel} (${dayMonth})`;
   return dayMonth;
 }
 
@@ -3292,12 +3396,14 @@ function renderTimesheets() {
   if (!listContainer) return;
 
   if (sectionTitle) {
-    sectionTitle.textContent = isOwner ? 'Horas da Equipe' : 'Minhas Horas';
+    sectionTitle.textContent = isOwner
+      ? (window.I18N ? window.I18N.t('timesheet.titleOwner') : 'Horas da Equipe')
+      : (window.I18N ? window.I18N.t('timesheet.titleStaff') : 'Minhas Horas');
   }
   if (sectionSub) {
     sectionSub.textContent = isOwner
-      ? 'Toque no funcionário para consultar os horários'
-      : 'Registre início, pausa e fim do seu dia de trabalho';
+      ? (window.I18N ? window.I18N.t('timesheet.subOwner') : 'Toque no funcionário para consultar os horários')
+      : (window.I18N ? window.I18N.t('timesheet.subStaff') : 'Registre início, pausa e fim do seu dia de trabalho');
   }
 
   // Gestor NÃO consegue cadastrar nem editar, apenas equipe
@@ -3317,6 +3423,8 @@ function renderTimesheets() {
   if (isOwner) {
     const rawStaffList = state.data.staff || [];
     if (rawStaffList.length === 0) {
+      const emptyOwnerTitle = window.I18N ? window.I18N.t('timesheet.emptyOwner') : 'Nenhum funcionário cadastrado';
+      const emptyOwnerSub = window.I18N ? window.I18N.t('timesheet.emptyOwnerSub') : 'Cadastre funcionários na seção de equipe abaixo para visualizar os horários.';
       listContainer.innerHTML = `
         <div class="ts-empty-state">
           <div class="ts-empty-icon">
@@ -3325,8 +3433,8 @@ function renderTimesheets() {
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
           </div>
-          <div class="ts-empty-title">Nenhum funcionário cadastrado</div>
-          <div class="ts-empty-sub">Cadastre funcionários na seção de equipe abaixo para visualizar os horários.</div>
+          <div class="ts-empty-title">${emptyOwnerTitle}</div>
+          <div class="ts-empty-sub">${emptyOwnerSub}</div>
         </div>
       `;
       return;
@@ -3350,6 +3458,10 @@ function renderTimesheets() {
       return { ...st, photo };
     });
 
+    const toPayTxt = window.I18N ? window.I18N.t('timesheet.toPayShort', { hours: '' }).trim() : 'a pagar';
+    const allPaidTxt = window.I18N ? window.I18N.t('timesheet.allPaidShort') : 'Tudo pago';
+    const noPendingTxt = window.I18N ? window.I18N.t('timesheet.noPendingShort') : 'Nenhuma pendência';
+
     listContainer.innerHTML = `
       <div class="ts-staff-picker-group">
         ${staffList.map(staff => {
@@ -3360,12 +3472,16 @@ function renderTimesheets() {
           const unpaidBadge = hasUnpaid
             ? `<span class="ts-staff-unpaid-pill is-unpaid" title="Total pendente de pagamento">
                 <span class="ts-status-dot is-unpaid"></span>
-                <span>${stats.unpaidFormatted} a pagar</span>
+                <span>${stats.unpaidFormatted} ${toPayTxt}</span>
               </span>`
             : `<span class="ts-staff-unpaid-pill is-paid" title="Todas as horas pagas">
                 <span class="ts-status-dot is-paid"></span>
-                <span>Tudo pago</span>
+                <span>${allPaidTxt}</span>
               </span>`;
+
+          const pendingSubTxt = stats.unpaidCount > 0
+            ? (window.I18N ? window.I18N.t('timesheet.pendingCount', { count: stats.unpaidCount }) : `${stats.unpaidCount} expediente(s) pendente(s)`)
+            : noPendingTxt;
 
           return `
           <div class="ts-staff-picker-card" data-staff-id="${staff.id}" role="button" tabindex="0">
@@ -3378,7 +3494,7 @@ function renderTimesheets() {
               </div>
               <div class="ts-staff-picker-info">
                 <div class="ts-staff-picker-name">${escapeHtml(staff.name)}</div>
-                <div class="ts-staff-picker-sub">${stats.unpaidCount > 0 ? `${stats.unpaidCount} expediente(s) pendente(s)` : 'Nenhuma pendência'}</div>
+                <div class="ts-staff-picker-sub">${pendingSubTxt}</div>
               </div>
             </div>
             <div class="ts-staff-picker-right">
@@ -3434,16 +3550,18 @@ function renderTimesheets() {
   });
 
   if (timesheets.length === 0) {
+    const emptyStaffTitle = window.I18N ? window.I18N.t('timesheet.emptyStaff') : 'Nenhuma hora registrada ainda';
+    const emptyStaffSub = window.I18N ? window.I18N.t('timesheet.emptyStaffSub') : 'Clique em "Registrar Dia" acima para marcar o início, pausa e fim do seu serviço.';
     listContainer.innerHTML = `
       <div class="ts-empty-state">
         <div class="ts-empty-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
+            <polyline points="12 6 12 16 14"></polyline>
           </svg>
         </div>
-        <div class="ts-empty-title">Nenhuma hora registrada ainda</div>
-        <div class="ts-empty-sub">Clique em "Registrar Dia" acima para marcar o início, pausa e fim do seu serviço.</div>
+        <div class="ts-empty-title">${emptyStaffTitle}</div>
+        <div class="ts-empty-sub">${emptyStaffSub}</div>
       </div>
     `;
     return;
@@ -3455,13 +3573,20 @@ function renderTimesheets() {
   const unpaidFormatted = minutesToFormatted(unpaidMinutes);
   const isAllPaid = unpaidMinutes === 0;
 
+  const summaryTitleTxt = isAllPaid
+    ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas Pagas')
+    : (window.I18N ? window.I18N.t('timesheet.toReceive') : 'Total a Receber (Não Pago)');
+  const summarySubTxt = unpaidTimesheets.length > 0
+    ? (window.I18N ? window.I18N.t('timesheet.pendingCount', { count: unpaidTimesheets.length }) : `${unpaidTimesheets.length} expediente(s) pendente(s)`)
+    : (window.I18N ? window.I18N.t('timesheet.noPending') : 'Nenhum valor pendente');
+
   const summaryBannerHtml = `
     <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
       <div class="ts-unpaid-banner-content">
         <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
         <div class="ts-unpaid-texts">
-          <span class="ts-unpaid-title">${isAllPaid ? 'Todas as Horas Pagas' : 'Total a Receber (Não Pago)'}</span>
-          <span class="ts-unpaid-sub">${unpaidTimesheets.length > 0 ? `${unpaidTimesheets.length} expediente(s) pendente(s)` : 'Nenhum valor pendente'}</span>
+          <span class="ts-unpaid-title">${summaryTitleTxt}</span>
+          <span class="ts-unpaid-sub">${summarySubTxt}</span>
         </div>
       </div>
       <div class="ts-unpaid-banner-right">
@@ -3469,6 +3594,16 @@ function renderTimesheets() {
       </div>
     </div>
   `;
+
+  const inProgressTxt = window.I18N ? window.I18N.t('timesheet.inProgress') : 'Em andamento';
+  const noBreakTxt = window.I18N ? window.I18N.t('timesheet.noBreak') : 'Sem pausa';
+  const statusPaidTxt = window.I18N ? window.I18N.t('timesheet.statusPaid') : 'Horas Pagas';
+  const statusUnpaidTxt = window.I18N ? window.I18N.t('timesheet.statusUnpaid') : 'Não Pagas';
+  const labelStartTxt = window.I18N ? window.I18N.t('timesheet.start') : 'Início';
+  const labelBreakTxt = window.I18N ? window.I18N.t('timesheet.break', { time: '' }).replace(': {time}', '').replace(':', '').trim() : 'Pausa';
+  const labelEndTxt = window.I18N ? window.I18N.t('timesheet.end') : 'Fim';
+  const exportWaTxt = window.I18N ? window.I18N.t('timesheet.exportWhatsApp') : 'Exportar WhatsApp';
+  const editBtnTxt = window.I18N ? window.I18N.t('timesheet.btnEdit') : 'Editar';
 
   listContainer.innerHTML = `
     ${summaryBannerHtml}
@@ -3478,40 +3613,40 @@ function renderTimesheets() {
         const hasEnd = Boolean(t.endTime);
         const totalText = (hasEnd && t.totalMinutes !== null && t.totalMinutes !== undefined)
           ? minutesToFormatted(t.totalMinutes)
-          : 'Em andamento';
+          : inProgressTxt;
 
-        let breakDisplay = 'Sem pausa';
+        let breakDisplay = noBreakTxt;
         if (t.breakStartTime && t.breakEndTime) {
           const bMin = calculateBreakMinutes(t.breakStartTime, t.breakEndTime);
           breakDisplay = `${t.breakStartTime} - ${t.breakEndTime}` + (bMin > 0 ? ` (${minutesToFormatted(bMin)})` : '');
         } else if (t.breakStartTime) {
-          breakDisplay = `Pausa: ${t.breakStartTime}`;
+          breakDisplay = `${labelBreakTxt}: ${t.breakStartTime}`;
         }
 
         const isPaid = Boolean(t.isPaid);
 
         const paidBadgeHtml = isPaid
-          ? `<span class="ts-status-dot is-paid" title="Horas Pagas"></span>`
-          : `<span class="ts-status-dot is-unpaid" title="Não Pago (Pendente)"></span>`;
+          ? `<span class="ts-status-dot is-paid" title="${statusPaidTxt}"></span>`
+          : `<span class="ts-status-dot is-unpaid" title="${statusUnpaidTxt}"></span>`;
 
         const paidBtnHtml = isPaid
-          ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="Horas marcadas como pagas. Toque para marcar como Não Pagas">
+          ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="${statusPaidTxt}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Horas Pagas</span>
+              <span>${statusPaidTxt}</span>
             </button>`
-          : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="Horas pendentes de pagamento. Toque para marcar como Pagas">
+          : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${statusUnpaidTxt}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>Não Pagas</span>
+              <span>${statusUnpaidTxt}</span>
             </button>`;
 
         return `
           <div class="timesheet-card is-collapsed" data-ts-id="${t.id}">
-            <div class="ts-card-header" role="button" tabindex="0" title="Toque para ver os detalhes deste dia">
+            <div class="ts-card-header" role="button" tabindex="0">
               <div class="ts-card-user-info">
                 <div class="ts-card-date-wrap">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B; flex-shrink: 0;">
@@ -3537,33 +3672,33 @@ function renderTimesheets() {
             <div class="ts-card-details">
               <div class="ts-card-timeline">
                 <div class="ts-time-pill pill-start">
-                  <span class="ts-time-pill-label">Início</span>
+                  <span class="ts-time-pill-label">${labelStartTxt}</span>
                   <span class="ts-time-pill-val">${t.startTime || '--:--'}</span>
                 </div>
                 <div class="ts-time-pill pill-break">
-                  <span class="ts-time-pill-label">Pausa</span>
+                  <span class="ts-time-pill-label">${labelBreakTxt}</span>
                   <span class="ts-time-pill-val" style="font-size: 0.78rem;">${breakDisplay}</span>
                 </div>
                 <div class="ts-time-pill pill-end">
-                  <span class="ts-time-pill-label">Fim</span>
-                  <span class="ts-time-pill-val">${t.endTime || 'Em andamento'}</span>
+                  <span class="ts-time-pill-label">${labelEndTxt}</span>
+                  <span class="ts-time-pill-val">${t.endTime || inProgressTxt}</span>
                 </div>
               </div>
 
               <div class="ts-card-actions">
                 ${paidBtnHtml}
-                <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="Exportar horas trabalhadas para o WhatsApp">
+                <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
                   </svg>
-                  <span>Exportar WhatsApp</span>
+                  <span>${exportWaTxt}</span>
                 </button>
-                <button type="button" class="btn-ts-edit" data-ts-id="${t.id}" title="Editar este registro de horas">
+                <button type="button" class="btn-ts-edit" data-ts-id="${t.id}" title="${editBtnTxt}">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 20h9"></path>
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                   </svg>
-                  <span>Editar</span>
+                  <span>${editBtnTxt}</span>
                 </button>
               </div>
             </div>
@@ -3790,7 +3925,7 @@ function openManagerStaffTimesheetModal(staffId) {
   const stepHours = document.getElementById('mgr-ts-step-hours');
 
   if (titleEl) titleEl.textContent = staff.name;
-  if (subtitleEl) subtitleEl.textContent = 'Toque no dia para consultar';
+  if (subtitleEl) subtitleEl.textContent = window.I18N ? window.I18N.t('managerTimesheet.tapDay') : 'Toque no dia para consultar';
   if (avatarEl) {
     let photoUrl = staff.photo || '';
     if (!photoUrl) {
@@ -3836,18 +3971,26 @@ function renderManagerStaffSummaryBanner(staff) {
   const stats = getStaffTimesheetStats(staff.id, staff.email, staff.name);
   const isAllPaid = stats.unpaidMinutes === 0;
 
+  const summaryTitleTxt = isAllPaid
+    ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas Pagas')
+    : (window.I18N ? window.I18N.t('managerTimesheet.totalToPay') : 'Total a Pagar (Não Pago)');
+  const summarySubTxt = stats.unpaidCount > 0
+    ? (window.I18N ? window.I18N.t('timesheet.pendingCount', { count: stats.unpaidCount }) : `${stats.unpaidCount} expediente(s) pendente(s)`)
+    : (window.I18N ? window.I18N.t('managerTimesheet.noPendingTitle') : 'Nenhuma pendência financeira');
+  const viewPendingBtnTxt = window.I18N ? window.I18N.t('managerTimesheet.btnViewPending') : 'Ver Pendentes';
+
   container.innerHTML = `
     <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
       <div class="ts-unpaid-banner-content">
         <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
         <div class="ts-unpaid-texts">
-          <span class="ts-unpaid-title">${isAllPaid ? 'Todas as Horas Pagas' : 'Total a Pagar (Não Pago)'}</span>
-          <span class="ts-unpaid-sub">${stats.unpaidCount > 0 ? `${stats.unpaidCount} expediente(s) pendente(s)` : 'Nenhuma pendência financeira'}</span>
+          <span class="ts-unpaid-title">${summaryTitleTxt}</span>
+          <span class="ts-unpaid-sub">${summarySubTxt}</span>
         </div>
       </div>
       <div class="ts-unpaid-banner-right">
         <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${stats.unpaidFormatted}</span>
-        ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="Ver todos os expedientes pendentes da colaboradora">Ver Pendentes</button>` : ''}
+        ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="Ver todos os expedientes pendentes da colaboradora">${viewPendingBtnTxt}</button>` : ''}
       </div>
     </div>
   `;
@@ -3896,11 +4039,15 @@ function showManagerTimesheetHours(staffId, dateStr) {
   if (stepHours) stepHours.style.display = 'block';
 
   if (subtitleEl) {
-    subtitleEl.textContent = isUnpaidMode ? 'Expedientes Pendentes' : 'Horas trabalhadas';
+    subtitleEl.textContent = isUnpaidMode
+      ? (window.I18N ? window.I18N.t('managerTimesheet.pendingRecords') : 'Expedientes Pendentes')
+      : (window.I18N ? window.I18N.t('managerTimesheet.workedHours') : 'Horas trabalhadas');
   }
 
   if (activeDateTxt) {
-    activeDateTxt.textContent = isUnpaidMode ? 'Pendentes' : formatTimesheetDateNoYear(dateStr);
+    activeDateTxt.textContent = isUnpaidMode
+      ? (window.I18N ? window.I18N.t('managerTimesheet.pending') : 'Pendentes')
+      : formatTimesheetDateNoYear(dateStr);
   }
 
   if (!hoursContainer) return;
@@ -3928,11 +4075,15 @@ function showManagerTimesheetHours(staffId, dateStr) {
   }
 
   if (records.length === 0) {
-    const emptyTitle = isUnpaidMode ? 'Nenhuma pendência' : 'Nenhum horário registrado';
+    const emptyTitle = isUnpaidMode
+      ? (window.I18N ? window.I18N.t('managerTimesheet.noPendingTitle') : 'Nenhuma pendência')
+      : (window.I18N ? window.I18N.t('managerTimesheet.noDayTitle') : 'Nenhum horário registrado');
     const emptySub = isUnpaidMode
-      ? `Todas as horas de ${escapeHtml(staff.name)} estão confirmadas como pagas!`
-      : `${escapeHtml(staff.name)} não registrou horas em ${formatTimesheetDateNoYear(dateStr)}.`;
-    const btnLabel = isUnpaidMode ? 'Voltar ao calendário' : 'Escolher outro dia';
+      ? (window.I18N ? window.I18N.t('managerTimesheet.noPendingSub', { name: escapeHtml(staff.name) }) : `Todas as horas de ${escapeHtml(staff.name)} estão confirmadas como pagas!`)
+      : (window.I18N ? window.I18N.t('managerTimesheet.noDaySub', { name: escapeHtml(staff.name), date: formatTimesheetDateNoYear(dateStr) }) : `${escapeHtml(staff.name)} não registrou horas em ${formatTimesheetDateNoYear(dateStr)}.`);
+    const btnLabel = isUnpaidMode
+      ? (window.I18N ? window.I18N.t('managerTimesheet.btnBackCalendar') : 'Voltar ao calendário')
+      : (window.I18N ? window.I18N.t('managerTimesheet.btnChooseOtherDay') : 'Escolher outro dia');
 
     hoursContainer.innerHTML = `
       <div class="mgr-ts-empty-day">
@@ -3960,7 +4111,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
         const subtitleEl = document.getElementById('mgr-ts-modal-subtitle');
-        if (subtitleEl) subtitleEl.textContent = 'Toque no dia para consultar';
+        if (subtitleEl) subtitleEl.textContent = window.I18N ? window.I18N.t('managerTimesheet.tapDay') : 'Toque no dia para consultar';
         if (stepDate) stepDate.style.display = 'block';
         if (stepHours) stepHours.style.display = 'none';
       });
@@ -3968,27 +4119,38 @@ function showManagerTimesheetHours(staffId, dateStr) {
     return;
   }
 
+  const inProgressTxt = window.I18N ? window.I18N.t('timesheet.inProgress') : 'Em andamento';
+  const noBreakTxt = window.I18N ? window.I18N.t('timesheet.noBreak') : 'Sem pausa';
+  const labelStartTxt = window.I18N ? window.I18N.t('timesheet.start') : 'Início';
+  const labelBreakTxt = window.I18N ? window.I18N.t('timesheet.break', { time: '' }).replace(': {time}', '').replace(':', '').trim() : 'Pausa';
+  const labelEndTxt = window.I18N ? window.I18N.t('timesheet.end') : 'Fim';
+  const exportWaTxt = window.I18N ? window.I18N.t('timesheet.exportWhatsApp') : 'Exportar WhatsApp';
+  const paidTitle = window.I18N ? window.I18N.t('managerTimesheet.statusPaidTitle') : 'Status: Horas Pagas';
+  const paidDesc = window.I18N ? window.I18N.t('managerTimesheet.statusPaidDesc') : 'A colaboradora marcou este expediente como pago.';
+  const unpaidTitle = window.I18N ? window.I18N.t('managerTimesheet.statusUnpaidTitle') : 'Status: Não Pago (Pendente)';
+  const unpaidDesc = window.I18N ? window.I18N.t('managerTimesheet.statusUnpaidDesc') : 'A colaboradora ainda não marcou este expediente como pago.';
+
   hoursContainer.innerHTML = `
     <div class="mgr-ts-records-list">
       ${records.map(t => {
         const hasEnd = Boolean(t.endTime);
         const totalText = (hasEnd && t.totalMinutes !== null && t.totalMinutes !== undefined)
           ? minutesToFormatted(t.totalMinutes)
-          : 'Em andamento';
+          : inProgressTxt;
 
-        let breakDisplay = 'Sem pausa';
+        let breakDisplay = noBreakTxt;
         if (t.breakStartTime && t.breakEndTime) {
           const bMin = calculateBreakMinutes(t.breakStartTime, t.breakEndTime);
           breakDisplay = `${t.breakStartTime} - ${t.breakEndTime}` + (bMin > 0 ? ` (${minutesToFormatted(bMin)})` : '');
         } else if (t.breakStartTime) {
-          breakDisplay = `Pausa: ${t.breakStartTime}`;
+          breakDisplay = `${labelBreakTxt}: ${t.breakStartTime}`;
         }
 
         const dateFormatted = formatTimesheetDateNoYear(t.date || dateStr);
         const isPaid = Boolean(t.isPaid);
         const paidBadgeHtml = isPaid
-          ? `<span class="ts-status-dot is-paid" title="Horas Pagas"></span>`
-          : `<span class="ts-status-dot is-unpaid" title="Não Pago (Pendente)"></span>`;
+          ? `<span class="ts-status-dot is-paid" title="${paidTitle}"></span>`
+          : `<span class="ts-status-dot is-unpaid" title="${unpaidTitle}"></span>`;
 
         const managerStatusHtml = isPaid
           ? `<div class="mgr-ts-payment-status is-paid">
@@ -3998,8 +4160,8 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 </svg>
               </div>
               <div class="mgr-ts-status-texts">
-                <span class="mgr-ts-status-title">Status: Horas Pagas</span>
-                <span class="mgr-ts-status-desc">A colaboradora marcou este expediente como pago.</span>
+                <span class="mgr-ts-status-title">${paidTitle}</span>
+                <span class="mgr-ts-status-desc">${paidDesc}</span>
               </div>
             </div>`
           : `<div class="mgr-ts-payment-status is-unpaid">
@@ -4010,14 +4172,14 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 </svg>
               </div>
               <div class="mgr-ts-status-texts">
-                <span class="mgr-ts-status-title">Status: Não Pago (Pendente)</span>
-                <span class="mgr-ts-status-desc">A colaboradora ainda não marcou este expediente como pago.</span>
+                <span class="mgr-ts-status-title">${unpaidTitle}</span>
+                <span class="mgr-ts-status-desc">${unpaidDesc}</span>
               </div>
             </div>`;
 
         return `
           <div class="timesheet-card mgr-ts-record-card is-collapsed" data-ts-id="${t.id}">
-            <div class="ts-card-header" role="button" tabindex="0" title="Toque para ver os detalhes deste expediente">
+            <div class="ts-card-header" role="button" tabindex="0">
               <div class="ts-card-user-info">
                 <div class="mgr-ts-card-date-wrap">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #64748B; flex-shrink: 0;">
@@ -4043,27 +4205,27 @@ function showManagerTimesheetHours(staffId, dateStr) {
             <div class="ts-card-details">
               <div class="ts-card-timeline">
                 <div class="ts-time-pill pill-start">
-                  <span class="ts-time-pill-label">Início</span>
+                  <span class="ts-time-pill-label">${labelStartTxt}</span>
                   <span class="ts-time-pill-val">${t.startTime || '--:--'}</span>
                 </div>
                 <div class="ts-time-pill pill-break">
-                  <span class="ts-time-pill-label">Pausa</span>
+                  <span class="ts-time-pill-label">${labelBreakTxt}</span>
                   <span class="ts-time-pill-val" style="font-size: 0.78rem;">${breakDisplay}</span>
                 </div>
                 <div class="ts-time-pill pill-end">
-                  <span class="ts-time-pill-label">Fim</span>
-                  <span class="ts-time-pill-val">${t.endTime || 'Em andamento'}</span>
+                  <span class="ts-time-pill-label">${labelEndTxt}</span>
+                  <span class="ts-time-pill-val">${t.endTime || inProgressTxt}</span>
                 </div>
               </div>
 
               ${managerStatusHtml}
 
               <div class="ts-card-actions">
-                <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="Exportar horas trabalhadas para o WhatsApp">
+                <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
                   </svg>
-                  <span>Exportar WhatsApp</span>
+                  <span>${exportWaTxt}</span>
                 </button>
               </div>
             </div>
@@ -6759,13 +6921,42 @@ function setupEventListeners() {
     };
   }
 
+  // Seletor de Idiomas (Espanhol e Português)
+  document.querySelectorAll('[data-lang-btn]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const lang = btn.getAttribute('data-lang-btn');
+      if (window.I18N && typeof window.I18N.setLanguage === 'function') {
+        window.I18N.setLanguage(lang);
+      }
+    });
+  });
+
+  // Listener para evento customizado disparado quando o idioma é alterado
+  window.addEventListener('airbnb-language-changed', (e) => {
+    const lang = e.detail?.lang || (window.I18N ? window.I18N.getLanguage() : 'es');
+    if (state.currentUser) {
+      updateTopbarUser();
+      renderUserProfileSection();
+    }
+    renderAll();
+    if (typeof initAllCustomControls === 'function') {
+      initAllCustomControls();
+    }
+  });
+
   // Topbar
   document.getElementById('btn-switch-user')?.addEventListener('click', async () => {
+    const title = window.I18N ? window.I18N.t('dialog.confirmLogoutTitle') : 'Sair da Sessão';
+    const message = window.I18N ? window.I18N.t('dialog.confirmLogoutMessage') : 'Deseja realmente sair e retornar à tela inicial?';
+    const confirmText = window.I18N ? window.I18N.t('dialog.confirmLogoutBtn') : 'Sair Agora';
+    const cancelText = window.I18N ? window.I18N.t('dialog.confirmLogoutCancel') : 'Cancelar';
+
     const confirmed = await showConfirmDialog({
-      title: 'Sair da Sessão',
-      message: 'Deseja realmente sair e retornar à tela inicial?',
-      confirmText: 'Sair Agora',
-      cancelText: 'Cancelar',
+      title,
+      message,
+      confirmText,
+      cancelText,
       confirmDanger: false,
       icon: 'logout'
     });
