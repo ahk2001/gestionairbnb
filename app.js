@@ -289,22 +289,14 @@ function loadData() {
         }
       }
 
-      // Expurgar registros de horas que estejam no futuro ou à frente do horário atual
+      // Expurgar apenas registros com datas estritamente no futuro (ex: amanhã ou depois)
       if (state.data && Array.isArray(state.data.timesheets)) {
         const todayStr = getTodayDateString();
-        const now = new Date();
-        const nowMinutes = now.getHours() * 60 + now.getMinutes();
         const lenBefore = state.data.timesheets.length;
 
         state.data.timesheets = state.data.timesheets.filter(t => {
           if (!t.date) return false;
-          // Se for estritamente data futura, descarta
           if (t.date > todayStr) return false;
-          // Se for a data de hoje, não pode ter início ou fim posterior ao horário atual
-          if (t.date === todayStr) {
-            if (t.endTime && timeToMinutes(t.endTime) > nowMinutes) return false;
-            if (t.startTime && timeToMinutes(t.startTime) > nowMinutes) return false;
-          }
           return true;
         });
 
@@ -365,10 +357,25 @@ function syncToCloudDebounced() {
       catch (e) { console.warn('[CloudSync] Falha ao sincronizar notes:', e); }
     }
 
-    // 4. Registro de Horas / Timesheets (permitido para Gestor e Equipe)
+    // 4. Registro de Horas / Timesheets
     if (state.data.timesheets) {
-      try { await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets); }
-      catch (e) { console.warn('[CloudSync] Falha ao sincronizar timesheets:', e); }
+      try {
+        if (isOwner) {
+          await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets);
+        } else {
+          const myEmail = (state.currentUser?.email || '').toLowerCase().trim();
+          const myId = state.currentUser?.id;
+          const myTimesheets = state.data.timesheets.filter(t => 
+            (myEmail && t.staffEmail && t.staffEmail.toLowerCase() === myEmail) ||
+            (myId && t.staffId === myId)
+          );
+          if (myTimesheets.length > 0) {
+            await AirbnbCloudSync.syncCollectionBatch('timesheets', myTimesheets);
+          }
+        }
+      } catch (e) {
+        console.warn('[CloudSync] Falha ao sincronizar timesheets:', e);
+      }
     }
 
     // 5. Calendário de Escalas (permitido para Gestor e Equipe)
@@ -1087,11 +1094,20 @@ async function logout() {
     clearTimeout(cloudSyncDebounceTimer);
     cloudSyncDebounceTimer = null;
   }
-  // Sincroniza eventuais alterações pendentes de recados ou compras antes de desconectar
+  // Sincroniza eventuais alterações pendentes de recados, compras ou horas antes de desconectar
   if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured() && state.currentUser) {
     try {
       if (state.data.notes) await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes);
       if (state.data.purchases) await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases);
+      if (state.data.timesheets) {
+        const isOwner = state.currentUser?.type === 'owner';
+        const myEmail = (state.currentUser?.email || '').toLowerCase().trim();
+        const myId = state.currentUser?.id;
+        const myTimesheets = isOwner
+          ? state.data.timesheets
+          : state.data.timesheets.filter(t => (myEmail && t.staffEmail && t.staffEmail.toLowerCase() === myEmail) || (myId && t.staffId === myId));
+        if (myTimesheets.length > 0) await AirbnbCloudSync.syncCollectionBatch('timesheets', myTimesheets);
+      }
     } catch (e) {
       console.warn('[CloudSync] Falha ao descarregar pendências antes do logout:', e);
     }
@@ -3086,9 +3102,26 @@ function renderTimesheets() {
   // VISÃO DA EQUIPE (FUNCIONÁRIA): MINHAS HORAS, REGISTRAR DIA E EDITAR
   // =========================================================================
   const currentId = state.currentUser?.id;
-  const currentName = state.currentUser?.name;
+  const currentName = (state.currentUser?.name || '').trim().toLowerCase();
+  const currentEmail = (state.currentUser?.email || '').trim().toLowerCase();
+
+  // Encontra o objeto correspondente no cadastro de equipe se houver
+  const matchedStaff = (state.data.staff || []).find(s => 
+    (currentEmail && s.email && s.email.toLowerCase() === currentEmail) ||
+    (currentId && s.id === currentId) ||
+    (currentName && s.name && s.name.trim().toLowerCase() === currentName)
+  );
+  const matchedStaffId = matchedStaff?.id;
+
   let timesheets = (state.data.timesheets && Array.isArray(state.data.timesheets))
-    ? state.data.timesheets.filter(t => (currentId && t.staffId === currentId) || (currentName && t.staffName === currentName))
+    ? state.data.timesheets.filter(t => {
+        if (!t) return false;
+        if (currentEmail && t.staffEmail && t.staffEmail.toLowerCase() === currentEmail) return true;
+        if (currentId && t.staffId === currentId) return true;
+        if (matchedStaffId && t.staffId === matchedStaffId) return true;
+        if (currentName && t.staffName && t.staffName.trim().toLowerCase() === currentName) return true;
+        return false;
+      })
     : [];
 
   timesheets.sort((a, b) => {
@@ -3361,8 +3394,14 @@ function renderManagerInlineCalendar(year, month) {
   // Identificar quais datas possuem registros para exibir pontinho verde indicador
   const staffId = state.activeManagerStaffId;
   const staff = (state.data.staff || []).find(s => s.id === staffId);
+  const sEmail = (staff?.email || '').toLowerCase().trim();
+  const sName = (staff?.name || '').toLowerCase().trim();
   const staffTimesheets = (state.data.timesheets || []).filter(t => 
-    staff && (t.staffId === staff.id || t.staffName === staff.name)
+    staff && (
+      t.staffId === staff.id ||
+      (sEmail && t.staffEmail && t.staffEmail.toLowerCase() === sEmail) ||
+      (sName && t.staffName && t.staffName.toLowerCase().trim() === sName)
+    )
   );
   const workedDatesSet = new Set(staffTimesheets.map(t => t.date).filter(Boolean));
 
@@ -3506,9 +3545,15 @@ function showManagerTimesheetHours(staffId, dateStr) {
   if (!hoursContainer) return;
 
   // Filtrar registros do funcionário nesta data específica
-  const records = (state.data.timesheets || []).filter(t =>
-    (t.staffId === staff.id || t.staffName === staff.name) && t.date === dateStr
-  );
+  const staffEmail = (staff.email || '').toLowerCase().trim();
+  const staffName = (staff.name || '').toLowerCase().trim();
+  const records = (state.data.timesheets || []).filter(t => {
+    if (!t || t.date !== dateStr) return false;
+    if (t.staffId === staff.id) return true;
+    if (staffEmail && t.staffEmail && t.staffEmail.toLowerCase() === staffEmail) return true;
+    if (staffName && t.staffName && t.staffName.toLowerCase().trim() === staffName) return true;
+    return false;
+  });
 
   records.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
@@ -3854,23 +3899,6 @@ function initTimePicker() {
         const hStr = String(_timePickerHour).padStart(2, '0');
         const mStr = String(_timePickerMinute).padStart(2, '0');
         const pickedTime = `${hStr}:${mStr}`;
-
-        // Se a data de registro for hoje, bloqueia seleção de horário futuro
-        const dateInput = document.getElementById('timesheet-date-input');
-        const dateVal = dateInput?.value || getTodayDateString();
-        const todayStr = getTodayDateString();
-
-        if (dateVal === todayStr) {
-          const now = new Date();
-          const curM = now.getHours() * 60 + now.getMinutes();
-          const pickM = _timePickerHour * 60 + _timePickerMinute;
-          if (pickM > curM) {
-            const curStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            showToast(`Horário futuro não permitido (${pickedTime}). Agora são ${curStr}.`);
-            return;
-          }
-        }
-
         state.tempTimesheetTimes[_timePickerActiveField] = pickedTime;
       }
       updateTimesheetModalFields();
@@ -6415,6 +6443,13 @@ function setupEventListeners() {
     if (confirmed) {
       state.data.timesheets = (state.data.timesheets || []).filter(t => t.id !== editId);
       saveData();
+
+      if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+        AirbnbCloudSync.deleteDocument('timesheets', editId).catch(err => {
+          console.warn('[CloudSync] Falha ao excluir horas no Firestore:', err);
+        });
+      }
+
       document.getElementById('modal-timesheet')?.classList.remove('active');
       renderTimesheets();
       showToast('Registro de horas excluído.');
@@ -6443,30 +6478,6 @@ function setupEventListeners() {
     if (!start) {
       showToast('Por favor, selecione pelo menos o horário de início.');
       return;
-    }
-
-    // Validação estrita: para a data de hoje, nenhum horário pode ser posterior ao momento atual
-    if (dateVal === todayStr) {
-      const now = new Date();
-      const nowM = now.getHours() * 60 + now.getMinutes();
-      const nowFormatted = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-      if (start && timeToMinutes(start) > nowM) {
-        showToast(`O horário de início (${start}) não pode ser no futuro. Agora são ${nowFormatted}.`);
-        return;
-      }
-      if (breakStart && timeToMinutes(breakStart) > nowM) {
-        showToast(`O início da pausa (${breakStart}) não pode ser no futuro. Agora são ${nowFormatted}.`);
-        return;
-      }
-      if (breakEnd && timeToMinutes(breakEnd) > nowM) {
-        showToast(`O fim da pausa (${breakEnd}) não pode ser no futuro. Agora são ${nowFormatted}.`);
-        return;
-      }
-      if (end && timeToMinutes(end) > nowM) {
-        showToast(`O horário de término (${end}) não pode ser no futuro. Agora são ${nowFormatted}.`);
-        return;
-      }
     }
 
     if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
@@ -6499,8 +6510,16 @@ function setupEventListeners() {
     const isPaid = document.getElementById('timesheet-is-paid-input')?.value === 'true';
 
     const currentUser = state.currentUser;
-    const staffId = currentUser?.id || 'staff_1';
-    const staffName = currentUser?.name || 'Equipe';
+    const staffEmail = (currentUser?.email || '').toLowerCase().trim();
+
+    // Encontra o registro de funcionário correspondente para vincular o staffId
+    const matchedStaff = (state.data.staff || []).find(s =>
+      (staffEmail && s.email && s.email.toLowerCase() === staffEmail) ||
+      (currentUser?.id && s.id === currentUser.id)
+    );
+
+    const staffId = matchedStaff?.id || currentUser?.id || 'staff_1';
+    const staffName = currentUser?.name || matchedStaff?.name || 'Equipe';
 
     if (!state.data.timesheets) state.data.timesheets = [];
 
@@ -6514,15 +6533,28 @@ function setupEventListeners() {
         existing.endTime = end;
         existing.totalMinutes = totalMinutes;
         existing.isPaid = isPaid;
+        existing.staffId = staffId;
+        existing.staffName = staffName;
+        if (staffEmail) existing.staffEmail = staffEmail;
         if (currentUser?.photo) existing.staffPhoto = currentUser.photo;
         existing.updatedAt = new Date().toISOString();
+
+        saveData();
+
+        if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+          AirbnbCloudSync.saveDocument('timesheets', existing.id, existing).catch(err => {
+            console.warn('[CloudSync] Falha ao atualizar horas no Firestore:', err);
+          });
+        }
+
         showToast('Registro de horas atualizado com sucesso!');
       }
     } else {
-      state.data.timesheets.push({
+      const newRecord = {
         id: 'ts_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         staffId: staffId,
         staffName: staffName,
+        staffEmail: staffEmail,
         staffPhoto: currentUser?.photo || null,
         date: dateVal,
         startTime: start,
@@ -6534,11 +6566,20 @@ function setupEventListeners() {
         notes: '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      });
+      };
+
+      state.data.timesheets.push(newRecord);
+      saveData();
+
+      if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+        AirbnbCloudSync.saveDocument('timesheets', newRecord.id, newRecord).catch(err => {
+          console.warn('[CloudSync] Falha no salvamento imediato de horas no Firestore:', err);
+        });
+      }
+
       showToast('Horas registradas com sucesso!');
     }
 
-    saveData();
     document.getElementById('modal-timesheet')?.classList.remove('active');
     renderTimesheets();
   });

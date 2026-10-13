@@ -103,6 +103,16 @@
               const remoteIds = new Set(items.map(it => String(it.id)));
               const localPending = (appState.data.calendar || []).filter(e => e && e.id && !remoteIds.has(String(e.id)));
               appState.data.calendar = [...localPending, ...items];
+            } else if (colName === 'timesheets') {
+              // Garante que registros de horas locais recém-criados não sejam descartados antes da confirmação da nuvem
+              const remoteIds = new Set(items.map(it => String(it.id)));
+              const localPending = (appState.data.timesheets || []).filter(t => t && t.id && !remoteIds.has(String(t.id)));
+              const combined = [...localPending, ...items];
+              combined.sort((a, b) => {
+                if (b.date !== a.date) return (b.date || '').localeCompare(a.date || '');
+                return (b.startTime || '').localeCompare(a.startTime || '');
+              });
+              appState.data.timesheets = combined;
             } else {
               // Se o Firestore retornou dados para essa coleção, substitui no estado
               if (items.length > 0) {
@@ -278,6 +288,16 @@
         if (!calSnap || calSnap.empty) {
           console.log('[CloudSync] Coleção de escalas vazia no Firestore. Inicializando escalas...');
           await syncCollectionBatch('calendar', initialData.calendar);
+        }
+      }
+
+      // Se produtos já existirem mas a coleção de horas estiver vazia na nuvem, inicializa horas
+      if (initialData.timesheets && initialData.timesheets.length > 0) {
+        const tsCol = firestoreMod.collection(firestoreDb, 'timesheets');
+        const tsSnap = await firestoreMod.getDocs ? await firestoreMod.getDocs(tsCol) : null;
+        if (!tsSnap || tsSnap.empty) {
+          console.log('[CloudSync] Coleção de horas trabalhadas vazia no Firestore. Inicializando horas...');
+          await syncCollectionBatch('timesheets', initialData.timesheets);
         }
       }
 

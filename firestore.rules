@@ -151,12 +151,17 @@ service cloud.firestore {
       allow create: if isAuthorizedUser();
       // Colaboradora só edita o próprio registro; Dono pode editar qualquer um
       allow update: if isOwner() || (
+        isStaff() && (
+          (resource.data.staffEmail != null && resource.data.staffEmail == request.auth.token.email.lower()) ||
+          (request.resource.data.staffEmail != null && request.resource.data.staffEmail == request.auth.token.email.lower())
+        )
+      );
+      // Dono pode apagar qualquer registro; colaboradora pode apagar o seu próprio
+      allow delete: if isOwner() || (
         isStaff() &&
         resource.data.staffEmail != null &&
         resource.data.staffEmail == request.auth.token.email.lower()
       );
-      // Integridade de folha de pagamento: apenas o proprietário pode apagar registros
-      allow delete: if isOwner();
     }
 
     // Bloqueia qualquer outra rota não explicitamente declarada
