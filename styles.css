@@ -6075,6 +6075,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transform: scale(1.08);
 }
 
+.time-wheel-item.is-disabled-future {
+  opacity: 0.22;
+  cursor: not-allowed;
+  filter: grayscale(1);
+  color: #CBD5E1;
+}
+
 .time-wheel-sep {
   font-size: 2rem;
   font-weight: 800;

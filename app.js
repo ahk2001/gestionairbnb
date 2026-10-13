@@ -3713,6 +3713,12 @@ function openTimesheetModal(editId = null) {
 
   if (dateInput) {
     dateInput.max = getTodayDateString();
+    dateInput.onchange = () => {
+      if (dateInput.value > getTodayDateString()) {
+        showToast('Não é possível registrar horas em uma data futura.');
+        dateInput.value = getTodayDateString();
+      }
+    };
   }
 
   if (editId) {
@@ -3836,6 +3842,14 @@ function initTimePicker() {
   hoursWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = parseInt(btn.dataset.val, 10);
+      const dateInput = document.getElementById('timesheet-date-input');
+      const todayStr = getTodayDateString();
+      const isToday = !dateInput || dateInput.value === todayStr;
+      const now = new Date();
+      if (isToday && val > now.getHours()) {
+        showToast(`Horário futuro não permitido (hora máxima atual: ${String(now.getHours()).padStart(2, '0')}:00).`);
+        return;
+      }
       scrollToTimeWheel(hoursWheel, val);
     });
   });
@@ -3844,6 +3858,14 @@ function initTimePicker() {
   minutesWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = parseInt(btn.dataset.val, 10);
+      const dateInput = document.getElementById('timesheet-date-input');
+      const todayStr = getTodayDateString();
+      const isToday = !dateInput || dateInput.value === todayStr;
+      const now = new Date();
+      if (isToday && _timePickerHour === now.getHours() && val > now.getMinutes()) {
+        showToast(`Minuto futuro não permitido (horário atual: ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}).`);
+        return;
+      }
       scrollToTimeWheel(minutesWheel, val);
     });
   });
@@ -3854,8 +3876,22 @@ function initTimePicker() {
     clearTimeout(hScrollTimeout);
     hScrollTimeout = setTimeout(() => {
       updateTimeWheelActiveItem(hoursWheel, (val) => {
-        _timePickerHour = val;
+        const dateInput = document.getElementById('timesheet-date-input');
+        const todayStr = getTodayDateString();
+        const isToday = !dateInput || dateInput.value === todayStr;
+        const now = new Date();
+        const nowH = now.getHours();
+        const nowM = now.getMinutes();
+
+        if (isToday && val > nowH) {
+          _timePickerHour = nowH;
+          scrollToTimeWheel(hoursWheel, nowH);
+          showToast(`Horário futuro não permitido (máximo: ${String(nowH).padStart(2, '0')}:00).`);
+        } else {
+          _timePickerHour = val;
+        }
         _timePickerIsCleared = false;
+        applyTimePickerFutureRestrictions(isToday, nowH, nowM);
         updateTimePickerDisplay();
       });
     }, 60);
@@ -3867,7 +3903,20 @@ function initTimePicker() {
     clearTimeout(mScrollTimeout);
     mScrollTimeout = setTimeout(() => {
       updateTimeWheelActiveItem(minutesWheel, (val) => {
-        _timePickerMinute = val;
+        const dateInput = document.getElementById('timesheet-date-input');
+        const todayStr = getTodayDateString();
+        const isToday = !dateInput || dateInput.value === todayStr;
+        const now = new Date();
+        const nowH = now.getHours();
+        const nowM = now.getMinutes();
+
+        if (isToday && _timePickerHour === nowH && val > nowM) {
+          _timePickerMinute = nowM;
+          scrollToTimeWheel(minutesWheel, nowM);
+          showToast(`Minuto futuro não permitido (máximo: ${String(nowH).padStart(2, '0')}:${String(nowM).padStart(2, '0')}).`);
+        } else {
+          _timePickerMinute = val;
+        }
         _timePickerIsCleared = false;
         updateTimePickerDisplay();
       });
@@ -3882,6 +3931,10 @@ function initTimePicker() {
     _timePickerIsCleared = false;
     setTimeWheelValues(_timePickerHour, _timePickerMinute);
     updateTimePickerDisplay();
+    const dateInput = document.getElementById('timesheet-date-input');
+    const todayStr = getTodayDateString();
+    const isToday = !dateInput || dateInput.value === todayStr;
+    applyTimePickerFutureRestrictions(isToday, now.getHours(), now.getMinutes());
   });
 
   // Botão "Limpar horário"
@@ -3896,6 +3949,23 @@ function initTimePicker() {
       if (_timePickerIsCleared) {
         state.tempTimesheetTimes[_timePickerActiveField] = '';
       } else {
+        const dateInput = document.getElementById('timesheet-date-input');
+        const todayStr = getTodayDateString();
+        const isToday = !dateInput || dateInput.value === todayStr;
+
+        if (isToday) {
+          const now = new Date();
+          const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+          const pickedTotalMinutes = _timePickerHour * 60 + _timePickerMinute;
+
+          if (pickedTotalMinutes > currentTotalMinutes) {
+            const curHStr = String(now.getHours()).padStart(2, '0');
+            const curMStr = String(now.getMinutes()).padStart(2, '0');
+            showToast(`Não é possível selecionar horário futuro (agora são ${curHStr}:${curMStr}).`);
+            return;
+          }
+        }
+
         const hStr = String(_timePickerHour).padStart(2, '0');
         const mStr = String(_timePickerMinute).padStart(2, '0');
         const pickedTime = `${hStr}:${mStr}`;
@@ -3909,6 +3979,34 @@ function initTimePicker() {
   // Fechar
   document.getElementById('btn-close-time-picker')?.addEventListener('click', () => {
     closeTimePicker();
+  });
+}
+
+function applyTimePickerFutureRestrictions(isToday, maxH, maxM) {
+  const hoursWheel = document.getElementById('time-wheel-hours');
+  const minutesWheel = document.getElementById('time-wheel-minutes');
+  if (!hoursWheel || !minutesWheel) return;
+
+  hoursWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
+    const val = parseInt(btn.dataset.val, 10);
+    if (isToday && val > maxH) {
+      btn.classList.add('is-disabled-future');
+      btn.setAttribute('title', 'Horário futuro não permitido');
+    } else {
+      btn.classList.remove('is-disabled-future');
+      btn.removeAttribute('title');
+    }
+  });
+
+  minutesWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
+    const val = parseInt(btn.dataset.val, 10);
+    if (isToday && _timePickerHour === maxH && val > maxM) {
+      btn.classList.add('is-disabled-future');
+      btn.setAttribute('title', 'Minuto futuro não permitido');
+    } else {
+      btn.classList.remove('is-disabled-future');
+      btn.removeAttribute('title');
+    }
   });
 }
 
@@ -3970,28 +4068,62 @@ function openTimePicker(fieldKey, fieldTitle) {
   const titleEl = document.getElementById('time-picker-title');
   if (titleEl) titleEl.textContent = fieldTitle || 'Selecionar Horário';
 
+  const dateInput = document.getElementById('timesheet-date-input');
+  const todayStr = getTodayDateString();
+  const isToday = !dateInput || dateInput.value === todayStr;
+  const now = new Date();
+  const nowH = now.getHours();
+  const nowM = now.getMinutes();
+  const currentTotalMinutes = nowH * 60 + nowM;
+
   const currentVal = state.tempTimesheetTimes[fieldKey] || '';
   if (currentVal && currentVal.includes(':')) {
     const parts = currentVal.split(':').map(Number);
-    _timePickerHour = isNaN(parts[0]) ? 8 : parts[0];
-    _timePickerMinute = isNaN(parts[1]) ? 0 : parts[1];
+    let h = isNaN(parts[0]) ? 8 : parts[0];
+    let m = isNaN(parts[1]) ? 0 : parts[1];
+    if (isToday && (h * 60 + m > currentTotalMinutes)) {
+      h = nowH;
+      m = nowM;
+    }
+    _timePickerHour = h;
+    _timePickerMinute = m;
     _timePickerIsCleared = false;
   } else {
-    if (fieldKey === 'start') {
-      _timePickerHour = 8; _timePickerMinute = 0;
-    } else if (fieldKey === 'breakStart') {
-      _timePickerHour = 12; _timePickerMinute = 0;
-    } else if (fieldKey === 'breakEnd') {
-      _timePickerHour = 13; _timePickerMinute = 0;
-    } else if (fieldKey === 'end') {
-      _timePickerHour = 16; _timePickerMinute = 30;
+    if (isToday) {
+      if (fieldKey === 'start') {
+        _timePickerHour = Math.min(8, nowH);
+        _timePickerMinute = 0;
+      } else if (fieldKey === 'breakStart') {
+        _timePickerHour = Math.min(12, nowH);
+        _timePickerMinute = 0;
+      } else if (fieldKey === 'breakEnd') {
+        _timePickerHour = Math.min(13, nowH);
+        _timePickerMinute = 0;
+      } else if (fieldKey === 'end') {
+        _timePickerHour = nowH;
+        _timePickerMinute = Math.floor(nowM / 5) * 5;
+      } else {
+        _timePickerHour = nowH;
+        _timePickerMinute = nowM;
+      }
     } else {
-      _timePickerHour = 8; _timePickerMinute = 0;
+      if (fieldKey === 'start') {
+        _timePickerHour = 8; _timePickerMinute = 0;
+      } else if (fieldKey === 'breakStart') {
+        _timePickerHour = 12; _timePickerMinute = 0;
+      } else if (fieldKey === 'breakEnd') {
+        _timePickerHour = 13; _timePickerMinute = 0;
+      } else if (fieldKey === 'end') {
+        _timePickerHour = 16; _timePickerMinute = 30;
+      } else {
+        _timePickerHour = 8; _timePickerMinute = 0;
+      }
     }
     _timePickerIsCleared = !currentVal;
   }
 
   updateTimePickerDisplay();
+  applyTimePickerFutureRestrictions(isToday, nowH, nowM);
 
   const modal = document.getElementById('modal-time-picker');
   if (modal) modal.classList.add('active');
@@ -6480,9 +6612,44 @@ function setupEventListeners() {
       return;
     }
 
+    // Se for o dia de hoje, valida se qualquer horário informado está no futuro em relação ao relógio
+    if (dateVal === todayStr) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const curHStr = String(now.getHours()).padStart(2, '0');
+      const curMStr = String(now.getMinutes()).padStart(2, '0');
+      const nowFormatted = `${curHStr}:${curMStr}`;
+
+      if (start && timeToMinutes(start) > currentMinutes) {
+        showToast(`O horário de início (${start}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        return;
+      }
+      if (breakStart && timeToMinutes(breakStart) > currentMinutes) {
+        showToast(`O início da pausa (${breakStart}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        return;
+      }
+      if (breakEnd && timeToMinutes(breakEnd) > currentMinutes) {
+        showToast(`O término da pausa (${breakEnd}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        return;
+      }
+      if (end && timeToMinutes(end) > currentMinutes) {
+        showToast(`O horário de término (${end}) não pode ser no futuro (horário atual: ${nowFormatted}).`);
+        return;
+      }
+    }
+
     if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
       showToast('Para registrar pausa, preencha o início e o fim da pausa.');
       return;
+    }
+
+    if (start && breakStart) {
+      const sM = timeToMinutes(start);
+      const bsM = timeToMinutes(breakStart);
+      if (bsM < sM) {
+        showToast('O início da pausa não pode ser anterior ao início do trabalho.');
+        return;
+      }
     }
 
     if (breakStart && breakEnd) {
@@ -6490,6 +6657,15 @@ function setupEventListeners() {
       const beM = timeToMinutes(breakEnd);
       if (beM <= bsM) {
         showToast('O fim da pausa deve ser posterior ao início da pausa.');
+        return;
+      }
+    }
+
+    if (breakEnd && end) {
+      const beM = timeToMinutes(breakEnd);
+      const eM = timeToMinutes(end);
+      if (eM < beM) {
+        showToast('O término do trabalho deve ser posterior ao fim da pausa.');
         return;
       }
     }
