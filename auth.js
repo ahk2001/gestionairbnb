@@ -16,6 +16,14 @@
   let isSuppressingNullAuth = false;
 
   let cachedModules = null;
+  let activeAccessUnsubscribe = null;
+
+  function stopAccessWatcher() {
+    if (activeAccessUnsubscribe) {
+      try { activeAccessUnsubscribe(); } catch (e) {}
+      activeAccessUnsubscribe = null;
+    }
+  }
 
   // Carregamento dinâmico dos módulos do Firebase SDK
   async function loadFirebaseModules() {
@@ -160,6 +168,7 @@
 
       authMod.onAuthStateChanged(firebaseAuth, async (fbUser) => {
         if (!fbUser) {
+          stopAccessWatcher();
           if (isSuppressingNullAuth) {
             return;
           }
@@ -169,9 +178,11 @@
 
         try {
           const userEmail = fbUser.email;
-          const access = await checkUserAccess(userEmail, firestoreMod);
+          const cleanEmail = String(userEmail || '').trim().toLowerCase();
+          const access = await checkUserAccess(cleanEmail, firestoreMod);
 
           if (!access) {
+            stopAccessWatcher();
             // Conta Google autenticada, porém NÃO está na lista de e-mails permitidos
             const deniedErr = {
               code: 'ACCESS_DENIED',
@@ -196,6 +207,7 @@
           }
 
           if (access.active === false) {
+            stopAccessWatcher();
             // Acesso suspenso pelo administrador
             const inactiveErr = {
               code: 'ACCOUNT_INACTIVE',
@@ -230,6 +242,52 @@
           };
 
           notifyListeners(appUser, null);
+
+          // Observador em tempo real: se o administrador suspender ou revogar a conta enquanto o usuário estiver ativo, desconecta instantaneamente
+          stopAccessWatcher();
+          if (!isRootOwnerEmail(cleanEmail) && firestoreDb) {
+            try {
+              const accessDocRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);
+              activeAccessUnsubscribe = firestoreMod.onSnapshot(accessDocRef, async (snap) => {
+                if (!snap.exists()) {
+                  stopAccessWatcher();
+                  try {
+                    isSuppressingNullAuth = true;
+                    await authMod.signOut(firebaseAuth);
+                  } catch (e) {}
+                  finally {
+                    setTimeout(() => { isSuppressingNullAuth = false; }, 800);
+                  }
+                  notifyListeners(null, {
+                    code: 'ACCESS_DENIED',
+                    email: cleanEmail,
+                    message: `O acesso para o e-mail ${cleanEmail} foi revogado pelo administrador.`
+                  });
+                } else {
+                  const currentAccess = snap.data();
+                  if (currentAccess && currentAccess.active === false) {
+                    stopAccessWatcher();
+                    try {
+                      isSuppressingNullAuth = true;
+                      await authMod.signOut(firebaseAuth);
+                    } catch (e) {}
+                    finally {
+                      setTimeout(() => { isSuppressingNullAuth = false; }, 800);
+                    }
+                    notifyListeners(null, {
+                      code: 'ACCOUNT_INACTIVE',
+                      email: cleanEmail,
+                      message: `O acesso para o e-mail ${cleanEmail} foi suspenso temporariamente.`
+                    });
+                  }
+                }
+              }, (errSnap) => {
+                console.warn('[AirbnbAuth] Aviso no observador em tempo real de acesso:', errSnap);
+              });
+            } catch (listenErr) {
+              console.warn('[AirbnbAuth] Falha ao registrar observador de revogação imediata:', listenErr);
+            }
+          }
         } catch (err) {
           console.error('[AirbnbAuth] Erro ao validar conta:', err);
           notifyListeners(null, {
@@ -274,6 +332,7 @@
 
   // Desconecta o usuário do Firebase
   async function logout() {
+    stopAccessWatcher();
     if (firebaseAuth) {
       const { authMod } = await loadFirebaseModules();
       await authMod.signOut(firebaseAuth);
@@ -285,6 +344,12 @@
   async function addStaffToAllowlist({ email, name, role = 'staff', staffId = null }) {
     if (!email) throw new Error('E-mail obrigatório');
     const cleanEmail = String(email).trim().toLowerCase();
+
+    // Impede que administradores secundários tentem rebaixar ou alterar a raiz
+    if (isRootOwnerEmail(cleanEmail) && (!currentUserState || !currentUserState.isRoot)) {
+      throw new Error('Apenas o gestor raiz pode alterar o usuário mestre.');
+    }
+
     const { firestoreMod } = await loadFirebaseModules();
 
     const docRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);
@@ -304,6 +369,9 @@
   async function setStaffActiveInAllowlist(email, active) {
     if (!email) return;
     const cleanEmail = String(email).trim().toLowerCase();
+    // Proteção: administradores raiz nunca podem ser inativados
+    if (isRootOwnerEmail(cleanEmail)) return;
+
     const { firestoreMod } = await loadFirebaseModules();
 
     const docRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);
@@ -316,6 +384,9 @@
   async function removeStaffFromAllowlist(email) {
     if (!email) return;
     const cleanEmail = String(email).trim().toLowerCase();
+    // Proteção: administradores raiz nunca podem ser excluídos da allowlist
+    if (isRootOwnerEmail(cleanEmail)) return;
+
     const { firestoreMod } = await loadFirebaseModules();
 
     const docRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);

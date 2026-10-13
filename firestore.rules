@@ -67,8 +67,10 @@ service cloud.firestore {
       allow get: if isAuthenticated() && (request.auth.token.email.lower() == email.lower() || isOwner());
       allow list: if isOwner();
 
-      // Bootstrap: o root owner pode criar seu próprio registro caso não exista
-      allow create: if isOwner() || (isRootOwner() && request.auth.token.email.lower() == email.lower());
+      // Bootstrap seguro: apenas o root owner pode criar registros de donos raiz.
+      // Donos secundários não podem criar ou registrar administradores raiz
+      allow create: if (isOwner() && !isRootOwnerEmail(email)) ||
+                       (isRootOwner() && request.auth.token.email.lower() == email.lower());
 
       // Apenas o proprietário pode alterar papéis ou revogar acessos
       // Protege contra exclusão ou modificação dos registros de administradores raiz por donos secundários
@@ -121,12 +123,13 @@ service cloud.firestore {
         request.resource.data.email != null &&
         request.resource.data.email.lower() == request.auth.token.email.lower()
       );
-      // Colaboradora só atualiza o seu próprio perfil e não pode alterar o e-mail cadastrado
+      // Colaboradora só atualiza o seu próprio perfil, não pode alterar o e-mail nem reativar status se estiver suspenso
       allow update: if isOwner() || (
         isStaff() &&
         resource.data.email != null &&
         resource.data.email.lower() == request.auth.token.email.lower() &&
-        (request.resource.data.email == null || request.resource.data.email.lower() == resource.data.email.lower())
+        (request.resource.data.email == null || request.resource.data.email.lower() == resource.data.email.lower()) &&
+        (!('isActive' in request.resource.data) || request.resource.data.isActive == resource.data.isActive)
       );
     }
 
@@ -140,8 +143,12 @@ service cloud.firestore {
         isStaff() &&
         request.resource.data.authorType != 'owner'
       );
-      // Dono e equipe podem marcar como resolvido/reabrir
-      allow update: if isAuthorizedUser();
+      // Dono pode editar tudo; Colaboradora não altera tipo de autor e, em recados do dono, só pode alternar status de resolução
+      allow update: if isOwner() || (
+        isStaff() &&
+        request.resource.data.authorType == resource.data.authorType &&
+        (resource.data.authorType != 'owner' || request.resource.data.content == resource.data.content)
+      );
       // Integridade dos avisos: colaboradora só pode apagar notas criadas pela equipe, NUNCA do gestor
       allow delete: if isOwner() || (
         isStaff() &&
@@ -173,7 +180,7 @@ service cloud.firestore {
     // ========================================================================
     match /timesheets/{timesheetId} {
       allow read: if isAuthorizedUser();
-      // Dono cria qualquer registro; Colaboradora só cria registro atribuído ao seu próprio e-mail
+      // Dono cria qualquer registro; Colaboradora só cria registro atribuído ao seu próprio e-mail (podendo definir status de pagamento)
       allow create: if isAuthorizedUser() && (
         isOwner() ||
         (

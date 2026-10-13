@@ -250,8 +250,8 @@
         const batch = firestoreMod.writeBatch(firestoreDb);
         const slice = items.slice(i, i + BATCH_SIZE);
 
-        slice.forEach(item => {
-          const docId = String(item.id || item.catalogId || `doc_${Date.now()}`);
+        slice.forEach((item, itemIdx) => {
+          const docId = String(item.id || item.catalogId || `doc_${Date.now()}_${itemIdx}_${Math.random().toString(36).slice(2, 7)}`);
           const docRef = firestoreMod.doc(firestoreDb, collectionName, docId);
           const cleanItem = JSON.parse(JSON.stringify(item));
           batch.set(docRef, cleanItem, { merge: true });

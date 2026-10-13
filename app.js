@@ -841,7 +841,7 @@ function updateTopbarUser() {
     if (usernameEl) usernameEl.textContent = state.currentUser.name;
     if (avatarEl) {
       if (state.currentUser.photo) {
-        avatarEl.innerHTML = `<img src="${state.currentUser.photo}" alt="${escapeHtml(state.currentUser.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        avatarEl.innerHTML = `<img src="${escapeHtml(state.currentUser.photo)}" alt="${escapeHtml(state.currentUser.name)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
         avatarEl.style.padding = '0';
         avatarEl.style.overflow = 'hidden';
       } else {
@@ -912,7 +912,7 @@ function renderUserProfileSection() {
 
   if (avatarBox) {
     if (state.currentUser.photo) {
-      avatarBox.innerHTML = `<img src="${state.currentUser.photo}" alt="${escapeHtml(state.currentUser.name)}">`;
+      avatarBox.innerHTML = `<img src="${escapeHtml(state.currentUser.photo)}" alt="${escapeHtml(state.currentUser.name)}">`;
     } else {
       const initials = getInitials(state.currentUser.name, isOwner ? 'AD' : 'EQ');
       avatarBox.innerHTML = `<span>${initials}</span>`;
@@ -1203,13 +1203,35 @@ async function saveUserProfile(newName, newPhoto) {
           await AirbnbCloudSync.saveDocument('staff', updatedStaffObj.id, updatedStaffObj);
         }
         if (timesheetsUpdated && state.data.timesheets && state.data.timesheets.length > 0) {
-          await AirbnbCloudSync.syncCollectionBatch('timesheets', state.data.timesheets);
+          const myTimesheets = (state.data.timesheets || []).filter(t =>
+            (userEmail && t.staffEmail && t.staffEmail.toLowerCase() === userEmail) ||
+            (userId && t.staffId === userId)
+          );
+          if (myTimesheets.length > 0) {
+            await AirbnbCloudSync.syncCollectionBatch('timesheets', myTimesheets);
+          }
         }
         if (notesUpdated && state.data.notes && state.data.notes.length > 0) {
-          await AirbnbCloudSync.syncCollectionBatch('notes', state.data.notes);
+          const myNotes = (state.data.notes || []).filter(n =>
+            n.authorType !== 'owner' && (
+              (userId && n.authorId && String(n.authorId) === userId) ||
+              (userEmail && n.authorEmail && n.authorEmail.toLowerCase() === userEmail) ||
+              (oldName && n.authorName && n.authorName.trim().toLowerCase() === oldName.trim().toLowerCase())
+            )
+          );
+          if (myNotes.length > 0) {
+            await AirbnbCloudSync.syncCollectionBatch('notes', myNotes);
+          }
         }
         if (purchasesUpdated && state.data.purchases && state.data.purchases.length > 0) {
-          await AirbnbCloudSync.syncCollectionBatch('purchases', state.data.purchases);
+          const myPurchases = (state.data.purchases || []).filter(p =>
+            (userEmail && p.buyerEmail && p.buyerEmail.toLowerCase() === userEmail) ||
+            (userId && p.buyerStaffId === userId) ||
+            (oldName && p.buyerName && p.buyerName.trim().toLowerCase() === oldName.trim().toLowerCase())
+          );
+          if (myPurchases.length > 0) {
+            await AirbnbCloudSync.syncCollectionBatch('purchases', myPurchases);
+          }
         }
         if (calendarUpdated && state.data.calendar && state.data.calendar.length > 0) {
           await AirbnbCloudSync.syncCollectionBatch('calendar', state.data.calendar);
@@ -3144,7 +3166,7 @@ function renderOwnerDashboard() {
           <div class="staff-info-col">
             <div class="staff-avatar-circle" title="${escapeHtml(staff.name)}">
               ${staff.photo
-                ? `<img src="${staff.photo}" alt="${escapeHtml(staff.name)}">`
+                ? `<img src="${escapeHtml(staff.photo)}" alt="${escapeHtml(staff.name)}">`
                 : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -4796,7 +4818,7 @@ function openViewPurchaseModal(purchaseId) {
     const buyerPhoto = purchase.buyerPhoto || buyerObj?.photo || (purchase.buyerName === 'Gestor' ? (state.data.ownerProfile?.photo || OWNER_PROFILE.photo) : null);
     buyerEl.innerHTML = `
       <span style="display: inline-flex; align-items: center; gap: 6px;">
-        ${buyerPhoto ? `<img src="${buyerPhoto}" class="purchase-buyer-img" alt="" style="width: 18px; height: 18px; border-radius: 50%; object-fit: cover;">` : ''}
+        ${buyerPhoto ? `<img src="${escapeHtml(buyerPhoto)}" class="purchase-buyer-img" alt="" style="width: 18px; height: 18px; border-radius: 50%; object-fit: cover;">` : ''}
         <span>${escapeHtml(purchase.buyerName)} (${roleLabel})</span>
       </span>
     `;
@@ -4865,7 +4887,7 @@ function openViewPurchaseModal(purchaseId) {
     if (purchase.receiptPhoto) {
       receiptContainer.innerHTML = `
         <div class="receipt-preview-card">
-          <img src="${purchase.receiptPhoto}" class="receipt-preview-thumb" id="view-purchase-receipt-img" alt="Comprovante / Nota Fiscal">
+          <img src="${escapeHtml(purchase.receiptPhoto)}" class="receipt-preview-thumb" id="view-purchase-receipt-img" alt="Comprovante / Nota Fiscal">
           <button type="button" class="btn-zoom-receipt" id="btn-zoom-purchase-receipt">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>
@@ -4985,7 +5007,7 @@ function renderPurchaseCardHtml(p, receiptTagTxt) {
     <div class="clickable-purchase-card" data-purchase-id="${p.id}" role="button" tabindex="0" title="Clique para visualizar detalhes e nota fiscal">
       <div class="purchase-card-left">
         ${p.productPhoto
-          ? `<img src="${p.productPhoto}" class="purchase-card-thumb" alt="${escapeHtml(p.productName || '')}">`
+          ? `<img src="${escapeHtml(p.productPhoto)}" class="purchase-card-thumb" alt="${escapeHtml(p.productName || '')}">`
           : `<div class="purchase-card-thumb-placeholder">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>
             </div>`
@@ -4995,7 +5017,7 @@ function renderPurchaseCardHtml(p, receiptTagTxt) {
           <div class="purchase-card-meta">
             <span class="purchase-meta-prop-badge">${escapeHtml(p.propertyId || '')}</span>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
-              ${buyerPhoto ? `<img src="${buyerPhoto}" class="purchase-buyer-img" alt="">` : ''}
+              ${buyerPhoto ? `<img src="${escapeHtml(buyerPhoto)}" class="purchase-buyer-img" alt="">` : ''}
               <span>${escapeHtml(p.buyerName || '')}</span>
             </span>
             <span>•</span>
@@ -5790,9 +5812,9 @@ function renderCustomSelectContent(select, wrapper) {
   wrapper.innerHTML = `
     <button type="button" class="custom-select-trigger" id="${select.id}-trigger" aria-haspopup="listbox" aria-expanded="false">
       <div class="custom-select-trigger-content">
-        ${meta.thumb ? `<img src="${meta.thumb}" class="custom-select-trigger-thumb" alt="">` : ''}
-        ${meta.badge ? `<span class="custom-select-trigger-badge ${meta.badgeClass || ''}">${meta.badge}</span>` : ''}
-        ${meta.title ? `<span class="custom-select-trigger-text">${meta.title}</span>` : (!meta.badge ? `<span class="custom-select-trigger-text">${t('customSelect.select')}</span>` : '')}
+        ${meta.thumb ? `<img src="${escapeHtml(meta.thumb)}" class="custom-select-trigger-thumb" alt="">` : ''}
+        ${meta.badge ? `<span class="custom-select-trigger-badge ${escapeHtml(meta.badgeClass || '')}">${escapeHtml(meta.badge)}</span>` : ''}
+        ${meta.title ? `<span class="custom-select-trigger-text">${escapeHtml(meta.title)}</span>` : (!meta.badge ? `<span class="custom-select-trigger-text">${t('customSelect.select')}</span>` : '')}
       </div>
       <span class="custom-select-chevron">${chevronSvgIcon}</span>
     </button>
@@ -5808,14 +5830,14 @@ function renderCustomSelectContent(select, wrapper) {
           const optMeta = getCustomOptionMeta(select, opt);
           const isSelected = opt.value === select.value;
           return `
-            <div class="custom-select-option ${isSelected ? 'selected' : ''}" data-value="${opt.value}" role="option" aria-selected="${isSelected}">
+            <div class="custom-select-option ${isSelected ? 'selected' : ''}" data-value="${escapeHtml(opt.value)}" role="option" aria-selected="${isSelected}">
               <div class="custom-select-option-main">
-                ${optMeta.thumb ? `<img src="${optMeta.thumb}" class="custom-select-option-thumb" alt="">` : ''}
-                ${optMeta.badge ? `<span class="custom-select-option-badge ${optMeta.badgeClass || ''}">${optMeta.badge}</span>` : ''}
+                ${optMeta.thumb ? `<img src="${escapeHtml(optMeta.thumb)}" class="custom-select-option-thumb" alt="">` : ''}
+                ${optMeta.badge ? `<span class="custom-select-option-badge ${escapeHtml(optMeta.badgeClass || '')}">${escapeHtml(optMeta.badge)}</span>` : ''}
                 ${(optMeta.title || optMeta.sub) ? `
                 <div class="custom-select-option-info">
-                  ${optMeta.title ? `<span class="custom-select-option-title">${optMeta.title}</span>` : ''}
-                  ${optMeta.sub ? `<span class="custom-select-option-sub">${optMeta.sub}</span>` : ''}
+                  ${optMeta.title ? `<span class="custom-select-option-title">${escapeHtml(optMeta.title)}</span>` : ''}
+                  ${optMeta.sub ? `<span class="custom-select-option-sub">${escapeHtml(optMeta.sub)}</span>` : ''}
                 </div>
                 ` : ''}
               </div>
@@ -5949,9 +5971,9 @@ function syncCustomSelect(target) {
   const triggerContent = wrapper.querySelector('.custom-select-trigger-content');
   if (triggerContent) {
     triggerContent.innerHTML = `
-      ${meta.thumb ? `<img src="${meta.thumb}" class="custom-select-trigger-thumb" alt="">` : ''}
-      ${meta.badge ? `<span class="custom-select-trigger-badge ${meta.badgeClass || ''}">${meta.badge}</span>` : ''}
-      ${meta.title ? `<span class="custom-select-trigger-text">${meta.title}</span>` : (!meta.badge ? `<span class="custom-select-trigger-text">Selecione...</span>` : '')}
+      ${meta.thumb ? `<img src="${escapeHtml(meta.thumb)}" class="custom-select-trigger-thumb" alt="">` : ''}
+      ${meta.badge ? `<span class="custom-select-trigger-badge ${escapeHtml(meta.badgeClass || '')}">${escapeHtml(meta.badge)}</span>` : ''}
+      ${meta.title ? `<span class="custom-select-trigger-text">${escapeHtml(meta.title)}</span>` : (!meta.badge ? `<span class="custom-select-trigger-text">Selecione...</span>` : '')}
     `;
   }
 
@@ -6560,7 +6582,7 @@ function renderPurchaseItems() {
 
         <select id="${selectId}" class="form-input purchase-item-product-select" data-index="${idx}" required>
           ${PRODUCT_CATALOG.map(p => `
-            <option value="${p.id}" ${p.id === item.catalogId ? 'selected' : ''}>${p.name}</option>
+            <option value="${escapeHtml(p.id)}" ${p.id === item.catalogId ? 'selected' : ''}>${escapeHtml(p.name)}</option>
           `).join('')}
         </select>
 
@@ -6861,7 +6883,7 @@ function openProductNoteModal(productId) {
       const dateStr = product.noteUpdatedAt ? ` • ${formatDateTime(product.noteUpdatedAt)}` : '';
       metaText.innerHTML = `
         <span style="display: inline-flex; align-items: center; gap: 6px;">
-          ${authorPhoto ? `<img src="${authorPhoto}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover; vertical-align: middle;">` : ''}
+          ${authorPhoto ? `<img src="${escapeHtml(authorPhoto)}" alt="" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover; vertical-align: middle;">` : ''}
           <span>${t('productNote.notedBy', { name: escapeHtml(author), date: dateStr })}</span>
         </span>
       `;
@@ -7452,7 +7474,7 @@ function openNewEventModal(prefilledDate) {
   if (staffSelect) {
     const activeStaff = state.data.staff.filter(s => s.isActive);
     staffSelect.innerHTML = activeStaff.map(s => `
-      <option value="${s.id}">${s.name}</option>
+      <option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>
     `).join('');
   }
 
