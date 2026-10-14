@@ -85,53 +85,62 @@
     return rootOwners.includes(cleanEmail);
   }
 
-  // Consulta o registro de permissão (allowlist) no Firestore
-  async function checkUserAccess(email, firestoreMod) {
+  // Consulta o registro de permissão (allowlist) no Firestore com retry automático contra oscilações de rede
+  async function checkUserAccess(email, firestoreMod, maxRetries = 3) {
     if (!email || !firestoreDb) return null;
     const cleanEmail = String(email).trim().toLowerCase();
 
-    try {
-      const accessDocRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);
-      const snapshot = await firestoreMod.getDoc(accessDocRef);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const accessDocRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);
+        const snapshot = await firestoreMod.getDoc(accessDocRef);
 
-      if (snapshot.exists()) {
-        return { id: snapshot.id, ...snapshot.data() };
-      }
-
-      // Se for o dono raiz e o documento ainda não existir na nuvem, faz o bootstrap automático
-      if (isRootOwnerEmail(cleanEmail)) {
-        const rootAccess = {
-          email: cleanEmail,
-          role: 'owner',
-          active: true,
-          name: 'Gestor dos Imóveis',
-          createdAt: new Date().toISOString(),
-          isRoot: true
-        };
-        try {
-          await firestoreMod.setDoc(accessDocRef, rootAccess, { merge: true });
-        } catch (setErr) {
-          console.warn('[AirbnbAuth] Aviso ao salvar doc raiz:', setErr);
+        if (snapshot.exists()) {
+          const data = snapshot.data() || {};
+          return { id: snapshot.id, ...data };
         }
-        return rootAccess;
-      }
 
-      return null;
-    } catch (err) {
-      console.error('[AirbnbAuth] Erro ao consultar permissões no Firestore:', err);
-      // Se for o dono raiz, garante acesso mesmo com erro temporário de leitura da coleção
-      if (isRootOwnerEmail(cleanEmail)) {
-        return {
-          email: cleanEmail,
-          role: 'owner',
-          active: true,
-          name: 'Gestor dos Imóveis',
-          isRoot: true
-        };
+        // Se for o dono raiz e o documento ainda não existir na nuvem, faz o bootstrap automático
+        if (isRootOwnerEmail(cleanEmail)) {
+          const rootAccess = {
+            email: cleanEmail,
+            role: 'owner',
+            active: true,
+            name: 'Gestor dos Imóveis',
+            createdAt: new Date().toISOString(),
+            isRoot: true
+          };
+          try {
+            await firestoreMod.setDoc(accessDocRef, rootAccess, { merge: true });
+          } catch (setErr) {
+            console.warn('[AirbnbAuth] Aviso ao salvar doc raiz:', setErr);
+          }
+          return rootAccess;
+        }
+
+        // Documento verificado e comprovadamente não existe na nuvem
+        return null;
+      } catch (err) {
+        console.warn(`[AirbnbAuth] Tentativa ${attempt}/${maxRetries} ao consultar permissões no Firestore:`, err);
+        if (attempt < maxRetries) {
+          await new Promise(res => setTimeout(res, attempt * 350));
+        } else {
+          // Se for o dono raiz, garante acesso mesmo com erro temporário de leitura da coleção
+          if (isRootOwnerEmail(cleanEmail)) {
+            return {
+              email: cleanEmail,
+              role: 'owner',
+              active: true,
+              name: 'Gestor dos Imóveis',
+              isRoot: true
+            };
+          }
+          // Retorna objeto indicando erro de conexão para não deslogar imediatamente por falso "Acesso Negado"
+          return { _networkError: true, error: err };
+        }
       }
-      // Se o usuário não estiver na allowlist ou as regras bloquearem a leitura, trata como acesso negado
-      return null;
     }
+    return null;
   }
 
   // Notifica todos os observadores cadastrados sobre a alteração de autenticação
@@ -180,6 +189,15 @@
           const userEmail = fbUser.email;
           const cleanEmail = String(userEmail || '').trim().toLowerCase();
           const access = await checkUserAccess(cleanEmail, firestoreMod);
+
+          if (access && access._networkError) {
+            notifyListeners(null, {
+              code: 'NETWORK_ERROR',
+              email: userEmail,
+              message: 'Não foi possível conectar com o banco de dados. Verifique sua conexão e tente novamente.'
+            });
+            return;
+          }
 
           if (!access) {
             stopAccessWatcher();
@@ -249,6 +267,11 @@
             try {
               const accessDocRef = firestoreMod.doc(firestoreDb, 'access', cleanEmail);
               activeAccessUnsubscribe = firestoreMod.onSnapshot(accessDocRef, async (snap) => {
+                // Blindagem: ignora snapshots vazios vindos de cache local antes do handshake com o servidor
+                if (snap.metadata && snap.metadata.fromCache && !snap.exists()) {
+                  return;
+                }
+
                 if (!snap.exists()) {
                   stopAccessWatcher();
                   try {
@@ -341,7 +364,7 @@
   }
 
   // Gerenciamento da Allowlist no Firestore (Exclusivo do Dono)
-  async function addStaffToAllowlist({ email, name, role = 'staff', staffId = null }) {
+  async function addStaffToAllowlist({ email, name, role = 'staff', staffId = null, active = true }) {
     if (!email) throw new Error('E-mail obrigatório');
     const cleanEmail = String(email).trim().toLowerCase();
 
@@ -357,7 +380,7 @@
       email: cleanEmail,
       name: (name || '').trim(),
       role: role,
-      active: true,
+      active: active !== false,
       staffId: staffId || `staff_${Date.now()}`,
       updatedAt: new Date().toISOString()
     };
@@ -393,6 +416,26 @@
     await firestoreMod.deleteDoc(docRef);
   }
 
+  // Sincroniza em lote toda a lista de colaboradores para a allowlist do Firestore
+  async function ensureStaffAllowlistBatch(staffList) {
+    if (!Array.isArray(staffList) || staffList.length === 0) return;
+    for (const s of staffList) {
+      if (s && s.email) {
+        try {
+          await addStaffToAllowlist({
+            email: s.email,
+            name: s.name,
+            role: 'staff',
+            staffId: s.id,
+            active: s.isActive !== false
+          });
+        } catch (e) {
+          console.warn('[AirbnbAuth] Aviso ao sincronizar allowlist em lote:', s.email, e);
+        }
+      }
+    }
+  }
+
   // API pública exposta em window.AirbnbAuth
   root.AirbnbAuth = {
     init,
@@ -412,7 +455,8 @@
     isRootOwnerEmail,
     addStaffToAllowlist,
     setStaffActiveInAllowlist,
-    removeStaffFromAllowlist
+    removeStaffFromAllowlist,
+    ensureStaffAllowlistBatch
   };
 
 })(window);

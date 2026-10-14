@@ -176,6 +176,11 @@
               });
 
               appState.data.staff = merged;
+
+              // Se o usuário atual for gestor, garante que toda a equipe da nuvem tenha allowlist ativa no Firestore
+              if (appState.currentUser && appState.currentUser.type === 'owner' && root.AirbnbAuth && typeof root.AirbnbAuth.ensureStaffAllowlistBatch === 'function') {
+                root.AirbnbAuth.ensureStaffAllowlistBatch(merged).catch(() => {});
+              }
             } else if (colName === 'products') {
               // Sincroniza produtos do estoque preservando criações locais pendentes e honrando exclusões
               const remoteIds = new Set(items.map(it => String(it.id)));

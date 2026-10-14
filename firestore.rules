@@ -22,11 +22,10 @@ service cloud.firestore {
              isRootOwnerEmail(request.auth.token.email);
     }
 
-    // Usuário autenticado pelo Google com e-mail verificado
+    // Usuário autenticado pelo Google
     function isAuthenticated() {
       return request.auth != null &&
-             request.auth.token.email != null &&
-             request.auth.token.email_verified == true;
+             request.auth.token.email != null;
     }
 
     // Busca o documento de acesso na allowlist

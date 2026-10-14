@@ -155,22 +155,31 @@ function initApp() {
           if (user.type === 'owner') {
             AirbnbCloudSync.seedCloudIfEmpty(state.data);
 
-            // Limpeza oficial da nuvem para o primeiro acesso oficial do gestor na V6
-            const CLOUD_WIPED_V6_KEY = 'AIRBNB_CLOUD_CLEAN_SLATE_V6_DONE';
-            if (!localStorage.getItem(CLOUD_WIPED_V6_KEY)) {
-              AirbnbCloudSync.wipeCloudDataForCleanSlate(generateInitialProducts()).then(() => {
-                localStorage.setItem(CLOUD_WIPED_V6_KEY, 'true');
-                loadFactoryDefaults();
-                renderAll();
-                console.log('[CloudSync] Limpeza oficial da nuvem concluída com sucesso.');
-              }).catch(e => {
-                console.warn('[CloudSync] Falha na limpeza oficial da nuvem:', e);
-              });
+            // Sincronização automática de segurança: garante que todas as colaboradoras salvas localmente tenham permissão na allowlist da nuvem
+            if (window.AirbnbAuth && Array.isArray(state.data.staff) && state.data.staff.length > 0) {
+              if (typeof window.AirbnbAuth.ensureStaffAllowlistBatch === 'function') {
+                window.AirbnbAuth.ensureStaffAllowlistBatch(state.data.staff).catch(e => console.warn('[AirbnbAuth] Auto-sincronização de allowlist:', e));
+              } else {
+                state.data.staff.forEach(s => {
+                  if (s && s.email) {
+                    AirbnbAuth.addStaffToAllowlist({
+                      email: s.email,
+                      name: s.name,
+                      role: 'staff',
+                      staffId: s.id,
+                      active: s.isActive !== false
+                    }).catch(e => console.warn('[AirbnbAuth] Auto-sincronização de allowlist:', e));
+                  }
+                });
+              }
             }
           }
         }
       } else if (error) {
-        if (error.code === 'ACCESS_DENIED' || error.code === 'ACCOUNT_INACTIVE') {
+        if (error.code === 'NETWORK_ERROR' || error.code === 'AUTH_CHECK_FAILED') {
+          setGateLoading(false);
+          showToast(error.message || 'Falha de conexão com o banco de dados. Tentando novamente...', 6000);
+        } else if (error.code === 'ACCESS_DENIED' || error.code === 'ACCOUNT_INACTIVE') {
           const isInactive = error.code === 'ACCOUNT_INACTIVE';
           const deniedMsg = isInactive
             ? t('gate.accountInactive')
@@ -7371,10 +7380,12 @@ async function handleNewStaffSubmit(e) {
         email: email,
         name: name,
         role: 'staff',
-        staffId: staffId
+        staffId: staffId,
+        active: true
       });
     } catch (err) {
       console.warn('Erro ao salvar permissão na allowlist do Firebase:', err);
+      showToast(t('toast.staffCloudSyncWarn'), 6000);
     }
   }
 
@@ -7488,16 +7499,19 @@ async function handleEditStaffSubmit(e) {
     try {
       if (oldEmail && oldEmail !== email) {
         await AirbnbAuth.removeStaffFromAllowlist(oldEmail);
-        await AirbnbAuth.addStaffToAllowlist({
-          email: email,
-          name: name,
-          role: 'staff',
-          staffId: staffId
-        });
       }
+      // Sempre garante a integridade completa do documento na allowlist (role: 'staff', active, name)
+      await AirbnbAuth.addStaffToAllowlist({
+        email: email,
+        name: name,
+        role: 'staff',
+        staffId: staffId,
+        active: isActive
+      });
       await AirbnbAuth.setStaffActiveInAllowlist(email, isActive);
     } catch (err) {
       console.warn('Erro ao atualizar permissão na allowlist do Firebase:', err);
+      showToast(t('toast.staffCloudSyncWarn'), 6000);
     }
   }
 
