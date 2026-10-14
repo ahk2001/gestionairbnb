@@ -22,7 +22,8 @@ window.AIRBNB_FIREBASE_CONFIG = window.AIRBNB_FIREBASE_CONFIG || {
 window.AIRBNB_ROOT_OWNERS = [
   "gestionairbnb2026@gmail.com",
   "gestao.airbnb.portugal@gmail.com",
-  "akreuch2001@gmail.com"
+  "akreuch2001@gmail.com",
+  "kiaramezadioses051029@gmail.com"
 ];
 
 // Helper para verificar se o Firebase foi preenchido com credenciais reais

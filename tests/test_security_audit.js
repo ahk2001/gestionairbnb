@@ -91,6 +91,11 @@ assert(
 );
 
 assert(
+  firestoreRules.includes('kiaramezadioses051029@gmail.com') && firebaseConfigJs.includes('kiaramezadioses051029@gmail.com'),
+  'E-mail kiaramezadioses051029@gmail.com configurado como administrador raiz nas regras e na inicialização'
+);
+
+assert(
   firestoreRules.includes('request.resource.data.authorType == resource.data.authorType'),
   'Colaboradoras não podem alterar autoria de notas para forjar permissões'
 );
