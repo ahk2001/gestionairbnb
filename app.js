@@ -295,11 +295,19 @@ function loadData() {
       // Limpeza automática da lixeira: produtos que já estão na lixeira há mais de 30 dias (1 mês) são removidos definitivamente
       const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
       const nowMs = Date.now();
+      const expiredTrashIds = [];
       state.data.trashProducts = state.data.trashProducts.filter(item => {
         if (!item.deletedAt) return true;
         const diff = nowMs - new Date(item.deletedAt).getTime();
-        return diff < THIRTY_DAYS_MS;
+        if (diff >= THIRTY_DAYS_MS) {
+          if (item.id) expiredTrashIds.push(item.id);
+          return false;
+        }
+        return true;
       });
+      if (expiredTrashIds.length > 0 && window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+        AirbnbCloudSync.deleteDocuments('trashProducts', expiredTrashIds).catch(e => {});
+      }
       if (state.data.calendar && Array.isArray(state.data.calendar)) {
         state.data.calendar.forEach(ev => {
           if (ev.eventType === 'reserva') {
@@ -326,9 +334,20 @@ function loadData() {
       state.data.products.forEach(p => {
         if (p.note === undefined) p.note = null;
       });
-      // Sincroniza produtos cadastrados pelo usuário de volta ao catálogo mestre
+
+      // Sincroniza produtos cadastrados pelo usuário de volta ao catálogo mestre e remove os que foram excluídos
+      const activeCatalogIds = new Set((state.data.products || []).map(p => p.catalogId).filter(Boolean));
+      const trashCatalogIds = new Set((state.data.trashProducts || []).map(t => t.id || t.catalogId).filter(Boolean));
+
+      for (let i = PRODUCT_CATALOG.length - 1; i >= 0; i--) {
+        const cat = PRODUCT_CATALOG[i];
+        if (trashCatalogIds.has(cat.id) || !activeCatalogIds.has(cat.id)) {
+          PRODUCT_CATALOG.splice(i, 1);
+        }
+      }
+
       state.data.products.forEach(p => {
-        if (p.catalogId && !PRODUCT_CATALOG.some(c => c.id === p.catalogId)) {
+        if (p.catalogId && !trashCatalogIds.has(p.catalogId) && !PRODUCT_CATALOG.some(c => c.id === p.catalogId)) {
           PRODUCT_CATALOG.push({
             id: p.catalogId,
             name: p.name,
@@ -1951,8 +1970,18 @@ function renderProductsTab() {
   });
 
   // Garante sincronia do PRODUCT_CATALOG com produtos do estoque
+  const activeCatalogIds = new Set((state.data.products || []).map(p => p.catalogId).filter(Boolean));
+  const trashCatalogIds = new Set((state.data.trashProducts || []).map(t => t.id || t.catalogId).filter(Boolean));
+
+  for (let i = PRODUCT_CATALOG.length - 1; i >= 0; i--) {
+    const cat = PRODUCT_CATALOG[i];
+    if (trashCatalogIds.has(cat.id) || !activeCatalogIds.has(cat.id)) {
+      PRODUCT_CATALOG.splice(i, 1);
+    }
+  }
+
   state.data.products.forEach(p => {
-    if (p.catalogId && !PRODUCT_CATALOG.some(c => c.id === p.catalogId)) {
+    if (p.catalogId && !trashCatalogIds.has(p.catalogId) && !PRODUCT_CATALOG.some(c => c.id === p.catalogId)) {
       PRODUCT_CATALOG.push({
         id: p.catalogId,
         name: p.name,
@@ -2123,16 +2152,17 @@ function moveProductToTrash(catalogId) {
   const catItem = PRODUCT_CATALOG.find(c => c.id === catalogId);
   if (!catItem) return;
 
-  const snapshots = state.data.products
-    .filter(p => p.catalogId === catalogId)
-    .map(p => ({
-      propertyId: p.propertyId,
-      quantity: p.quantity,
-      status: p.status,
-      note: p.note,
-      noteAuthor: p.noteAuthor,
-      noteUpdatedAt: p.noteUpdatedAt
-    }));
+  const prodsToDelete = state.data.products.filter(p => p.catalogId === catalogId);
+  const prodIdsToDelete = prodsToDelete.map(p => p.id);
+
+  const snapshots = prodsToDelete.map(p => ({
+    propertyId: p.propertyId,
+    quantity: p.quantity,
+    status: p.status,
+    note: p.note,
+    noteAuthor: p.noteAuthor,
+    noteUpdatedAt: p.noteUpdatedAt
+  }));
 
   const trashItem = {
     ...catItem,
@@ -2149,6 +2179,19 @@ function moveProductToTrash(catalogId) {
 
   saveData();
   renderAll();
+
+  // Exclui produtos do estoque na nuvem e registra na lixeira do Firestore
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    if (prodIdsToDelete.length > 0) {
+      AirbnbCloudSync.deleteDocuments('products', prodIdsToDelete).catch(err => {
+        console.warn('[CloudSync] Falha ao excluir produtos do estoque na nuvem ao mover para lixeira:', err);
+      });
+    }
+    AirbnbCloudSync.saveDocument('trashProducts', trashItem.id, trashItem).catch(err => {
+      console.warn('[CloudSync] Falha ao salvar produto na lixeira da nuvem:', err);
+    });
+  }
+
   showToast(t('toast.productMovedTrash'));
 }
 
@@ -2174,9 +2217,10 @@ function restoreTrashProduct(trashId) {
   PRODUCT_CATALOG.unshift(catalogItem);
 
   const props = ['JB', 'VN', 'HN'];
+  const newProducts = [];
   props.forEach(propId => {
     const snap = (item.stockSnapshots || []).find(s => s.propertyId === propId);
-    state.data.products.push({
+    const prodObj = {
       id: `${propId}_${catalogItem.id}`,
       propertyId: propId,
       catalogId: catalogItem.id,
@@ -2194,20 +2238,42 @@ function restoreTrashProduct(trashId) {
       noteAuthor: snap ? snap.noteAuthor : null,
       noteUpdatedAt: snap ? snap.noteUpdatedAt : null,
       updatedAt: new Date().toISOString()
-    });
+    };
+    state.data.products.push(prodObj);
+    newProducts.push(prodObj);
   });
 
   saveData();
   renderAll();
+
+  // Exclui da lixeira na nuvem e sincroniza os produtos restaurados no estoque
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.deleteDocument('trashProducts', trashId).catch(err => {
+      console.warn('[CloudSync] Falha ao remover item da lixeira na nuvem:', err);
+    });
+    if (newProducts.length > 0) {
+      AirbnbCloudSync.syncCollectionBatch('products', newProducts).catch(err => {
+        console.warn('[CloudSync] Falha ao sincronizar produtos restaurados na nuvem:', err);
+      });
+    }
+  }
+
   showToast(t('toast.productRestored'));
 }
 
 function purgeTrashProduct(trashId) {
   if (!state.data.trashProducts) return;
-  const item = state.data.trashProducts.find(t => t.id === trashId);
   state.data.trashProducts = state.data.trashProducts.filter(t => t.id !== trashId);
   saveData();
   renderAll();
+
+  // Exclui definitivamente da lixeira na nuvem
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.deleteDocument('trashProducts', trashId).catch(err => {
+      console.warn('[CloudSync] Falha ao excluir item da lixeira na nuvem:', err);
+    });
+  }
+
   showToast(t('toast.productDeletedPerm'));
 }
 
@@ -6997,11 +7063,22 @@ async function deleteProduct(productId, name, propId) {
     });
 
     if (deleteAll) {
+      const prodsToDelete = state.data.products.filter(p => p.catalogId === catalogId);
+      const toDeleteIds = prodsToDelete.map(p => p.id);
+
       state.data.products = state.data.products.filter(p => p.catalogId !== catalogId);
       const catIdx = PRODUCT_CATALOG.findIndex(c => c.id === catalogId);
       if (catIdx !== -1) PRODUCT_CATALOG.splice(catIdx, 1);
       saveData();
       renderAll();
+
+      // Exclui todos os produtos vinculados a esse item de catálogo no Firestore
+      if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+        AirbnbCloudSync.deleteDocuments('products', toDeleteIds).catch(err => {
+          console.warn('[CloudSync] Falha ao excluir produtos da nuvem:', err);
+        });
+      }
+
       showToast(t('toast.productRemovedAll', { name }));
       return;
     }
@@ -7026,6 +7103,14 @@ async function deleteProduct(productId, name, propId) {
 
   saveData();
   renderAll();
+
+  // Exclui o documento individual do Firestore
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.deleteDocument('products', productId).catch(err => {
+      console.warn('[CloudSync] Falha ao excluir produto da nuvem:', err);
+    });
+  }
+
   showToast(t('toast.productRemovedSingle', { name, prop: propId }));
 }
 

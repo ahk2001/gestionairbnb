@@ -100,7 +100,7 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if isAuthorizedUser();
       allow create, update: if isAuthorizedUser();
-      allow delete: if isOwner();
+      allow delete: if isAuthorizedUser();
     }
 
     // ========================================================================
@@ -109,7 +109,7 @@ service cloud.firestore {
     match /trashProducts/{trashId} {
       allow read: if isAuthorizedUser();
       allow create, update: if isAuthorizedUser();
-      allow delete: if isOwner();
+      allow delete: if isAuthorizedUser();
     }
 
     // ========================================================================

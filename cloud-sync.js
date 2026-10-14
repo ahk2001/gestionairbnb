@@ -10,6 +10,25 @@
   let saveDebounceTimer = null;
   let lastKnownData = null;
 
+  // Registro de exclusões recentes para blindagem contra reconciliação ou concorrência
+  const recentlyDeleted = new Map(); // `${colName}:${docId}` -> timestamp
+
+  function markAsDeleted(colName, docId) {
+    if (!docId) return;
+    recentlyDeleted.set(`${colName}:${String(docId)}`, Date.now());
+  }
+
+  function isRecentlyDeleted(colName, docId) {
+    const key = `${colName}:${String(docId)}`;
+    const time = recentlyDeleted.get(key);
+    if (!time) return false;
+    if (Date.now() - time > 45000) {
+      recentlyDeleted.delete(key);
+      return false;
+    }
+    return true;
+  }
+
   function notifySyncStatus(status, details = null) {
     syncStatus = status;
     syncStatusListeners.forEach(fn => {
@@ -81,7 +100,9 @@
         const unsub = firestoreMod.onSnapshot(colRef, (snapshot) => {
           const items = [];
           snapshot.forEach(docSnap => {
-            items.push({ id: docSnap.id, ...docSnap.data() });
+            if (!isRecentlyDeleted(colName, docSnap.id)) {
+              items.push({ id: docSnap.id, ...docSnap.data() });
+            }
           });
 
           // Atualiza o estado da aplicação
@@ -155,6 +176,16 @@
               });
 
               appState.data.staff = merged;
+            } else if (colName === 'products') {
+              // Sincroniza produtos do estoque preservando criações locais pendentes e honrando exclusões
+              const remoteIds = new Set(items.map(it => String(it.id)));
+              const localPending = (appState.data.products || []).filter(p =>
+                p && p.id && !remoteIds.has(String(p.id)) && !isRecentlyDeleted('products', p.id)
+              );
+              appState.data.products = [...localPending, ...items];
+            } else if (colName === 'trashProducts') {
+              // A lixeira reflete exatamente a coleção remota (inclusive vazia)
+              appState.data.trashProducts = items;
             } else {
               // Se o Firestore retornou dados para essa coleção, substitui no estado
               if (items.length > 0) {
@@ -222,6 +253,8 @@
 
   // Exclui um documento individual no Firestore
   async function deleteDocument(collectionName, docId) {
+    if (!docId) return;
+    markAsDeleted(collectionName, docId);
     if (!root.isFirebaseConfigured || !root.isFirebaseConfigured()) return;
     try {
       const { firestoreMod, firestoreDb } = await root.AirbnbAuth.loadFirebaseModules();
@@ -231,6 +264,32 @@
       await firestoreMod.deleteDoc(docRef);
     } catch (err) {
       console.error(`[CloudSync] Erro ao excluir doc ${collectionName}/${docId}:`, err);
+      throw err;
+    }
+  }
+
+  // Exclui múltiplos documentos em lote no Firestore
+  async function deleteDocuments(collectionName, docIds) {
+    if (!Array.isArray(docIds) || docIds.length === 0) return;
+    docIds.forEach(id => markAsDeleted(collectionName, id));
+    if (!root.isFirebaseConfigured || !root.isFirebaseConfigured()) return;
+    try {
+      const { firestoreMod, firestoreDb } = await root.AirbnbAuth.loadFirebaseModules();
+      if (!firestoreDb) return;
+
+      const BATCH_SIZE = 400;
+      for (let i = 0; i < docIds.length; i += BATCH_SIZE) {
+        const batch = firestoreMod.writeBatch(firestoreDb);
+        const slice = docIds.slice(i, i + BATCH_SIZE);
+        slice.forEach(id => {
+          if (!id) return;
+          const docRef = firestoreMod.doc(firestoreDb, collectionName, String(id));
+          batch.delete(docRef);
+        });
+        await batch.commit();
+      }
+    } catch (err) {
+      console.error(`[CloudSync] Erro ao excluir lote em ${collectionName}:`, err);
       throw err;
     }
   }
@@ -252,6 +311,7 @@
 
         slice.forEach((item, itemIdx) => {
           const docId = String(item.id || item.catalogId || `doc_${Date.now()}_${itemIdx}_${Math.random().toString(36).slice(2, 7)}`);
+          if (isRecentlyDeleted(collectionName, docId)) return;
           const docRef = firestoreMod.doc(firestoreDb, collectionName, docId);
           const cleanItem = JSON.parse(JSON.stringify(item));
           batch.set(docRef, cleanItem, { merge: true });
@@ -400,6 +460,7 @@
     stopSync,
     saveDocument,
     deleteDocument,
+    deleteDocuments,
     syncCollectionBatch,
     seedCloudIfEmpty,
     wipeCloudDataForCleanSlate,
