@@ -21,7 +21,8 @@ window.AIRBNB_FIREBASE_CONFIG = window.AIRBNB_FIREBASE_CONFIG || {
 // (Garante acesso ao painel mesmo antes de configurar outros usuários na allowlist)
 window.AIRBNB_ROOT_OWNERS = [
   "gestionairbnb2026@gmail.com",
-  "gestao.airbnb.portugal@gmail.com"
+  "gestao.airbnb.portugal@gmail.com",
+  "akreuch2001@gmail.com"
 ];
 
 // Helper para verificar se o Firebase foi preenchido com credenciais reais

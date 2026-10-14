@@ -10,12 +10,14 @@ const firestoreRulesPath = path.join(rootDir, 'firestore.rules');
 const authJsPath = path.join(rootDir, 'auth.js');
 const cloudSyncJsPath = path.join(rootDir, 'cloud-sync.js');
 const vercelJsonPath = path.join(rootDir, 'vercel.json');
+const firebaseConfigJsPath = path.join(rootDir, 'firebase-config.js');
 
 const appJs = fs.readFileSync(appJsPath, 'utf8');
 const firestoreRules = fs.readFileSync(firestoreRulesPath, 'utf8');
 const authJs = fs.readFileSync(authJsPath, 'utf8');
 const cloudSyncJs = fs.readFileSync(cloudSyncJsPath, 'utf8');
 const vercelJson = JSON.parse(fs.readFileSync(vercelJsonPath, 'utf8'));
+const firebaseConfigJs = fs.readFileSync(firebaseConfigJsPath, 'utf8');
 
 let passCount = 0;
 let failCount = 0;
@@ -81,6 +83,11 @@ console.log('\n2. Integridade e Regras do Servidor (firestore.rules):');
 assert(
   firestoreRules.includes('!isRootOwnerEmail(email) || isRootOwner()'),
   'Administradores raiz estão blindados contra exclusão ou alteração por donos secundários'
+);
+
+assert(
+  firestoreRules.includes('akreuch2001@gmail.com') && firebaseConfigJs.includes('akreuch2001@gmail.com'),
+  'E-mail akreuch2001@gmail.com configurado como administrador raiz nas regras e na inicialização'
 );
 
 assert(

@@ -10,7 +10,8 @@ service cloud.firestore {
     function isRootOwnerEmail(email) {
       return email != null &&
              (email.lower() == 'gestionairbnb2026@gmail.com' ||
-              email.lower() == 'gestao.airbnb.portugal@gmail.com');
+              email.lower() == 'gestao.airbnb.portugal@gmail.com' ||
+              email.lower() == 'akreuch2001@gmail.com');
     }
 
     // Administrador raiz pré-autorizado para bootstrap seguro

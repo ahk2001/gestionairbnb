@@ -23,7 +23,7 @@ O sistema opera com autenticação real do Google e regras de segurança executa
 ### 1. Portão de Entrada Unificado
 * **Login Oficial com Google:** Um único botão seguro com pop-up oficial do Google (`select_account`).
 * **Allowlist de Segurança no Servidor:** O sistema verifica se a conta Google logada está na coleção `access` do Firestore. Se o e-mail não estiver pré-autorizado ou estiver inativo, o acesso é negado e os dados na nuvem permanecem 100% protegidos.
-* **Administrador Raiz:** O e-mail `gestionairbnb2026@gmail.com` possui permissão administrativa raiz pré-configurada.
+* **Administradores Raiz:** Os e-mails `gestionairbnb2026@gmail.com`, `gestao.airbnb.portugal@gmail.com` e `akreuch2001@gmail.com` possuem permissão administrativa raiz pré-configurada.
 
 ### 2. Gestão de Colaboradoras (Painel do Gestor)
 * **Cadastro por E-mail Google:** O gestor cadastra o nome e o e-mail Google da colaboradora para autorizar o acesso.
