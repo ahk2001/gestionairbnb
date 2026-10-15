@@ -140,10 +140,31 @@
           // Atualiza o estado da aplicação
           if (appState && appState.data) {
             if (colName === 'purchases') {
-              // Garante que compras locais criadas recentemente não sejam descartadas antes da confirmação da nuvem
+              const isTestPurchase = (p) => {
+                if (!p) return false;
+                const pName = String(p.productName || (p.items && p.items[0]?.productName) || '').toLowerCase();
+                const bName = String(p.buyerName || '').toLowerCase();
+                const isAmaciante = pName.includes('amaciante');
+                const isSantaDesign = bName.includes('santa design');
+                const is30 = Number(p.totalCost) === 30;
+                return isAmaciante && (isSantaDesign || is30);
+              };
+
+              // Exclui automaticamente a compra de teste no Firestore se ela vier no snapshot
+              items.forEach(it => {
+                if (isTestPurchase(it)) {
+                  deleteDocument('purchases', it.id).catch(() => {});
+                }
+              });
+
+              // Garante que compras locais criadas recentemente não sejam descartadas antes da confirmação da nuvem,
+              // mas respeita compras excluídas persistidas e a remoção da compra de teste
               const remoteIds = new Set(items.map(it => String(it.id)));
-              const localPending = (appState.data.purchases || []).filter(p => p && p.id && !remoteIds.has(String(p.id)));
-              const combinedPurchases = [...localPending, ...items];
+              const localPending = (appState.data.purchases || []).filter(p =>
+                p && p.id && !remoteIds.has(String(p.id)) && !isRecentlyDeleted('purchases', p.id) && !isTestPurchase(p)
+              );
+              const cleanRemoteItems = items.filter(it => !isRecentlyDeleted('purchases', it.id) && !isTestPurchase(it));
+              const combinedPurchases = [...localPending, ...cleanRemoteItems];
               if (typeof root.comparePurchasesDesc === 'function') {
                 combinedPurchases.sort(root.comparePurchasesDesc);
               } else {

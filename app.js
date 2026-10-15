@@ -401,6 +401,45 @@ function loadData() {
           saveData();
         }
       }
+
+      // Expurgar compra de teste solicitada pelo usuário
+      if (state.data && Array.isArray(state.data.purchases)) {
+        const isTestPurchase = (p) => {
+          if (!p) return false;
+          const pName = String(p.productName || (p.items && p.items[0]?.productName) || '').toLowerCase();
+          const bName = String(p.buyerName || '').toLowerCase();
+          const isAmaciante = pName.includes('amaciante');
+          const isSantaDesign = bName.includes('santa design');
+          const is30 = Number(p.totalCost) === 30;
+          return isAmaciante && (isSantaDesign || is30);
+        };
+
+        const testPurchases = state.data.purchases.filter(isTestPurchase);
+        if (testPurchases.length > 0) {
+          testPurchases.forEach(tp => {
+            state.data.purchases = state.data.purchases.filter(p => p.id !== tp.id);
+            // Reverte as unidades adicionadas no teste se o produto existir
+            const pId = tp.propertyId || 'JB';
+            const items = (tp.items && Array.isArray(tp.items) && tp.items.length > 0)
+              ? tp.items
+              : [{ catalogId: tp.productId || 'p01', quantity: tp.quantityBought || 2 }];
+            items.forEach(it => {
+              const catId = it.catalogId || 'p01';
+              const targetProd = (state.data.products || []).find(p =>
+                p.propertyId === pId && (p.catalogId === catId || p.id === `${pId}_${catId}`)
+              );
+              if (targetProd) {
+                targetProd.quantity = Math.max(0, (Number(targetProd.quantity) || 0) - (Number(it.quantity) || 2));
+                if (typeof updateProductStatus === 'function') updateProductStatus(targetProd);
+              }
+            });
+            if (window.AirbnbCloudSync) {
+              AirbnbCloudSync.deleteDocument('purchases', tp.id).catch(() => {});
+            }
+          });
+          saveData();
+        }
+      }
     } catch (e) {
       console.error('Erro ao restaurar dados, restaurando padrões', e);
       loadFactoryDefaults();
@@ -3402,7 +3441,8 @@ function renderOwnerDashboard() {
 
       // Adiciona listener de clique para abrir o modal de detalhes e comprovante
       purchasesContainer.querySelectorAll('.clickable-purchase-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-card-delete-purchase')) return;
           const purchaseId = card.dataset.purchaseId;
           openViewPurchaseModal(purchaseId);
         });
@@ -5025,6 +5065,13 @@ function openViewPurchaseModal(purchaseId) {
     }
   }
 
+  modal.dataset.currentPurchaseId = purchaseId;
+  const isOwner = state.currentUser?.type === 'owner';
+  const btnDelBottom = document.getElementById('btn-delete-view-purchase');
+  const btnDelTop = document.getElementById('btn-delete-view-purchase-top');
+  if (btnDelBottom) btnDelBottom.style.display = isOwner ? 'flex' : 'none';
+  if (btnDelTop) btnDelTop.style.display = isOwner ? 'inline-flex' : 'none';
+
   modal.style.display = 'flex';
   modal.classList.add('active');
 }
@@ -5041,8 +5088,79 @@ function closeViewPurchaseModal() {
   }
 }
 
+async function deletePurchase(purchaseId) {
+  if (!purchaseId) return;
+
+  const isOwner = state.currentUser?.type === 'owner';
+  if (!isOwner) {
+    showToast(t('toast.onlyOwnerCanDeletePurchase') || 'Apenas o gestor pode excluir comprovantes de compra.');
+    return;
+  }
+
+  const purchase = (state.data.purchases || []).find(p => p.id === purchaseId);
+  const purchaseName = purchase?.productName || (purchase?.items && purchase.items[0]?.productName) || 'este comprovante';
+
+  const confirmed = await showConfirmDialog({
+    title: t('dialog.deletePurchaseTitle'),
+    message: t('dialog.deletePurchaseConfirm', { name: purchaseName }),
+    confirmText: t('dialog.deletePurchaseConfirmBtn'),
+    cancelText: t('dialog.cancelBtn'),
+    confirmDanger: true,
+    icon: 'trash'
+  });
+
+  if (!confirmed) return;
+
+  // Reverte a quantidade do estoque nos produtos correspondentes
+  if (purchase) {
+    const items = (purchase.items && Array.isArray(purchase.items) && purchase.items.length > 0)
+      ? purchase.items
+      : [{
+          catalogId: purchase.productId || 'p01',
+          quantity: purchase.quantityBought || 1
+        }];
+
+    items.forEach(it => {
+      const targetProd = (state.data.products || []).find(p =>
+        p.propertyId === purchase.propertyId && (p.catalogId === it.catalogId || p.id === `${purchase.propertyId}_${it.catalogId}`)
+      );
+      if (targetProd) {
+        targetProd.quantity = Math.max(0, (Number(targetProd.quantity) || 0) - (Number(it.quantity) || 1));
+        if (typeof updateProductStatus === 'function') {
+          updateProductStatus(targetProd);
+        }
+        if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+          AirbnbCloudSync.saveDocument('products', targetProd.id, targetProd).catch(e => {
+            console.warn('[CloudSync] Falha ao atualizar estoque após exclusão de compra:', e);
+          });
+        }
+      }
+    });
+  }
+
+  // Remove da lista de compras local
+  state.data.purchases = (state.data.purchases || []).filter(p => p.id !== purchaseId);
+  saveData();
+
+  // Fecha o modal de detalhes caso esteja aberto
+  closeViewPurchaseModal();
+
+  // Re-renderiza compras e painel
+  renderAll();
+
+  // Exclui da nuvem no Firestore
+  if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+    AirbnbCloudSync.deleteDocument('purchases', purchaseId).catch(err => {
+      console.warn('[CloudSync] Falha ao excluir compra da nuvem:', err);
+    });
+  }
+
+  showToast(t('toast.purchaseDeleted'));
+}
+
 window.openViewPurchaseModal = openViewPurchaseModal;
 window.closeViewPurchaseModal = closeViewPurchaseModal;
+window.deletePurchase = deletePurchase;
 
 // ==========================================================================
 // RENDERIZAÇÃO E MODAL DE COMPROVANTES / HISTÓRICO COMPLETO DE COMPRAS
@@ -5105,6 +5223,8 @@ function renderPurchaseCardHtml(p, receiptTagTxt) {
   const tagTxt = receiptTagTxt || (window.I18N ? window.I18N.t('purchases.receiptTag') : 'Nota Fiscal');
   const dateFormatted = typeof formatDate === 'function' ? formatDate(p.purchaseDate) : (p.purchaseDate || '');
   const costFormatted = typeof formatMoney === 'function' ? formatMoney(p.totalCost) : `€ ${(Number(p.totalCost) || 0).toFixed(2)}`;
+  const isOwner = state.currentUser?.type === 'owner';
+  const deleteBtnTitle = window.I18N ? window.I18N.t('purchases.deleteCardBtn') : 'Eliminar compra';
 
   return `
     <div class="clickable-purchase-card" data-purchase-id="${p.id}" role="button" tabindex="0" title="Clique para visualizar detalhes e nota fiscal">
@@ -5139,6 +5259,13 @@ function renderPurchaseCardHtml(p, receiptTagTxt) {
           <div class="purchase-card-cost">${costFormatted}</div>
           <div class="purchase-card-qty">+${p.quantityBought || 1} un</div>
         </div>
+        ${isOwner ? `
+          <button type="button" class="btn-card-delete-purchase" data-purchase-id="${p.id}" title="${escapeHtml(deleteBtnTitle)}" aria-label="${escapeHtml(deleteBtnTitle)}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+          </button>
+        ` : ''}
         <span class="purchase-card-arrow">›</span>
       </div>
     </div>
@@ -5523,7 +5650,8 @@ function renderAllPurchasesModalContent() {
       listEl.innerHTML = filteredList.map(p => renderPurchaseCardHtml(p, receiptTagTxt)).join('');
 
       listEl.querySelectorAll('.clickable-purchase-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-card-delete-purchase')) return;
           const purchaseId = card.dataset.purchaseId;
           openViewPurchaseModal(purchaseId);
         });
@@ -8103,6 +8231,7 @@ function setupEventListeners() {
 
   // Delegação de cliques para cards de compra dentro do modal de histórico completo
   document.getElementById('all-purchases-modal-list')?.addEventListener('click', (e) => {
+    if (e.target.closest('.btn-card-delete-purchase')) return;
     const card = e.target.closest('.clickable-purchase-card, [data-purchase-id]');
     if (card && card.dataset.purchaseId) {
       openViewPurchaseModal(card.dataset.purchaseId);
@@ -8111,10 +8240,34 @@ function setupEventListeners() {
 
   // Delegação de cliques para cards de compra (funciona em qualquer clique no card ou filhos)
   document.getElementById('recent-purchases-container')?.addEventListener('click', (e) => {
+    if (e.target.closest('.btn-card-delete-purchase')) return;
     const card = e.target.closest('.clickable-purchase-card, [data-purchase-id]');
     if (card && card.dataset.purchaseId) {
       openViewPurchaseModal(card.dataset.purchaseId);
     }
+  });
+
+  // Exclusão de compras pelo Gestor (card e modais)
+  document.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.btn-card-delete-purchase');
+    if (delBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const pId = delBtn.dataset.purchaseId;
+      if (pId) deletePurchase(pId);
+    }
+  });
+
+  document.getElementById('btn-delete-view-purchase')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-view-purchase');
+    const pId = modal?.dataset?.currentPurchaseId;
+    if (pId) deletePurchase(pId);
+  });
+
+  document.getElementById('btn-delete-view-purchase-top')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-view-purchase');
+    const pId = modal?.dataset?.currentPurchaseId;
+    if (pId) deletePurchase(pId);
   });
 
   // Zerar Sistema para Início Oficial (Gestor)

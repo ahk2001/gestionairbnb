@@ -308,6 +308,8 @@
       'modalViewPurchase.receipt': 'Comprobante / Ticket Fiscal',
       'modalViewPurchase.noReceipt': 'Sin comprobante adjunto.',
       'modalViewPurchase.btnClose': 'Cerrar Detalles',
+      'modalViewPurchase.btnDelete': 'Eliminar este Comprobante',
+      'purchases.deleteCardBtn': 'Eliminar comprobante',
 
       // Modal Zoom
       'modalZoom.title': 'Foto del Producto',
@@ -546,8 +548,13 @@
       'dialog.deleteEventTitle': 'Eliminar Turno',
       'dialog.deleteEventMsg': '¿Realmente deseas eliminar el turno "{title}"?',
       'dialog.deleteEventConfirmBtn': 'Eliminar Turno',
+      'dialog.deletePurchaseTitle': 'Eliminar Comprobante',
+      'dialog.deletePurchaseConfirm': '¿Estás seguro de que deseas eliminar este comprobante de compra de "{name}"? Esta acción removerá el registro del sistema.',
+      'dialog.deletePurchaseConfirmBtn': 'Eliminar Comprobante',
 
       // Toasts adicionais
+      'toast.purchaseDeleted': 'Comprobante eliminado con éxito.',
+      'toast.onlyOwnerCanDeletePurchase': 'Solo el gestor puede eliminar comprobantes de compra.',
       'toast.sessionClosed': 'Sesión cerrada con éxito.',
       'toast.demoAccess': 'Acceso en Modo Demostración concedido.',
       'toast.rulesSavedForProduct': '¡Reglas de semáforo guardadas para "{name}"!',
@@ -952,6 +959,8 @@
       'modalViewPurchase.receipt': 'Comprovante / Nota Fiscal',
       'modalViewPurchase.noReceipt': 'Sem comprovante anexado.',
       'modalViewPurchase.btnClose': 'Fechar Detalhes',
+      'modalViewPurchase.btnDelete': 'Excluir este Comprovante',
+      'purchases.deleteCardBtn': 'Excluir comprovante',
 
       // Modal Zoom
       'modalZoom.title': 'Foto do Produto',
@@ -1190,8 +1199,13 @@
       'dialog.deleteEventTitle': 'Excluir Escala',
       'dialog.deleteEventMsg': 'Deseja realmente excluir a escala "{title}"?',
       'dialog.deleteEventConfirmBtn': 'Excluir Escala',
+      'dialog.deletePurchaseTitle': 'Excluir Comprovante',
+      'dialog.deletePurchaseConfirm': 'Tem certeza que deseja excluir o comprovante de compra de "{name}"? Esta ação removerá o registro do sistema.',
+      'dialog.deletePurchaseConfirmBtn': 'Excluir Comprovante',
 
       // Toasts adicionais
+      'toast.purchaseDeleted': 'Comprovante excluído com sucesso.',
+      'toast.onlyOwnerCanDeletePurchase': 'Apenas o gestor pode excluir comprovantes de compra.',
       'toast.sessionClosed': 'Sessão encerrada com sucesso.',
       'toast.demoAccess': 'Acesso em Modo de Demonstração liberado.',
       'toast.rulesSavedForProduct': 'Regras de semáforo salvas para "{name}"!',
