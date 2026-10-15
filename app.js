@@ -345,18 +345,33 @@ function loadData() {
       });
 
       // Sincroniza produtos cadastrados pelo usuário de volta ao catálogo mestre e remove os que foram excluídos
+      const trashCatalogIds = new Set((state.data.trashProducts || []).map(t => String(t.id || t.catalogId)).filter(Boolean));
+      const trashNames = new Set((state.data.trashProducts || []).map(t => String(t.name || '').trim().toLowerCase()).filter(Boolean));
+
+      // Expurga imediatamente de state.data.products quaisquer produtos que estejam na lixeira
+      state.data.products = (state.data.products || []).filter(p => {
+        if (!p) return false;
+        const cId = p.catalogId ? String(p.catalogId) : '';
+        const pId = p.id ? String(p.id) : '';
+        const pName = p.name ? String(p.name).trim().toLowerCase() : '';
+        if (cId && trashCatalogIds.has(cId)) return false;
+        if (pId && trashCatalogIds.has(pId)) return false;
+        if (pName && trashNames.has(pName)) return false;
+        return true;
+      });
+
       const activeCatalogIds = new Set((state.data.products || []).map(p => p.catalogId).filter(Boolean));
-      const trashCatalogIds = new Set((state.data.trashProducts || []).map(t => t.id || t.catalogId).filter(Boolean));
 
       for (let i = PRODUCT_CATALOG.length - 1; i >= 0; i--) {
         const cat = PRODUCT_CATALOG[i];
-        if (trashCatalogIds.has(cat.id) || !activeCatalogIds.has(cat.id)) {
+        if (trashCatalogIds.has(String(cat.id)) || (cat.name && trashNames.has(String(cat.name).trim().toLowerCase())) || !activeCatalogIds.has(cat.id)) {
           PRODUCT_CATALOG.splice(i, 1);
         }
       }
 
       state.data.products.forEach(p => {
-        if (p.catalogId && !trashCatalogIds.has(p.catalogId) && !PRODUCT_CATALOG.some(c => c.id === p.catalogId)) {
+        const pName = String(p.name || '').trim().toLowerCase();
+        if (p.catalogId && !trashCatalogIds.has(String(p.catalogId)) && !trashNames.has(pName) && !PRODUCT_CATALOG.some(c => c.id === p.catalogId)) {
           PRODUCT_CATALOG.push({
             id: p.catalogId,
             name: p.name,

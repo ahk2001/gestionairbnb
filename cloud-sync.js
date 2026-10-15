@@ -10,20 +10,52 @@
   let saveDebounceTimer = null;
   let lastKnownData = null;
 
-  // Registro de exclusões recentes para blindagem contra reconciliação ou concorrência
+  // Registro persistente de exclusões para blindagem contra reconciliação, concorrência e recarregamento
+  const DELETED_STORAGE_KEY = 'AIRBNB_DELETED_DOCS_V2';
   const recentlyDeleted = new Map(); // `${colName}:${docId}` -> timestamp
+
+  function loadPersistedDeleted() {
+    try {
+      const raw = localStorage.getItem(DELETED_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const now = Date.now();
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        Object.entries(parsed).forEach(([key, time]) => {
+          if (now - time < SEVEN_DAYS_MS) {
+            recentlyDeleted.set(key, time);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+  loadPersistedDeleted();
+
+  function savePersistedDeleted() {
+    try {
+      const obj = {};
+      recentlyDeleted.forEach((time, key) => {
+        obj[key] = time;
+      });
+      localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify(obj));
+    } catch (e) {}
+  }
 
   function markAsDeleted(colName, docId) {
     if (!docId) return;
     recentlyDeleted.set(`${colName}:${String(docId)}`, Date.now());
+    savePersistedDeleted();
   }
 
   function isRecentlyDeleted(colName, docId) {
+    if (!docId) return false;
     const key = `${colName}:${String(docId)}`;
     const time = recentlyDeleted.get(key);
     if (!time) return false;
-    if (Date.now() - time > 45000) {
+    // Mantém blindagem por 7 dias para assegurar que exclusões não sejam ressuscitadas por caches locais
+    if (Date.now() - time > 7 * 24 * 60 * 60 * 1000) {
       recentlyDeleted.delete(key);
+      savePersistedDeleted();
       return false;
     }
     return true;
@@ -184,13 +216,48 @@
             } else if (colName === 'products') {
               // Sincroniza produtos do estoque preservando criações locais pendentes e honrando exclusões
               const remoteIds = new Set(items.map(it => String(it.id)));
+              const trashIds = new Set((appState.data.trashProducts || []).map(t => String(t.id || t.catalogId)).filter(Boolean));
+              const trashNames = new Set((appState.data.trashProducts || []).map(t => String(t.name || '').trim().toLowerCase()).filter(Boolean));
+
+              const isItemTrashedOrDeleted = (p) => {
+                if (!p) return true;
+                const cId = p.catalogId ? String(p.catalogId) : '';
+                const pId = p.id ? String(p.id) : '';
+                const pName = p.name ? String(p.name).trim().toLowerCase() : '';
+                return (cId && trashIds.has(cId)) ||
+                       (pId && trashIds.has(pId)) ||
+                       (pName && trashNames.has(pName)) ||
+                       isRecentlyDeleted('products', pId) ||
+                       (cId && isRecentlyDeleted('products', cId));
+              };
+
               const localPending = (appState.data.products || []).filter(p =>
-                p && p.id && !remoteIds.has(String(p.id)) && !isRecentlyDeleted('products', p.id)
+                p && p.id && !remoteIds.has(String(p.id)) && !isRecentlyDeleted('products', p.id) && !isItemTrashedOrDeleted(p)
               );
-              appState.data.products = [...localPending, ...items];
+              const cleanRemoteItems = items.filter(it => !isItemTrashedOrDeleted(it));
+              appState.data.products = [...localPending, ...cleanRemoteItems];
             } else if (colName === 'trashProducts') {
               // A lixeira reflete exatamente a coleção remota (inclusive vazia)
               appState.data.trashProducts = items;
+              // Remove imediatamente do estoque quaisquer produtos que estejam na lixeira
+              if (appState.data.products && Array.isArray(appState.data.products)) {
+                const trashIds = new Set(items.map(t => String(t.id || t.catalogId)).filter(Boolean));
+                const trashNames = new Set(items.map(t => String(t.name || '').trim().toLowerCase()).filter(Boolean));
+                const prodsBefore = appState.data.products.length;
+                appState.data.products = appState.data.products.filter(p => {
+                  if (!p) return false;
+                  const cId = p.catalogId ? String(p.catalogId) : '';
+                  const pId = p.id ? String(p.id) : '';
+                  const pName = p.name ? String(p.name).trim().toLowerCase() : '';
+                  if (cId && trashIds.has(cId)) return false;
+                  if (pId && trashIds.has(pId)) return false;
+                  if (pName && trashNames.has(pName)) return false;
+                  return true;
+                });
+                if (appState.data.products.length !== prodsBefore) {
+                  try { localStorage.setItem('airbnb_stock_data_v2', JSON.stringify(appState.data)); } catch (e) {}
+                }
+              }
             } else {
               // Se o Firestore retornou dados para essa coleção, substitui no estado
               if (items.length > 0) {
