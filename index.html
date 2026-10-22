@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=105">
-  <script src="i18n.js?v=105"></script>
+  <link rel="stylesheet" href="styles.css?v=106">
+  <script src="i18n.js?v=106"></script>
 </head>
 <body>
 
@@ -1415,67 +1415,147 @@
 
       <form id="timesheet-form" class="purchase-form">
         <input type="hidden" id="timesheet-edit-id" value="">
+        <input type="hidden" id="timesheet-type-input" value="hours">
+
+        <!-- Seletor do Tipo de Registro: Horas ou Serviço (Check-in) -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" data-i18n="modalTs.recordTypeLabel">Tipo de Registro</label>
+          <div class="ts-type-segmented-wrap">
+            <button type="button" class="ts-type-seg-btn active" id="ts-type-btn-hours" data-type="hours">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span data-i18n="modalTs.typeHours">Horas de Trabajo</span>
+            </button>
+            <button type="button" class="ts-type-seg-btn" id="ts-type-btn-service" data-type="service">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <polyline points="16 11 18 13 22 9"></polyline>
+              </svg>
+              <span data-i18n="modalTs.typeService">Servicio (Check-in)</span>
+            </button>
+          </div>
+        </div>
 
         <div class="form-group">
-          <label for="timesheet-date-input" class="form-label" data-i18n="modalTs.dateLabel">Día trabajado</label>
+          <label for="timesheet-date-input" class="form-label" id="timesheet-date-label" data-i18n="modalTs.dateLabel">Día trabajado</label>
           <input type="date" id="timesheet-date-input" class="form-input" required>
         </div>
 
-        <span class="form-label" data-i18n="modalTs.timesLabel">Horarios</span>
-        <div class="ts-field-list">
-          <button type="button" class="ts-time-field" data-field="start" id="ts-field-start">
-            <span class="ts-field-dot ts-dot-start"></span>
-            <span class="ts-field-text">
-              <span class="ts-field-label" data-i18n="modalTs.startLabel">Inicio de la jornada</span>
-              <span class="ts-field-hint" data-i18n="modalTs.startHint">Obligatorio</span>
-            </span>
-            <span class="ts-field-value">--:--</span>
-          </button>
-          <button type="button" class="ts-time-field" data-field="breakStart" id="ts-field-breakStart">
-            <span class="ts-field-dot ts-dot-break"></span>
-            <span class="ts-field-text">
-              <span class="ts-field-label" data-i18n="modalTs.breakStartLabel">Inicio de la pausa</span>
-              <span class="ts-field-hint" data-i18n="modalTs.breakStartHint">Opcional</span>
-            </span>
-            <span class="ts-field-value">--:--</span>
-          </button>
-          <button type="button" class="ts-time-field" data-field="breakEnd" id="ts-field-breakEnd">
-            <span class="ts-field-dot ts-dot-break"></span>
-            <span class="ts-field-text">
-              <span class="ts-field-label" data-i18n="modalTs.breakEndLabel">Fin de la pausa</span>
-              <span class="ts-field-hint" data-i18n="modalTs.breakEndHint">Opcional</span>
-            </span>
-            <span class="ts-field-value">--:--</span>
-          </button>
-          <button type="button" class="ts-time-field" data-field="end" id="ts-field-end">
-            <span class="ts-field-dot ts-dot-end"></span>
-            <span class="ts-field-text">
-              <span class="ts-field-label" data-i18n="modalTs.endLabel">Fin de la jornada</span>
-              <span class="ts-field-hint" data-i18n="modalTs.endHint">Se puede completar después</span>
-            </span>
-            <span class="ts-field-value">--:--</span>
-          </button>
+        <!-- GRUPO HORAS TRABALHADAS -->
+        <div id="ts-hours-fields-group">
+          <span class="form-label" data-i18n="modalTs.timesLabel">Horarios</span>
+          <div class="ts-field-list">
+            <button type="button" class="ts-time-field" data-field="start" id="ts-field-start">
+              <span class="ts-field-dot ts-dot-start"></span>
+              <span class="ts-field-text">
+                <span class="ts-field-label" data-i18n="modalTs.startLabel">Inicio de la jornada</span>
+                <span class="ts-field-hint" data-i18n="modalTs.startHint">Obligatorio</span>
+              </span>
+              <span class="ts-field-value">--:--</span>
+            </button>
+            <button type="button" class="ts-time-field" data-field="breakStart" id="ts-field-breakStart">
+              <span class="ts-field-dot ts-dot-break"></span>
+              <span class="ts-field-text">
+                <span class="ts-field-label" data-i18n="modalTs.breakStartLabel">Inicio de la pausa</span>
+                <span class="ts-field-hint" data-i18n="modalTs.breakStartHint">Opcional</span>
+              </span>
+              <span class="ts-field-value">--:--</span>
+            </button>
+            <button type="button" class="ts-time-field" data-field="breakEnd" id="ts-field-breakEnd">
+              <span class="ts-field-dot ts-dot-break"></span>
+              <span class="ts-field-text">
+                <span class="ts-field-label" data-i18n="modalTs.breakEndLabel">Fin de la pausa</span>
+                <span class="ts-field-hint" data-i18n="modalTs.breakEndHint">Opcional</span>
+              </span>
+              <span class="ts-field-value">--:--</span>
+            </button>
+            <button type="button" class="ts-time-field" data-field="end" id="ts-field-end">
+              <span class="ts-field-dot ts-dot-end"></span>
+              <span class="ts-field-text">
+                <span class="ts-field-label" data-i18n="modalTs.endLabel">Fin de la jornada</span>
+                <span class="ts-field-hint" data-i18n="modalTs.endHint">Se puede completar después</span>
+              </span>
+              <span class="ts-field-value">--:--</span>
+            </button>
+          </div>
+
+          <div class="ts-total-preview">
+            <span data-i18n="modalTs.totalWorked">Total trabajado</span>
+            <strong id="timesheet-total-preview">--</strong>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label for="timesheet-hours-notes" class="form-label" data-i18n="modalTs.hoursNotesLabel">Descripción / Tareas Realizadas (Opcional)</label>
+            <textarea id="timesheet-hours-notes" class="form-input" rows="2" placeholder="Ej: Limpieza profunda de cocina y baños, cambio de sábanas y reposición..." data-i18n-placeholder="modalTs.hoursNotesPlaceholder" style="resize: vertical; min-height: 56px; font-size: 0.9rem; line-height: 1.4;"></textarea>
+          </div>
         </div>
 
-        <div class="ts-total-preview">
-          <span data-i18n="modalTs.totalWorked">Total trabajado</span>
-          <strong id="timesheet-total-preview">--</strong>
+        <!-- GRUPO SERVIÇO REALIZADO (CHECK-IN) -->
+        <div id="ts-service-fields-group" style="display: none;">
+          <div class="form-group">
+            <label for="timesheet-service-name" class="form-label" data-i18n="modalTs.serviceTypeLabel">Tipo de Servicio</label>
+            <div class="ts-service-select-wrap">
+              <select id="timesheet-service-name" class="form-input custom-luxury-select">
+                <option value="checkin" data-i18n="modalTs.serviceCheckin">Check-in</option>
+                <option value="checkout" data-i18n="modalTs.serviceCheckout">Check-out</option>
+                <option value="outro" data-i18n="modalTs.serviceOther">Otro Servicio</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="modalTs.servicePropertyLabel">Inmueble / Propiedad</label>
+            <div class="ts-prop-segmented-wrap" id="ts-prop-segmented-wrap">
+              <button type="button" class="ts-prop-seg-btn active" data-prop="JB">JB</button>
+              <button type="button" class="ts-prop-seg-btn" data-prop="VN">VN</button>
+              <button type="button" class="ts-prop-seg-btn" data-prop="HN">HN</button>
+            </div>
+            <input type="hidden" id="timesheet-service-property" value="JB">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="modalTs.serviceTimeLabel">Horario del Servicio</label>
+            <button type="button" class="ts-time-field has-value" data-field="serviceTime" id="ts-field-service-time">
+              <span class="ts-field-dot ts-dot-start"></span>
+              <span class="ts-field-text">
+                <span class="ts-field-label" data-i18n="modalTs.serviceTimeSub">Hora de llegada / entrega de llaves</span>
+                <span class="ts-field-hint" data-i18n="modalTs.serviceTimeHint">Toca para seleccionar</span>
+              </span>
+              <span class="ts-field-value" id="ts-service-time-val">15:00</span>
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label for="timesheet-service-price" class="form-label" data-i18n="modalTs.servicePriceLabel">Valor del Servicio (€)</label>
+            <div class="price-input-wrap" style="position: relative;">
+              <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); font-size: 0.95rem;">€</span>
+              <input type="number" id="timesheet-service-price" class="form-input" placeholder="0,00" step="0.50" min="0" style="padding-left: 32px; font-weight: 700; font-size: 1.05rem;">
+            </div>
+            <small class="form-hint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;" data-i18n="modalTs.servicePriceHint">Check-in estándar: 7,00 € (o indica otro valor si acordado)</small>
+          </div>
+
+          <div class="form-group">
+            <label for="timesheet-service-notes" class="form-label" data-i18n="modalTs.serviceNotesLabel">Descripción del Servicio / Huésped (Opcional)</label>
+            <textarea id="timesheet-service-notes" class="form-input" rows="2" placeholder="Ej: Check-in Familia Rossi (4 huéspedes) y entrega de llaves..." data-i18n-placeholder="modalTs.serviceNotesPlaceholder" style="resize: vertical; min-height: 56px; font-size: 0.9rem; line-height: 1.4;"></textarea>
+          </div>
         </div>
 
         <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
-          <label class="form-label" data-i18n="modalTs.paymentStatus">Estado de Pago de las Horas</label>
+          <label class="form-label" id="timesheet-payment-label" data-i18n="modalTs.paymentStatus">Estado de Pago de las Horas</label>
           <div class="ts-payment-toggle-wrap">
             <button type="button" class="ts-payment-opt-btn active opt-unpaid" id="ts-modal-btn-unpaid" data-status="unpaid">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span data-i18n="modalTs.unpaid">No Pagadas</span>
+              <span id="ts-modal-unpaid-txt" data-i18n="modalTs.unpaid">No Pagadas</span>
             </button>
             <button type="button" class="ts-payment-opt-btn opt-paid" id="ts-modal-btn-paid" data-status="paid">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span data-i18n="modalTs.paid">Horas Pagadas</span>
+              <span id="ts-modal-paid-txt" data-i18n="modalTs.paid">Horas Pagadas</span>
             </button>
           </div>
           <input type="hidden" id="timesheet-is-paid-input" value="false">
@@ -1704,11 +1784,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=105"></script>
-  <script src="auth.js?v=105"></script>
-  <script src="cloud-sync.js?v=105"></script>
-  <script src="touch-scroll.js?v=105"></script>
-  <script src="initialData.js?v=105"></script>
-  <script src="app.js?v=105"></script>
+  <script src="firebase-config.js?v=106"></script>
+  <script src="auth.js?v=106"></script>
+  <script src="cloud-sync.js?v=106"></script>
+  <script src="touch-scroll.js?v=106"></script>
+  <script src="initialData.js?v=106"></script>
+  <script src="app.js?v=106"></script>
 </body>
 </html>
