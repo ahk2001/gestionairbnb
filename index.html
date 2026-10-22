@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=104">
-  <script src="i18n.js?v=104"></script>
+  <link rel="stylesheet" href="styles.css?v=105">
+  <script src="i18n.js?v=105"></script>
 </head>
 <body>
 
@@ -539,9 +539,18 @@
     </main>
 
     <!-- ====================================================================
-         Navegação Inferior Fixa Flutuante (Sticky Bottom Dock)
+         Navegação Inferior Fixa Flutuante / Footer (Sticky Bottom Dock)
          ==================================================================== -->
-    <nav class="bottom-nav" data-i18n-aria="nav.ariaMain" aria-label="Navegación Principal">
+    <footer class="bottom-nav app-footer" id="app-footer" data-i18n-aria="nav.ariaMain" aria-label="Navegación Principal" role="navigation">
+      <!-- Efeito de Fundo Animado Fluido de Luxo (Aurora Mesh & Shimmer) -->
+      <div class="footer-animated-bg" aria-hidden="true">
+        <div class="footer-ambient-mesh"></div>
+        <div class="footer-orb footer-orb-1"></div>
+        <div class="footer-orb footer-orb-2"></div>
+        <div class="footer-orb footer-orb-3"></div>
+        <div class="footer-shimmer-sweep"></div>
+      </div>
+
       <button class="nav-item" data-tab="products" type="button">
         <span class="nav-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -586,7 +595,7 @@
         </span>
         <span class="nav-label" data-i18n="nav.owner">Gestión</span>
       </button>
-    </nav>
+    </footer>
 
   </div><!-- /mobile-wrapper -->
 
@@ -1695,11 +1704,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=104"></script>
-  <script src="auth.js?v=104"></script>
-  <script src="cloud-sync.js?v=104"></script>
-  <script src="touch-scroll.js?v=104"></script>
-  <script src="initialData.js?v=104"></script>
-  <script src="app.js?v=104"></script>
+  <script src="firebase-config.js?v=105"></script>
+  <script src="auth.js?v=105"></script>
+  <script src="cloud-sync.js?v=105"></script>
+  <script src="touch-scroll.js?v=105"></script>
+  <script src="initialData.js?v=105"></script>
+  <script src="app.js?v=105"></script>
 </body>
 </html>

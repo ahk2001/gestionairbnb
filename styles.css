@@ -1058,6 +1058,22 @@ html, body {
   gap: 4px;
 }
 
+.qty-display.btn-trigger-edit-qty {
+  cursor: pointer;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.qty-display.btn-trigger-edit-qty:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.qty-display.btn-trigger-edit-qty:active {
+  transform: scale(0.97);
+}
+
 .qty-number {
   font-size: 1.35rem;
   font-weight: 800;
@@ -1100,6 +1116,8 @@ html, body {
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), inset 0 1px 1px rgba(255, 255, 255, 0.95);
   transition: transform 0.18s var(--ease-spring), background 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 .stepper-btn:hover {
@@ -1128,9 +1146,13 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 14px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
-  cursor: default;
   user-select: none;
-  pointer-events: none; /* Mostrador automático - não selecionável manualmente */
+}
+
+.traffic-light-container.status-display-only,
+.traffic-light-container.status-display-only .traffic-pill {
+  cursor: default;
+  pointer-events: none;
 }
 
 .traffic-pill,
@@ -1140,7 +1162,7 @@ html, body {
   padding: 8px 4px;
   font-size: 0.72rem;
   font-weight: 600;
-  cursor: default;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1149,7 +1171,19 @@ html, body {
   background: transparent;
   color: var(--text-muted);
   user-select: none;
-  pointer-events: none;
+  touch-action: manipulation;
+}
+
+.traffic-pill:hover,
+.traffic-btn:hover {
+  background: rgba(255, 255, 255, 0.70);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.traffic-pill:active,
+.traffic-btn:active {
+  transform: scale(0.96);
 }
 
 .traffic-pill.active,
@@ -2895,9 +2929,11 @@ input:checked + .toggle-slider:before {
 }
 
 /* ==========================================================================
-   Dock de Navegação Inferior Flutuante (Minimalista em Vidro Fosco de Luxo)
+   Dock de Navegação Inferior Flutuante / Footer (Vidro Fosco com Fundo Animado)
    ========================================================================== */
-.bottom-nav {
+.bottom-nav,
+footer.bottom-nav,
+.app-footer {
   position: fixed;
   bottom: 16px;
   left: 50%;
@@ -2917,6 +2953,94 @@ input:checked + .toggle-slider:before {
   z-index: 200;
   padding: 0 8px;
   transition: all 0.35s var(--ease-spring);
+  overflow: hidden;
+  animation: footerBorderAura 9s ease-in-out infinite;
+}
+
+/* Container do Efeito de Fundo Animado Fluido */
+.footer-animated-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Gradiente Mesh Base com Movimento Suave */
+.footer-ambient-mesh {
+  position: absolute;
+  inset: -30%;
+  background: 
+    radial-gradient(circle at 15% 25%, rgba(15, 39, 68, 0.14) 0%, transparent 48%),
+    radial-gradient(circle at 85% 75%, rgba(245, 158, 11, 0.12) 0%, transparent 42%),
+    radial-gradient(circle at 50% 15%, rgba(59, 130, 246, 0.11) 0%, transparent 52%),
+    radial-gradient(circle at 75% 85%, rgba(16, 185, 129, 0.09) 0%, transparent 45%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(240, 244, 252, 0.65) 100%);
+  background-size: 200% 200%;
+  animation: footerMeshShift 14s ease-in-out infinite alternate;
+  filter: blur(10px);
+  will-change: transform;
+}
+
+/* Orbs de Luz Flutuantes (Aurora Orbs) */
+.footer-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(14px);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Orb 1: Azul Noturno Profundo / Safira */
+.footer-orb-1 {
+  width: 140px;
+  height: 90px;
+  left: -20px;
+  top: -20px;
+  background: radial-gradient(circle, rgba(15, 39, 68, 0.22) 0%, rgba(37, 99, 235, 0.15) 50%, transparent 75%);
+  animation: footerOrbOne 9s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+/* Orb 2: Champagne / Ouro Âmbar de Luxo */
+.footer-orb-2 {
+  width: 130px;
+  height: 80px;
+  right: -20px;
+  bottom: -20px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.10) 50%, transparent 75%);
+  animation: footerOrbTwo 11s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+/* Orb 3: Esmeralda Suave / Ciano Cristalino */
+.footer-orb-3 {
+  width: 110px;
+  height: 70px;
+  left: 42%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.10) 50%, transparent 75%);
+  animation: footerOrbThree 13s ease-in-out infinite alternate;
+}
+
+/* Faixa Shimmer Especular de Luz que Percorre Suavemente */
+.footer-shimmer-sweep {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 65%,
+    transparent 100%
+  );
+  transform: translateX(-150%) skewX(-20deg);
+  animation: footerShimmerSweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  will-change: transform;
 }
 
 .nav-item {
@@ -2931,6 +3055,7 @@ input:checked + .toggle-slider:before {
   color: var(--text-dim);
   cursor: pointer;
   position: relative;
+  z-index: 2;
   padding: 6px 0;
   transition: color 0.2s var(--ease-spring), transform 0.18s var(--ease-spring);
 }
@@ -2963,6 +3088,16 @@ input:checked + .toggle-slider:before {
   font-weight: 800;
 }
 
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  inset: 2px 4px;
+  border-radius: 20px;
+  background: rgba(15, 39, 68, 0.05);
+  z-index: -1;
+  animation: navItemActivePulse 3s ease-in-out infinite alternate;
+}
+
 .nav-item.active::after {
   content: "";
   position: absolute;
@@ -2990,6 +3125,7 @@ input:checked + .toggle-slider:before {
   padding: 0 4px;
   border: 2px solid white;
   box-shadow: 0 2px 6px rgba(11, 13, 17, 0.2);
+  z-index: 3;
 }
 
 /* Botão Flutuante (FAB em Vidro Escuro Nobre) */
@@ -4240,6 +4376,126 @@ button[type="submit"].form-submit-btn:hover {
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/* ==========================================================================
+   Keyframes do Footer Animado (Mesh, Aurora Orbs, Shimmer & Aura)
+   ========================================================================== */
+@keyframes footerBorderAura {
+  0%, 100% {
+    box-shadow: 0 20px 52px rgba(11, 13, 17, 0.12), 
+                0 4px 16px rgba(11, 13, 17, 0.04), 
+                inset 0 1.5px 2px rgba(255, 255, 255, 1),
+                0 0 0 1px rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.85);
+  }
+  33% {
+    box-shadow: 0 22px 54px rgba(15, 39, 68, 0.15), 
+                0 6px 20px rgba(59, 130, 246, 0.10), 
+                inset 0 1.5px 2px rgba(255, 255, 255, 1),
+                0 0 16px rgba(37, 99, 235, 0.14);
+    border-color: rgba(147, 197, 253, 0.7);
+  }
+  66% {
+    box-shadow: 0 22px 54px rgba(180, 83, 9, 0.12), 
+                0 6px 20px rgba(245, 158, 11, 0.08), 
+                inset 0 1.5px 2px rgba(255, 255, 255, 1),
+                0 0 14px rgba(245, 158, 11, 0.12);
+    border-color: rgba(253, 230, 138, 0.65);
+  }
+}
+
+@keyframes footerMeshShift {
+  0% {
+    transform: scale(1) translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.08) translate(-4%, 3%) rotate(2deg);
+  }
+  100% {
+    transform: scale(1.02) translate(3%, -2%) rotate(-1deg);
+  }
+}
+
+@keyframes footerOrbOne {
+  0% {
+    transform: translate(0, 0) scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(65px, 12px) scale(1.22);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(115px, -6px) scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes footerOrbTwo {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-75px, -10px) scale(1.25);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-125px, 8px) scale(0.95);
+    opacity: 0.75;
+  }
+}
+
+@keyframes footerOrbThree {
+  0% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-45%, -55%) scale(1.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-55%, -45%) scale(1);
+    opacity: 0.6;
+  }
+}
+
+@keyframes footerShimmerSweep {
+  0%, 25% {
+    transform: translateX(-150%) skewX(-20deg);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.75;
+  }
+  55%, 100% {
+    transform: translateX(180%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes navItemActivePulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-ambient-mesh,
+  .footer-orb,
+  .footer-shimmer-sweep,
+  .bottom-nav,
+  footer.bottom-nav,
+  .nav-item.active::before {
+    animation: none !important;
   }
 }
 

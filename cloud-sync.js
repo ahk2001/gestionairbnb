@@ -61,6 +61,101 @@
     return true;
   }
 
+  // Fila e rastreamento de alterações locais em produtos para blindagem contra sobrescrita por snapshots obsoletos
+  const pendingProductUpdates = new Map(); // productId -> { data, timestamp }
+  const productSaveDebounceTimers = new Map(); // productId -> timerId
+
+  let pendingSeq = 0; // contador monotônico para identificar cada versão pendente
+
+  function markProductPendingSync(productId, productData) {
+    if (!productId || !productData) return 0;
+    const seq = ++pendingSeq;
+    pendingProductUpdates.set(String(productId), {
+      data: JSON.parse(JSON.stringify(productData)),
+      timestamp: Date.now(),
+      seq
+    });
+    return seq;
+  }
+
+  // Remove a pendência. Se `onlyIfSeq` for informado, só remove se nenhuma edição mais nova
+  // tiver sido registrada enquanto o salvamento estava em andamento (evita condição de corrida).
+  function clearProductPendingSync(productId, onlyIfSeq) {
+    if (!productId) return;
+    const sId = String(productId);
+    if (onlyIfSeq !== undefined) {
+      const current = pendingProductUpdates.get(sId);
+      if (!current || current.seq !== onlyIfSeq) return;
+    }
+    pendingProductUpdates.delete(sId);
+  }
+
+  function hasProductPendingSync(productId) {
+    if (!productId) return false;
+    return pendingProductUpdates.has(String(productId));
+  }
+
+  // Salva a versão pendente mais recente de um produto e só limpa a pendência se ela não mudou no meio do caminho
+  async function savePendingProduct(sId) {
+    const entry = pendingProductUpdates.get(sId);
+    if (!entry) return;
+    await saveDocument('products', sId, entry.data);
+    clearProductPendingSync(sId, entry.seq);
+  }
+
+  async function flushPendingProductSync() {
+    if (pendingProductUpdates.size === 0) return;
+    // Cancela timers de debounce: o flush já envia a versão mais recente
+    productSaveDebounceTimers.forEach(timerId => clearTimeout(timerId));
+    productSaveDebounceTimers.clear();
+
+    const ids = Array.from(pendingProductUpdates.keys());
+    await Promise.all(ids.map(pId =>
+      savePendingProduct(pId).catch(e => {
+        console.warn(`[CloudSync] Falha no flush de ${pId}:`, e);
+      })
+    ));
+  }
+
+  // Salva produto individualmente com debounce curto (250ms) para acomodar cliques múltiplos rápidos no + e -
+  function scheduleProductSave(productId, productData, immediate = false) {
+    if (!productId || !productData) return;
+    const sId = String(productId);
+    markProductPendingSync(sId, productData);
+
+    const existingTimer = productSaveDebounceTimers.get(sId);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    if (immediate) {
+      productSaveDebounceTimers.delete(sId);
+      return savePendingProduct(sId).catch(err => {
+        console.warn(`[CloudSync] Erro no salvamento imediato do produto ${sId}:`, err);
+      });
+    }
+
+    const timer = setTimeout(async () => {
+      productSaveDebounceTimers.delete(sId);
+      try {
+        await savePendingProduct(sId);
+      } catch (err) {
+        console.warn(`[CloudSync] Erro no agendamento do produto ${sId}:`, err);
+      }
+    }, 250);
+
+    productSaveDebounceTimers.set(sId, timer);
+  }
+
+  // Flush automático ao fechar a janela, alternar app ou ocultar a tela do celular
+  if (typeof window !== 'undefined') {
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        flushPendingProductSync();
+      }
+    });
+    window.addEventListener('pagehide', () => flushPendingProductSync());
+    window.addEventListener('beforeunload', () => flushPendingProductSync());
+  }
+
   function notifySyncStatus(status, details = null) {
     syncStatus = status;
     syncStatusListeners.forEach(fn => {
@@ -235,7 +330,8 @@
                 root.AirbnbAuth.ensureStaffAllowlistBatch(merged).catch(() => {});
               }
             } else if (colName === 'products') {
-              // Sincroniza produtos do estoque preservando criações locais pendentes e honrando exclusões
+              // Sincroniza produtos do estoque com reconciliação inteligente por timestamp (updatedAt),
+              // protegendo edições locais recentes contra sobrescrita por snapshots remotos intermediários
               const remoteIds = new Set(items.map(it => String(it.id)));
               const trashIds = new Set((appState.data.trashProducts || []).map(t => String(t.id || t.catalogId)).filter(Boolean));
               const trashNames = new Set((appState.data.trashProducts || []).map(t => String(t.name || '').trim().toLowerCase()).filter(Boolean));
@@ -252,11 +348,72 @@
                        (cId && isRecentlyDeleted('products', cId));
               };
 
-              const localPending = (appState.data.products || []).filter(p =>
-                p && p.id && !remoteIds.has(String(p.id)) && !isRecentlyDeleted('products', p.id) && !isItemTrashedOrDeleted(p)
-              );
-              const cleanRemoteItems = items.filter(it => !isItemTrashedOrDeleted(it));
-              appState.data.products = [...localPending, ...cleanRemoteItems];
+              const currentLocalProds = Array.isArray(appState.data.products) ? appState.data.products : [];
+              const localMap = new Map();
+              currentLocalProds.forEach(p => {
+                if (p && p.id) {
+                  localMap.set(String(p.id), p);
+                }
+              });
+
+              const mergedProducts = [];
+              const productsToResync = [];
+
+              // 1. Processa todos os itens recebidos da nuvem
+              items.forEach(remoteItem => {
+                if (!remoteItem || !remoteItem.id || isItemTrashedOrDeleted(remoteItem)) return;
+                const rId = String(remoteItem.id);
+                const localItem = localMap.get(rId);
+
+                if (!localItem) {
+                  // Produto novo recebido da nuvem
+                  mergedProducts.push(remoteItem);
+                } else {
+                  // Produto já existe localmente: verificar quem tem a alteração mais recente
+                  const isPendingLocal = hasProductPendingSync(rId);
+                  const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
+                  const remoteTime = remoteItem.updatedAt ? new Date(remoteItem.updatedAt).getTime() : 0;
+
+                  // Se o produto foi alterado localmente mais recentemente ou tem gravação pendente,
+                  // preserva a versão local e garante que a nuvem receba o dado mais novo!
+                  if (isPendingLocal || (localTime > 0 && localTime > remoteTime)) {
+                    mergedProducts.push(localItem);
+                    // Se há pendência, o próprio agendador já fará o envio; só reenvia aqui se não houver
+                    if (!isPendingLocal) productsToResync.push(localItem);
+                  } else {
+                    mergedProducts.push(remoteItem);
+                  }
+                }
+              });
+
+              // 2. Preserva criações locais que ainda não estão no Firestore
+              currentLocalProds.forEach(locItem => {
+                if (!locItem || !locItem.id) return;
+                const locId = String(locItem.id);
+                if (!remoteIds.has(locId) && !isRecentlyDeleted('products', locId) && !isItemTrashedOrDeleted(locItem)) {
+                  mergedProducts.push(locItem);
+                  // Só reenvia para a nuvem se for uma criação/edição local realmente pendente.
+                  // Caso contrário o produto pode ter sido excluído definitivamente por outro usuário
+                  // e reenviá-lo causaria "ressurreição".
+                  if (hasProductPendingSync(locId)) {
+                    productsToResync.push(locItem);
+                  }
+                }
+              });
+
+              appState.data.products = mergedProducts;
+
+              // 3. Se havia versões locais mais recentes, sincroniza-as de volta com o Firestore
+              if (productsToResync.length > 0) {
+                productsToResync.forEach(p => {
+                  const pid = String(p.id);
+                  if (hasProductPendingSync(pid)) {
+                    savePendingProduct(pid).catch(() => {});
+                  } else {
+                    saveDocument('products', pid, p).catch(() => {});
+                  }
+                });
+              }
             } else if (colName === 'trashProducts') {
               // A lixeira reflete exatamente a coleção remota (inclusive vazia)
               appState.data.trashProducts = items;
@@ -276,7 +433,7 @@
                   return true;
                 });
                 if (appState.data.products.length !== prodsBefore) {
-                  try { localStorage.setItem('airbnb_stock_data_v2', JSON.stringify(appState.data)); } catch (e) {}
+                  try { localStorage.setItem('AIRBNB_CONTROL_DATA_V6', JSON.stringify(appState.data)); } catch (e) {}
                 }
               }
             } else {
@@ -558,6 +715,11 @@
     seedCloudIfEmpty,
     wipeCloudDataForCleanSlate,
     scheduleSave,
+    scheduleProductSave,
+    flushPendingProductSync,
+    markProductPendingSync,
+    clearProductPendingSync,
+    hasProductPendingSync,
     onSyncStatusChange,
     getStatus: () => syncStatus
   };

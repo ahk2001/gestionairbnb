@@ -93,6 +93,8 @@
       'inventory.ruleFalta': '🔴 Falta (hasta {n})',
       'inventory.ruleAtencao': '🟡 Atención ({from}-{to})',
       'inventory.ruleSuficiente': '🟢 Suficiente (≥ {n})',
+      'inventory.clickToEditQty': 'Clic para definir cantidad exacta',
+      'inventory.promptQty': 'Definir cantidad en stock para "{name}" ({unit}):',
 
       // Aba 3: Recados (Notas)
       'notes.title': 'Dejar Nota para el Inmueble',
@@ -767,6 +769,8 @@
       'inventory.ruleFalta': '🔴 Falta (até {n})',
       'inventory.ruleAtencao': '🟡 Atenção ({from}-{to})',
       'inventory.ruleSuficiente': '🟢 Suficiente (≥ {n})',
+      'inventory.clickToEditQty': 'Clique para definir quantidade exata',
+      'inventory.promptQty': 'Definir quantidade em estoque para "{name}" ({unit}):',
 
       // Aba 3: Recados (Notas)
       'notes.title': 'Deixar Recado para o Imóvel',

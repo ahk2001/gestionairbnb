@@ -1837,9 +1837,12 @@ function renderProducts() {
             <h3 class="product-name" title="${escapeHtml(item.name || '')}">${escapeHtml(item.name || '')}</h3>
 
             <div class="product-qty-row">
-              <div class="qty-display">
+              <div class="qty-display btn-trigger-edit-qty" data-id="${item.id}" title="${t('inventory.clickToEditQty') || 'Clique para definir quantidade exata'}" role="button" tabindex="0">
                 <span class="qty-number" id="qty-val-${item.id}">${item.quantity}</span>
                 <span class="qty-unit">${escapeHtml(item.unit || 'un')}</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.40; margin-left: 2px;">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
               </div>
 
               <!-- Ajuste Rápido - e + -->
@@ -1851,22 +1854,22 @@ function renderProducts() {
           </div>
         </div>
 
-        <!-- Mostrador de Status (Suficiente | Atenção | Falta - Indicador Automático pela Quantidade) -->
-        <div class="traffic-light-container status-display-only" aria-label="Status do Estoque">
-          <div class="traffic-pill status-green-btn ${isGreen ? 'active' : ''}">
+        <!-- Mostrador e Seletor Rápido de Status (Suficiente | Atenção | Falta) -->
+        <div class="traffic-light-container" aria-label="Status do Estoque">
+          <button type="button" class="traffic-pill status-green-btn ${isGreen ? 'active' : ''}" data-id="${item.id}" data-status="suficiente" title="${lblSuficiente}">
             <span class="indicator-dot"></span>
             <span>${lblSuficiente}</span>
-          </div>
+          </button>
 
-          <div class="traffic-pill status-yellow-btn ${isYellow ? 'active' : ''}">
+          <button type="button" class="traffic-pill status-yellow-btn ${isYellow ? 'active' : ''}" data-id="${item.id}" data-status="acabando" title="${lblAtencao}">
             <span class="indicator-dot"></span>
             <span>${lblAtencao}</span>
-          </div>
+          </button>
 
-          <div class="traffic-pill status-red-btn ${isRed ? 'active' : ''}">
+          <button type="button" class="traffic-pill status-red-btn ${isRed ? 'active' : ''}" data-id="${item.id}" data-status="falta" title="${lblFalta}">
             <span class="indicator-dot"></span>
             <span>${lblFalta}</span>
-          </div>
+          </button>
         </div>
 
         <!-- Rodapé do Card com Atalhos para Nota, Editar, Excluir e Compra -->
@@ -1933,13 +1936,41 @@ function renderProducts() {
     });
   });
 
+  // Edição direta de quantidade ao clicar no número
+  container.querySelectorAll('.btn-trigger-edit-qty').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      promptProductQuantity(el.dataset.id);
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        promptProductQuantity(el.dataset.id);
+      }
+    });
+  });
+
+  // Alternância rápida de status e quantidade pelo semáforo
+  container.querySelectorAll('.traffic-pill[data-status]').forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setProductStatus(pill.dataset.id, pill.dataset.status);
+    });
+  });
+
   // Stepper + e - com cálculo automático pelo semáforo customizado
   container.querySelectorAll('.btn-step-minus').forEach(btn => {
-    btn.addEventListener('click', () => stepProductQuantity(btn.dataset.id, -1));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stepProductQuantity(btn.dataset.id, -1);
+    });
   });
 
   container.querySelectorAll('.btn-step-plus').forEach(btn => {
-    btn.addEventListener('click', () => stepProductQuantity(btn.dataset.id, 1));
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stepProductQuantity(btn.dataset.id, 1);
+    });
   });
 
   // Botão Comprar do Card
@@ -1961,47 +1992,148 @@ function renderProducts() {
   });
 }
 
+let cardFilterDebounceTimer = null;
+
+function updateProductCardUI(productId) {
+  const product = state.data.products.find(p => p.id === productId);
+  if (!product) return;
+
+  const card = document.getElementById(`card-${productId}`);
+  if (card) {
+    const qtyValEl = card.querySelector(`#qty-val-${productId}`);
+    if (qtyValEl) {
+      qtyValEl.textContent = product.quantity;
+    }
+
+    const isGreen = product.status === 'suficiente';
+    const isYellow = product.status === 'acabando';
+    const isRed = product.status === 'falta';
+
+    const pillGreen = card.querySelector('.status-green-btn');
+    const pillYellow = card.querySelector('.status-yellow-btn');
+    const pillRed = card.querySelector('.status-red-btn');
+
+    if (pillGreen) pillGreen.classList.toggle('active', isGreen);
+    if (pillYellow) pillYellow.classList.toggle('active', isYellow);
+    if (pillRed) pillRed.classList.toggle('active', isRed);
+  }
+
+  // Atualiza contador de itens no topo da aba Estoque
+  const countBadge = document.getElementById('inventory-count-display');
+  if (countBadge) {
+    let list = state.data.products;
+    if (state.selectedProperty !== 'ALL') {
+      list = list.filter(p => p.propertyId === state.selectedProperty);
+    }
+    if (state.selectedCategory !== 'all') {
+      list = list.filter(p => p.category === state.selectedCategory);
+    }
+    if (state.selectedStatus && state.selectedStatus !== 'all') {
+      list = list.filter(p => p.status === state.selectedStatus);
+    }
+    const totalCount = list.length;
+    if (window.I18N) {
+      countBadge.textContent = totalCount === 1
+        ? window.I18N.t('inventory.countBadgeSingular')
+        : window.I18N.t('inventory.countBadge', { count: totalCount });
+    }
+  }
+
+  updateWhatsappShortageButton();
+  updateBadges();
+  renderUrgentItems();
+}
+
+function setProductQuantityDirectly(productId, newQty) {
+  const product = state.data.products.find(p => p.id === productId);
+  if (!product) return;
+
+  const qty = Math.max(0, parseInt(newQty, 10) || 0);
+  product.quantity = qty;
+  product.status = calculateProductStatus(product, qty);
+  product.updatedAt = new Date().toISOString();
+
+  // 1. Grava no LocalStorage imediatamente
+  try {
+    localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(state.data));
+  } catch (e) {
+    console.warn('[LocalStorage] Falha ao persistir:', e);
+  }
+
+  // 2. Atualiza UI cirurgicamente sem lag ou re-render destrutivo
+  updateProductCardUI(productId);
+
+  // 3. Sincronização inteligente e individual do produto na nuvem com debounce de 250ms.
+  // Grava apenas ESTE produto (não a coleção inteira), evitando sobrescrever edições de outros usuários.
+  if (window.AirbnbCloudSync && typeof window.AirbnbCloudSync.scheduleProductSave === 'function') {
+    window.AirbnbCloudSync.scheduleProductSave(product.id, product);
+  } else if (window.AirbnbCloudSync && typeof window.AirbnbCloudSync.saveDocument === 'function') {
+    window.AirbnbCloudSync.saveDocument('products', product.id, product).catch(e => {
+      console.warn('[CloudSync] Falha ao sincronizar produto individual:', e);
+    });
+  } else {
+    // 4. Fallback: sync geral debounced quando o salvamento individual não está disponível
+    syncToCloudDebounced();
+  }
+
+  // 5. Se houver filtro de status ativo (ex: usuário visualizando apenas "Falta" e o produto virou "Suficiente"),
+  // agenda a reorganização da lista com delay suave para não sumir o card debaixo do dedo durante cliques múltiplos
+  if (state.selectedStatus && state.selectedStatus !== 'all') {
+    if (cardFilterDebounceTimer) clearTimeout(cardFilterDebounceTimer);
+    cardFilterDebounceTimer = setTimeout(() => {
+      renderProducts();
+    }, 1800);
+  }
+}
+
+function promptProductQuantity(productId) {
+  const product = state.data.products.find(p => p.id === productId);
+  if (!product) return;
+
+  const currentLang = window.I18N ? window.I18N.getLanguage() : 'es';
+  const promptMsg = t('inventory.promptQty', { name: product.name, unit: product.unit || (currentLang === 'es' ? 'ud' : 'un') });
+
+  const inputVal = window.prompt(promptMsg, String(product.quantity));
+  if (inputVal === null) return; // Cancelou
+
+  const parsed = parseInt(inputVal.trim(), 10);
+  if (isNaN(parsed) || parsed < 0) {
+    showToast(currentLang === 'es' ? 'Introduce un número válido mayor o igual a 0.' : 'Insira um número válido maior ou igual a 0.');
+    return;
+  }
+
+  setProductQuantityDirectly(productId, parsed);
+}
+
 function setProductStatus(productId, status) {
   const product = state.data.products.find(p => p.id === productId);
   if (!product) return;
 
   const { faltaMax, atencaoMax, suficienteMin } = getProductThresholds(product);
 
-  product.status = status;
-  product.updatedAt = new Date().toISOString();
+  let targetQty = parseInt(product.quantity, 10) || 0;
 
-  // Ajusta quantidade sugerida se a quantidade atual conflitar com o status escolhido
-  if (status === 'falta' && Number(product.quantity) > faltaMax) {
-    product.quantity = faltaMax;
+  // Só ajusta a quantidade se ela conflitar com o status escolhido
+  if (status === 'falta') {
+    if (targetQty > faltaMax) targetQty = faltaMax;
   } else if (status === 'acabando') {
-    if (Number(product.quantity) > atencaoMax || Number(product.quantity) <= faltaMax) {
-      product.quantity = atencaoMax;
-    }
-  } else if (status === 'suficiente' && Number(product.quantity) < suficienteMin) {
-    product.quantity = suficienteMin;
+    if (targetQty > atencaoMax || targetQty <= faltaMax) targetQty = atencaoMax;
+  } else if (status === 'suficiente') {
+    targetQty = Math.max(targetQty, suficienteMin);
   }
 
-  saveData();
-  renderProducts();
-  renderUrgentItems();
+  setProductQuantityDirectly(productId, targetQty);
 
   const labels = { suficiente: t('status.suficiente'), acabando: t('status.acabando'), falta: t('status.falta') };
-  showToast(`${product.name}: ${labels[status]}`);
+  showToast(`${product.name}: ${labels[status] || status}`);
 }
 
 function stepProductQuantity(productId, delta) {
   const product = state.data.products.find(p => p.id === productId);
   if (!product) return;
 
-  const newQty = Math.max(0, Number(product.quantity) + delta);
-  product.quantity = newQty;
-  // Recalcula automaticamente o status baseado nas regras customizadas do produto
-  product.status = calculateProductStatus(product, newQty);
-  product.updatedAt = new Date().toISOString();
-
-  saveData();
-  renderProducts();
-  renderUrgentItems();
+  const newQty = Math.max(0, (parseInt(product.quantity, 10) || 0) + delta);
+  setProductQuantityDirectly(productId, newQty);
 }
 
 // ==========================================================================
@@ -8745,6 +8877,20 @@ window.logout = logout;
 window.initApp = initApp;
 window.openEditProfileModal = openEditProfileModal;
 window.closeEditProfileModal = closeEditProfileModal;
+
+// Flush de dados de estoque ao trocar de aplicativo ou fechar a janela
+window.addEventListener('beforeunload', () => {
+  try { localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(state.data)); } catch (e) {}
+  if (window.AirbnbCloudSync && typeof window.AirbnbCloudSync.flushPendingProductSync === 'function') {
+    window.AirbnbCloudSync.flushPendingProductSync();
+  }
+});
+window.addEventListener('pagehide', () => {
+  try { localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(state.data)); } catch (e) {}
+  if (window.AirbnbCloudSync && typeof window.AirbnbCloudSync.flushPendingProductSync === 'function') {
+    window.AirbnbCloudSync.flushPendingProductSync();
+  }
+});
 
 // Inicia aplicação com verificação de estado do documento
 if (document.readyState === 'loading') {
