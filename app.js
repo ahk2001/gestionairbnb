@@ -4006,7 +4006,7 @@ function renderTimesheets() {
 
   const summaryTitleTxt = isAllPaid
     ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas Pagas')
-    : (window.I18N ? window.I18N.t('timesheet.toReceiveAmount', { amount: formatMoney(unpaidGrandTotal) }) : `Total a Receber: ${formatMoney(unpaidGrandTotal)}`);
+    : (window.I18N ? window.I18N.t('timesheet.toReceive') : 'Total a Receber');
 
   const summaryBannerHtml = `
     <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
@@ -4223,7 +4223,6 @@ function renderTimesheets() {
               </div>
               <div class="ts-card-badges">
                 ${paidBadgeHtml}
-                ${dayAmountHtml}
                 <span class="ts-total-badge ${!hasEnd ? 'in-progress' : ''}">
                   ${totalText}
                 </span>
@@ -4659,7 +4658,7 @@ function renderManagerStaffSummaryBanner(staff) {
 
   const summaryTitleTxt = isAllPaid
     ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas e Serviços Pagos')
-    : (window.I18N ? window.I18N.t('managerTimesheet.totalToPayAmount', { amount: formatMoney(stats.unpaidGrandTotal) }) : `Total a Pagar: ${formatMoney(stats.unpaidGrandTotal)}`);
+    : (window.I18N ? window.I18N.t('managerTimesheet.totalToPay') : 'Total a Pagar');
   const summarySubTxt = stats.unpaidCount > 0
     ? stats.unpaidBreakdown
     : (window.I18N ? window.I18N.t('managerTimesheet.noPendingTitle') : 'Nenhuma pendência financeira');
@@ -4979,7 +4978,6 @@ function showManagerTimesheetHours(staffId, dateStr) {
               </div>
               <div class="ts-card-badges">
                 ${paidBadgeHtml}
-                ${dayAmountHtml}
                 <span class="ts-total-badge ${!hasEnd ? 'in-progress' : ''}">
                   ${totalText}
                 </span>

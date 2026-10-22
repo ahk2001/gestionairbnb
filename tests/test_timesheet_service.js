@@ -62,8 +62,9 @@ assert(appJs.includes('TIMESHEET_HOURLY_RATE = 10.0'), 'Constante TIMESHEET_HOUR
 assert(appJs.includes('TIMESHEET_CHECKIN_RATE = 7.0'), 'Constante TIMESHEET_CHECKIN_RATE definida como 7 euros/checkin');
 assert(appJs.includes('getTimesheetRecordAmount'), 'Função helper getTimesheetRecordAmount presente');
 assert(appJs.includes('unpaidGrandTotal'), 'Cálculo de total geral monetário não pago presente');
-assert(appJs.includes('timesheet.toReceiveAmount'), 'Chave de internacionalização toReceiveAmount utilizada');
-assert(appJs.includes('managerTimesheet.totalToPayAmount'), 'Chave de internacionalização totalToPayAmount utilizada para gestor');
+assert(appJs.includes('timesheet.toReceive'), 'Chave de internacionalização toReceive utilizada');
+assert(appJs.includes('managerTimesheet.totalToPay'), 'Chave de internacionalização totalToPay utilizada para gestor');
+assert(!appJs.includes('${dayAmountHtml}\n                <span class="ts-total-badge'), 'Horas minimizadas não contêm badge de valor a pagar no cabeçalho');
 
 // 6. Teste Matemático dos Cálculos
 const hourlyRate = 10.0;
