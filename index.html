@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=107">
-  <script src="i18n.js?v=107"></script>
+  <link rel="stylesheet" href="styles.css?v=108">
+  <script src="i18n.js?v=108"></script>
 </head>
 <body>
 
@@ -1417,6 +1417,14 @@
         <input type="hidden" id="timesheet-edit-id" value="">
         <input type="hidden" id="timesheet-type-input" value="hours">
 
+        <!-- Seletor de Colaborador (Visível para o Gestor) -->
+        <div class="form-group" id="ts-staff-select-group" style="display: none; margin-bottom: 14px;">
+          <label for="timesheet-staff-select" class="form-label" data-i18n="modalTs.staffLabel">Colaboradora / Empleado</label>
+          <div class="custom-luxury-select-wrap">
+            <select id="timesheet-staff-select" class="form-input custom-luxury-select"></select>
+          </div>
+        </div>
+
         <!-- Seletor do Tipo de Registro: Horas ou Serviço (Check-in) -->
         <div class="form-group" style="margin-bottom: 14px;">
           <label class="form-label" data-i18n="modalTs.recordTypeLabel">Tipo de Registro</label>
@@ -1653,6 +1661,7 @@
           <div class="mgr-ts-cal-quick-actions">
             <button type="button" class="mgr-ts-cal-quick-btn" data-action="today" data-i18n="modalMgrTs.today">Hoy</button>
             <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday" data-i18n="modalMgrTs.yesterday">Ayer</button>
+            <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-add-btn" id="btn-mgr-ts-add-record" data-i18n="modalMgrTs.btnAddHours">+ Añadir Horas / Servicio</button>
           </div>
         </div>
       </div>
@@ -1667,7 +1676,10 @@
             </svg>
             <span data-i18n="modalMgrTs.changeDate">Cambiar fecha</span>
           </button>
-          <span class="mgr-ts-active-date-badge" id="mgr-ts-active-date-txt">12/10/2026</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="mgr-ts-add-day-btn" id="btn-mgr-ts-add-day-record" data-i18n="modalMgrTs.btnAddHours" title="Añadir horas en este día">+ Añadir</button>
+            <span class="mgr-ts-active-date-badge" id="mgr-ts-active-date-txt">12/10/2026</span>
+          </div>
         </div>
 
         <div id="mgr-ts-hours-card-container">
@@ -1784,11 +1796,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=107"></script>
-  <script src="auth.js?v=107"></script>
-  <script src="cloud-sync.js?v=107"></script>
-  <script src="touch-scroll.js?v=107"></script>
-  <script src="initialData.js?v=107"></script>
-  <script src="app.js?v=107"></script>
+  <script src="firebase-config.js?v=108"></script>
+  <script src="auth.js?v=108"></script>
+  <script src="cloud-sync.js?v=108"></script>
+  <script src="touch-scroll.js?v=108"></script>
+  <script src="initialData.js?v=108"></script>
+  <script src="app.js?v=108"></script>
 </body>
 </html>

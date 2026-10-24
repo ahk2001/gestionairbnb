@@ -286,10 +286,46 @@
               const localPending = (appState.data.calendar || []).filter(e => e && e.id && !remoteIds.has(String(e.id)));
               appState.data.calendar = [...localPending, ...items];
             } else if (colName === 'timesheets') {
-              // Garante que registros de horas locais recém-criados não sejam descartados antes da confirmação da nuvem
-              const remoteIds = new Set(items.map(it => String(it.id)));
-              const localPending = (appState.data.timesheets || []).filter(t => t && t.id && !remoteIds.has(String(t.id)));
-              const combined = [...localPending, ...items];
+              // Reconciliação inteligente de registros de horas: preserva edições locais mais recentes e protege pendências locais
+              const currentList = Array.isArray(appState.data.timesheets) ? appState.data.timesheets : [];
+              const localMap = new Map();
+              currentList.forEach(t => {
+                if (t && t.id && !isRecentlyDeleted('timesheets', t.id)) {
+                  localMap.set(String(t.id), t);
+                }
+              });
+
+              const mergedMap = new Map();
+
+              items.forEach(remItem => {
+                if (!remItem || !remItem.id || isRecentlyDeleted('timesheets', remItem.id)) return;
+                const idStr = String(remItem.id);
+                const locItem = localMap.get(idStr);
+
+                if (locItem) {
+                  const locTime = locItem.updatedAt ? new Date(locItem.updatedAt).getTime() : 0;
+                  const remTime = remItem.updatedAt ? new Date(remItem.updatedAt).getTime() : 0;
+
+                  // Se a versão local for estritamente mais recente que a remota (ex: salvamento recente offline ou antes do sync), preserva a edição local
+                  if (locTime > remTime) {
+                    mergedMap.set(idStr, locItem);
+                    saveDocument('timesheets', idStr, locItem).catch(() => {});
+                  } else {
+                    mergedMap.set(idStr, remItem);
+                  }
+                  localMap.delete(idStr);
+                } else {
+                  mergedMap.set(idStr, remItem);
+                }
+              });
+
+              // Preserva registros locais pendentes que ainda não subiram para a nuvem
+              localMap.forEach((locItem, idStr) => {
+                mergedMap.set(idStr, locItem);
+                saveDocument('timesheets', idStr, locItem).catch(() => {});
+              });
+
+              const combined = Array.from(mergedMap.values());
               combined.sort((a, b) => {
                 if (b.date !== a.date) return (b.date || '').localeCompare(a.date || '');
                 return (b.startTime || '').localeCompare(a.startTime || '');

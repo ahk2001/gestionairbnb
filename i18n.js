@@ -448,6 +448,7 @@
       'modalTs.paymentStatusService': 'Estado de Pago del Servicio',
       'modalTs.unpaidService': 'No Pagado',
       'modalTs.paidService': 'Servicio Pagado',
+      'modalTs.staffLabel': 'Colaboradora / Empleado',
 
       // Modal Time Picker
       'modalTimePicker.title': 'Seleccionar Horario',
@@ -463,6 +464,7 @@
       'modalMgrTs.today': 'Hoy',
       'modalMgrTs.yesterday': 'Ayer',
       'modalMgrTs.noRecord': 'Sin horas registradas en esta fecha.',
+      'modalMgrTs.btnAddHours': 'Registrar Horas / Servicio',
 
       // Modal Editar Perfil
       'modalProfile.title': 'Editar Mi Perfil',
@@ -1147,6 +1149,7 @@
       'modalTs.paymentStatusService': 'Status de Pagamento do Serviço',
       'modalTs.unpaidService': 'Não Pago',
       'modalTs.paidService': 'Serviço Pago',
+      'modalTs.staffLabel': 'Colaboradora / Funcionário',
 
       // Modal Time Picker
       'modalTimePicker.title': 'Selecionar Horário',
@@ -1162,6 +1165,7 @@
       'modalMgrTs.today': 'Hoje',
       'modalMgrTs.yesterday': 'Ontem',
       'modalMgrTs.noRecord': 'Nenhum registro de horas nesta data.',
+      'modalMgrTs.btnAddHours': 'Registrar Horas / Serviço',
 
       // Modal Editar Perfil
       'modalProfile.title': 'Editar Meu Perfil',

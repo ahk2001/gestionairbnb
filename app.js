@@ -505,7 +505,12 @@ function syncToCloudDebounced() {
           const myTimesheets = state.data.timesheets.filter(t => 
             (myEmail && t.staffEmail && t.staffEmail.toLowerCase() === myEmail) ||
             (myId && t.staffId === myId)
-          );
+          ).map(t => {
+            if (!t.staffEmail && myEmail) {
+              return { ...t, staffEmail: myEmail };
+            }
+            return t;
+          });
           if (myTimesheets.length > 0) {
             await AirbnbCloudSync.syncCollectionBatch('timesheets', myTimesheets);
           }
@@ -3737,8 +3742,9 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
     return false;
   });
 
-  const unpaidRecords = staffRecords.filter(t => !t.isPaid && (t.type === 'service' || Boolean(t.endTime)));
-  const unpaidHoursRecords = unpaidRecords.filter(t => t.type !== 'service');
+  const unpaidRecords = staffRecords.filter(t => !t.isPaid);
+  const unpaidHoursRecords = unpaidRecords.filter(t => t.type !== 'service' && Boolean(t.endTime));
+  const inProgressRecords = unpaidRecords.filter(t => t.type !== 'service' && !t.endTime);
   const unpaidServicesRecords = unpaidRecords.filter(t => t.type === 'service');
   const unpaidMinutes = unpaidHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
   const unpaidHoursTotal = (unpaidMinutes / 60) * TIMESHEET_HOURLY_RATE;
@@ -3746,8 +3752,8 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
   const unpaidServicesTotal = unpaidServicesRecords.reduce((acc, t) => acc + getTimesheetRecordAmount(t), 0);
   const unpaidGrandTotal = unpaidHoursTotal + unpaidServicesTotal;
 
-  const paidRecords = staffRecords.filter(t => Boolean(t.isPaid) && (t.type === 'service' || Boolean(t.endTime)));
-  const paidHoursRecords = paidRecords.filter(t => t.type !== 'service');
+  const paidRecords = staffRecords.filter(t => Boolean(t.isPaid));
+  const paidHoursRecords = paidRecords.filter(t => t.type !== 'service' && Boolean(t.endTime));
   const paidServicesRecords = paidRecords.filter(t => t.type === 'service');
   const paidMinutes = paidHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
   const paidHoursTotal = (paidMinutes / 60) * TIMESHEET_HOURLY_RATE;
@@ -3759,6 +3765,7 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
   let unpaidBreakdown = '';
   const servSingular = window.I18N ? window.I18N.t('timesheet.serviceSingle') : 'serviço';
   const servPlural = window.I18N ? window.I18N.t('timesheet.servicePlural') : 'serviços';
+  const inProgressTxt = window.I18N ? window.I18N.t('timesheet.inProgress') : 'Em andamento';
   const servTxt = unpaidServicesCount === 1 ? servSingular : servPlural;
 
   if (unpaidMinutes > 0 && unpaidServicesCount > 0) {
@@ -3770,6 +3777,9 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
   } else if (unpaidMinutes > 0) {
     unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${minutesToFormatted(unpaidMinutes)}`;
     unpaidBreakdown = `${minutesToFormatted(unpaidMinutes)} (${formatMoney(unpaidHoursTotal)})`;
+  } else if (inProgressRecords.length > 0) {
+    unpaidFormatted = inProgressTxt;
+    unpaidBreakdown = inProgressTxt;
   } else {
     unpaidFormatted = '€ 0,00';
     unpaidBreakdown = '';
@@ -3778,6 +3788,7 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
   return {
     allRecords: staffRecords,
     unpaidRecords,
+    inProgressCount: inProgressRecords.length,
     unpaidCount: unpaidRecords.length,
     unpaidMinutes,
     unpaidHoursTotal,
@@ -3818,9 +3829,9 @@ function renderTimesheets() {
       : (window.I18N ? window.I18N.t('timesheet.subStaff') : 'Registre início, pausa e fim do seu dia de trabalho');
   }
 
-  // Gestor NÃO consegue cadastrar nem editar, apenas equipe
+  // Botão de adicionar registro visível para equipe e gestor
   if (btnAdd) {
-    btnAdd.style.display = isOwner ? 'none' : 'inline-flex';
+    btnAdd.style.display = 'inline-flex';
   }
 
   // Na visão do gestor o filtro antigo é ocultado
@@ -4810,10 +4821,15 @@ function showManagerTimesheetHours(staffId, dateStr) {
   const labelBreakTxt = window.I18N ? window.I18N.t('timesheet.break', { time: '' }).replace(': {time}', '').replace(':', '').trim() : 'Pausa';
   const labelEndTxt = window.I18N ? window.I18N.t('timesheet.end') : 'Fim';
   const exportWaTxt = window.I18N ? window.I18N.t('timesheet.exportWhatsApp') : 'Exportar WhatsApp';
+  const editBtnTxt = window.I18N ? window.I18N.t('timesheet.btnEdit') : 'Editar';
+  const statusPaidTxt = window.I18N ? window.I18N.t('timesheet.statusPaid') : 'Horas Pagas';
+  const statusUnpaidTxt = window.I18N ? window.I18N.t('timesheet.statusUnpaid') : 'Não Pagas';
+  const servicePaidTxt = window.I18N ? window.I18N.t('timesheet.serviceStatusPaid') : 'Serviço Pago';
+  const serviceUnpaidTxt = window.I18N ? window.I18N.t('timesheet.serviceStatusUnpaid') : 'Não Pago';
   const paidTitle = window.I18N ? window.I18N.t('managerTimesheet.statusPaidTitle') : 'Status: Horas Pagas';
-  const paidDesc = window.I18N ? window.I18N.t('managerTimesheet.statusPaidDesc') : 'A colaboradora marcou este expediente como pago.';
+  const paidDesc = window.I18N ? window.I18N.t('managerTimesheet.statusPaidDesc') : 'Expediente marcado como pago.';
   const unpaidTitle = window.I18N ? window.I18N.t('managerTimesheet.statusUnpaidTitle') : 'Status: Não Pago (Pendente)';
-  const unpaidDesc = window.I18N ? window.I18N.t('managerTimesheet.statusUnpaidDesc') : 'A colaboradora ainda não marcou este expediente como pago.';
+  const unpaidDesc = window.I18N ? window.I18N.t('managerTimesheet.statusUnpaidDesc') : 'Expediente pendente de pagamento.';
 
   hoursContainer.innerHTML = `
     <div class="mgr-ts-records-list">
@@ -4836,6 +4852,36 @@ function showManagerTimesheetHours(staffId, dateStr) {
         const paidBadgeHtml = isPaid
           ? `<span class="ts-status-dot is-paid" title="${paidTitle}"></span>`
           : `<span class="ts-status-dot is-unpaid" title="${unpaidTitle}"></span>`;
+
+        const paidBtnHtml = t.type === 'service'
+          ? (isPaid
+            ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="${servicePaidTxt}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>${servicePaidTxt}</span>
+              </button>`
+            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${serviceUnpaidTxt}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>${serviceUnpaidTxt}</span>
+              </button>`)
+          : (isPaid
+            ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="${statusPaidTxt}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>${statusPaidTxt}</span>
+              </button>`
+            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${statusUnpaidTxt}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>${statusUnpaidTxt}</span>
+              </button>`);
 
         const managerStatusHtml = isPaid
           ? `<div class="mgr-ts-payment-status is-paid">
@@ -4944,11 +4990,19 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 ${managerStatusHtml}
 
                 <div class="ts-card-actions">
+                  ${paidBtnHtml}
                   <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
                     </svg>
                     <span>${exportWaTxt}</span>
+                  </button>
+                  <button type="button" class="btn-ts-edit" data-ts-id="${t.id}" title="${editBtnTxt}">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    <span>${editBtnTxt}</span>
                   </button>
                 </div>
               </div>
@@ -5019,11 +5073,19 @@ function showManagerTimesheetHours(staffId, dateStr) {
               ${managerStatusHtml}
 
               <div class="ts-card-actions">
+                ${paidBtnHtml}
                 <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
                   </svg>
                   <span>${exportWaTxt}</span>
+                </button>
+                <button type="button" class="btn-ts-edit" data-ts-id="${t.id}" title="${editBtnTxt}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  <span>${editBtnTxt}</span>
                 </button>
               </div>
             </div>
@@ -5041,6 +5103,21 @@ function showManagerTimesheetHours(staffId, dateStr) {
         card.classList.toggle('is-collapsed');
       });
     }
+  });
+
+  hoursContainer.querySelectorAll('.btn-ts-toggle-paid').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTimesheetPaidStatus(btn.dataset.tsId);
+      showManagerTimesheetHours(staffId, dateStr);
+    });
+  });
+
+  hoursContainer.querySelectorAll('.btn-ts-edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openTimesheetModal(btn.dataset.tsId, staffId, dateStr !== 'unpaid' ? dateStr : null);
+    });
   });
 
   hoursContainer.querySelectorAll('.btn-ts-whatsapp').forEach(btn => {
@@ -5111,14 +5188,29 @@ function setTimesheetModalType(type) {
   }
 }
 
-function openTimesheetModal(editId = null) {
+function openTimesheetModal(editId = null, presetStaffId = null, presetDate = null) {
   const modal = document.getElementById('modal-timesheet');
   const titleEl = document.getElementById('timesheet-modal-title');
   const dateInput = document.getElementById('timesheet-date-input');
   const editIdInput = document.getElementById('timesheet-edit-id');
   const btnDelete = document.getElementById('btn-delete-timesheet');
+  const staffGroup = document.getElementById('ts-staff-select-group');
+  const staffSelect = document.getElementById('timesheet-staff-select');
 
   if (!modal) return;
+
+  const isOwner = state.currentUser?.type === 'owner' || state.role === 'owner';
+
+  // Configura seletor de funcionário para gestores
+  if (staffGroup) {
+    staffGroup.style.display = isOwner ? 'block' : 'none';
+  }
+  if (staffSelect && isOwner) {
+    const rawStaffList = state.data.staff || [];
+    staffSelect.innerHTML = rawStaffList.map(s => `
+      <option value="${escapeHtml(s.id)}">${escapeHtml(s.name || s.email)}</option>
+    `).join('');
+  }
 
   if (dateInput) {
     dateInput.max = getTodayDateString();
@@ -5139,6 +5231,10 @@ function openTimesheetModal(editId = null) {
     }
     if (editIdInput) editIdInput.value = record.id;
     if (dateInput) dateInput.value = record.date || getTodayDateString();
+
+    if (staffSelect && isOwner && record.staffId) {
+      staffSelect.value = record.staffId;
+    }
 
     setTimesheetModalType(isService ? 'service' : 'hours');
 
@@ -5196,7 +5292,16 @@ function openTimesheetModal(editId = null) {
   } else {
     if (titleEl) titleEl.textContent = window.I18N ? window.I18N.t('modalTs.title') : 'Registrar Horas ou Serviço';
     if (editIdInput) editIdInput.value = '';
-    if (dateInput) dateInput.value = getTodayDateString();
+    if (dateInput) dateInput.value = presetDate || getTodayDateString();
+
+    if (staffSelect && isOwner) {
+      if (presetStaffId) {
+        staffSelect.value = presetStaffId;
+      } else if (state.activeManagerStaffId) {
+        staffSelect.value = state.activeManagerStaffId;
+      }
+    }
+
     const now = new Date();
     const curH = String(now.getHours()).padStart(2, '0');
     const curM = String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0');
@@ -5329,14 +5434,6 @@ function initTimePicker() {
   hoursWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = parseInt(btn.dataset.val, 10);
-      const dateInput = document.getElementById('timesheet-date-input');
-      const todayStr = getTodayDateString();
-      const isToday = !dateInput || dateInput.value === todayStr;
-      const now = new Date();
-      if (isToday && val > now.getHours()) {
-        showToast(t('toast.futureHourNotAllowed', { time: `${String(now.getHours()).padStart(2, '0')}:00` }));
-        return;
-      }
       scrollToTimeWheel(hoursWheel, val);
     });
   });
@@ -5345,14 +5442,6 @@ function initTimePicker() {
   minutesWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = parseInt(btn.dataset.val, 10);
-      const dateInput = document.getElementById('timesheet-date-input');
-      const todayStr = getTodayDateString();
-      const isToday = !dateInput || dateInput.value === todayStr;
-      const now = new Date();
-      if (isToday && _timePickerHour === now.getHours() && val > now.getMinutes()) {
-        showToast(t('toast.futureMinuteNotAllowed', { time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}` }));
-        return;
-      }
       scrollToTimeWheel(minutesWheel, val);
     });
   });
@@ -5363,22 +5452,9 @@ function initTimePicker() {
     clearTimeout(hScrollTimeout);
     hScrollTimeout = setTimeout(() => {
       updateTimeWheelActiveItem(hoursWheel, (val) => {
-        const dateInput = document.getElementById('timesheet-date-input');
-        const todayStr = getTodayDateString();
-        const isToday = !dateInput || dateInput.value === todayStr;
-        const now = new Date();
-        const nowH = now.getHours();
-        const nowM = now.getMinutes();
-
-        if (isToday && val > nowH) {
-          _timePickerHour = nowH;
-          scrollToTimeWheel(hoursWheel, nowH);
-          showToast(t('toast.futureHourNotAllowed', { time: `${String(nowH).padStart(2, '0')}:00` }));
-        } else {
-          _timePickerHour = val;
-        }
+        _timePickerHour = val;
         _timePickerIsCleared = false;
-        applyTimePickerFutureRestrictions(isToday, nowH, nowM);
+        applyTimePickerFutureRestrictions(false, 23, 59);
         updateTimePickerDisplay();
       });
     }, 60);
@@ -5390,20 +5466,7 @@ function initTimePicker() {
     clearTimeout(mScrollTimeout);
     mScrollTimeout = setTimeout(() => {
       updateTimeWheelActiveItem(minutesWheel, (val) => {
-        const dateInput = document.getElementById('timesheet-date-input');
-        const todayStr = getTodayDateString();
-        const isToday = !dateInput || dateInput.value === todayStr;
-        const now = new Date();
-        const nowH = now.getHours();
-        const nowM = now.getMinutes();
-
-        if (isToday && _timePickerHour === nowH && val > nowM) {
-          _timePickerMinute = nowM;
-          scrollToTimeWheel(minutesWheel, nowM);
-          showToast(t('toast.futureMinuteNotAllowed', { time: `${String(nowH).padStart(2, '0')}:${String(nowM).padStart(2, '0')}` }));
-        } else {
-          _timePickerMinute = val;
-        }
+        _timePickerMinute = val;
         _timePickerIsCleared = false;
         updateTimePickerDisplay();
       });
@@ -5418,10 +5481,7 @@ function initTimePicker() {
     _timePickerIsCleared = false;
     setTimeWheelValues(_timePickerHour, _timePickerMinute);
     updateTimePickerDisplay();
-    const dateInput = document.getElementById('timesheet-date-input');
-    const todayStr = getTodayDateString();
-    const isToday = !dateInput || dateInput.value === todayStr;
-    applyTimePickerFutureRestrictions(isToday, now.getHours(), now.getMinutes());
+    applyTimePickerFutureRestrictions(false, 23, 59);
   });
 
   // Botão "Limpar horário"
@@ -5436,23 +5496,6 @@ function initTimePicker() {
       if (_timePickerIsCleared) {
         state.tempTimesheetTimes[_timePickerActiveField] = '';
       } else {
-        const dateInput = document.getElementById('timesheet-date-input');
-        const todayStr = getTodayDateString();
-        const isToday = !dateInput || dateInput.value === todayStr;
-
-        if (isToday) {
-          const now = new Date();
-          const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
-          const pickedTotalMinutes = _timePickerHour * 60 + _timePickerMinute;
-
-          if (pickedTotalMinutes > currentTotalMinutes) {
-            const curHStr = String(now.getHours()).padStart(2, '0');
-            const curMStr = String(now.getMinutes()).padStart(2, '0');
-            showToast(t('toast.futureTimeNotAllowedNow', { time: `${curHStr}:${curMStr}` }));
-            return;
-          }
-        }
-
         const hStr = String(_timePickerHour).padStart(2, '0');
         const mStr = String(_timePickerMinute).padStart(2, '0');
         const pickedTime = `${hStr}:${mStr}`;
@@ -5475,25 +5518,13 @@ function applyTimePickerFutureRestrictions(isToday, maxH, maxM) {
   if (!hoursWheel || !minutesWheel) return;
 
   hoursWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
-    const val = parseInt(btn.dataset.val, 10);
-    if (isToday && val > maxH) {
-      btn.classList.add('is-disabled-future');
-      btn.setAttribute('title', 'Horário futuro não permitido');
-    } else {
-      btn.classList.remove('is-disabled-future');
-      btn.removeAttribute('title');
-    }
+    btn.classList.remove('is-disabled-future');
+    btn.removeAttribute('title');
   });
 
   minutesWheel.querySelectorAll('.time-wheel-item').forEach(btn => {
-    const val = parseInt(btn.dataset.val, 10);
-    if (isToday && _timePickerHour === maxH && val > maxM) {
-      btn.classList.add('is-disabled-future');
-      btn.setAttribute('title', 'Minuto futuro não permitido');
-    } else {
-      btn.classList.remove('is-disabled-future');
-      btn.removeAttribute('title');
-    }
+    btn.classList.remove('is-disabled-future');
+    btn.removeAttribute('title');
   });
 }
 
@@ -9061,8 +9092,9 @@ function setupEventListeners() {
 
   document.querySelectorAll('#modal-manager-timesheet .mgr-ts-cal-quick-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      e.stopPropagation();
       const action = btn.dataset.action;
+      if (!action) return;
+      e.stopPropagation();
       const d = new Date();
       if (action === 'yesterday') {
         d.setDate(d.getDate() - 1);
@@ -9070,6 +9102,19 @@ function setupEventListeners() {
       const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       showManagerTimesheetHours(state.activeManagerStaffId, iso);
     });
+  });
+
+  document.getElementById('btn-mgr-ts-add-record')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openTimesheetModal(null, state.activeManagerStaffId, getTodayDateString());
+  });
+
+  document.getElementById('btn-mgr-ts-add-day-record')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const targetDate = (state.activeManagerStaffDate && state.activeManagerStaffDate !== 'unpaid')
+      ? state.activeManagerStaffDate
+      : getTodayDateString();
+    openTimesheetModal(null, state.activeManagerStaffId, targetDate);
   });
 
   const mgrModal = document.getElementById('modal-manager-timesheet');
@@ -9184,16 +9229,39 @@ function setupEventListeners() {
     const isPaid = document.getElementById('timesheet-is-paid-input')?.value === 'true';
 
     const currentUser = state.currentUser;
-    const staffEmail = (currentUser?.email || '').toLowerCase().trim();
+    const isOwner = state.currentUser?.type === 'owner' || state.role === 'owner';
 
-    // Encontra o registro de funcionário correspondente para vincular o staffId
-    const matchedStaff = (state.data.staff || []).find(s =>
-      (staffEmail && s.email && s.email.toLowerCase() === staffEmail) ||
-      (currentUser?.id && s.id === currentUser.id)
-    );
+    let staffId = null;
+    let staffName = null;
+    let staffEmail = null;
+    let staffPhoto = null;
 
-    const staffId = matchedStaff?.id || currentUser?.id || 'staff_1';
-    const staffName = currentUser?.name || matchedStaff?.name || 'Equipe';
+    if (isOwner) {
+      const staffSelect = document.getElementById('timesheet-staff-select');
+      const selectedId = staffSelect?.value;
+      const matched = (state.data.staff || []).find(s => s.id === selectedId);
+      if (matched) {
+        staffId = matched.id;
+        staffName = matched.name;
+        staffEmail = matched.email;
+        staffPhoto = matched.photo;
+      } else {
+        staffId = selectedId || (state.data.staff?.[0]?.id || 'staff_1');
+        staffName = state.data.staff?.[0]?.name || 'Equipe';
+        staffEmail = state.data.staff?.[0]?.email || null;
+        staffPhoto = state.data.staff?.[0]?.photo || null;
+      }
+    } else {
+      const myEmail = (currentUser?.email || '').toLowerCase().trim();
+      const matched = (state.data.staff || []).find(s =>
+        (myEmail && s.email && s.email.toLowerCase() === myEmail) ||
+        (currentUser?.id && s.id === currentUser.id)
+      );
+      staffId = matched?.id || currentUser?.id || 'staff_1';
+      staffName = currentUser?.name || matched?.name || 'Equipe';
+      staffEmail = myEmail || matched?.email;
+      staffPhoto = currentUser?.photo || matched?.photo || null;
+    }
 
     if (!state.data.timesheets) state.data.timesheets = [];
 
@@ -9209,20 +9277,6 @@ function setupEventListeners() {
       const servicePrice = parsedPrice !== null ? parsedPrice : (serviceType === 'checkin' ? TIMESHEET_CHECKIN_RATE : 0);
       const notes = (document.getElementById('timesheet-service-notes')?.value || '').trim();
 
-      // Se for o dia de hoje, valida se o horário do serviço informado está no futuro em relação ao relógio
-      if (dateVal === todayStr) {
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const curHStr = String(now.getHours()).padStart(2, '0');
-        const curMStr = String(now.getMinutes()).padStart(2, '0');
-        const nowFormatted = `${curHStr}:${curMStr}`;
-
-        if (serviceTime && timeToMinutes(serviceTime) > currentMinutes) {
-          showToast(t('toast.startFutureNotAllowed', { time: serviceTime, now: nowFormatted }));
-          return;
-        }
-      }
-
       if (editId) {
         const existing = state.data.timesheets.find(t => t.id === editId);
         if (existing) {
@@ -9237,7 +9291,7 @@ function setupEventListeners() {
           existing.staffId = staffId;
           existing.staffName = staffName;
           if (staffEmail) existing.staffEmail = staffEmail;
-          if (currentUser?.photo) existing.staffPhoto = currentUser.photo;
+          if (staffPhoto) existing.staffPhoto = staffPhoto;
           existing.updatedAt = new Date().toISOString();
 
           saveData();
@@ -9264,7 +9318,7 @@ function setupEventListeners() {
           staffId: staffId,
           staffName: staffName,
           staffEmail: staffEmail,
-          staffPhoto: currentUser?.photo || null,
+          staffPhoto: staffPhoto,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -9283,6 +9337,9 @@ function setupEventListeners() {
 
       document.getElementById('modal-timesheet')?.classList.remove('active');
       renderTimesheets();
+      if (document.getElementById('modal-manager-timesheet')?.classList.contains('active')) {
+        showManagerTimesheetHours(staffId, state.activeManagerStaffDate || dateVal);
+      }
       return;
     }
 
@@ -9294,32 +9351,6 @@ function setupEventListeners() {
     if (!start) {
       showToast(t('toast.selectStartTimeRequired'));
       return;
-    }
-
-    // Se for o dia de hoje, valida se qualquer horário informado está no futuro em relação ao relógio
-    if (dateVal === todayStr) {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const curHStr = String(now.getHours()).padStart(2, '0');
-      const curMStr = String(now.getMinutes()).padStart(2, '0');
-      const nowFormatted = `${curHStr}:${curMStr}`;
-
-      if (start && timeToMinutes(start) > currentMinutes) {
-        showToast(t('toast.startFutureNotAllowed', { time: start, now: nowFormatted }));
-        return;
-      }
-      if (breakStart && timeToMinutes(breakStart) > currentMinutes) {
-        showToast(t('toast.breakStartFutureNotAllowed', { time: breakStart, now: nowFormatted }));
-        return;
-      }
-      if (breakEnd && timeToMinutes(breakEnd) > currentMinutes) {
-        showToast(t('toast.breakEndFutureNotAllowed', { time: breakEnd, now: nowFormatted }));
-        return;
-      }
-      if (end && timeToMinutes(end) > currentMinutes) {
-        showToast(t('toast.endFutureNotAllowed', { time: end, now: nowFormatted }));
-        return;
-      }
     }
 
     if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
@@ -9384,7 +9415,7 @@ function setupEventListeners() {
         existing.staffId = staffId;
         existing.staffName = staffName;
         if (staffEmail) existing.staffEmail = staffEmail;
-        if (currentUser?.photo) existing.staffPhoto = currentUser.photo;
+        if (staffPhoto) existing.staffPhoto = staffPhoto;
         existing.updatedAt = new Date().toISOString();
 
         saveData();
@@ -9404,7 +9435,7 @@ function setupEventListeners() {
         staffId: staffId,
         staffName: staffName,
         staffEmail: staffEmail,
-        staffPhoto: currentUser?.photo || null,
+        staffPhoto: staffPhoto,
         date: dateVal,
         startTime: start,
         breakStartTime: breakStart,
@@ -9431,6 +9462,9 @@ function setupEventListeners() {
 
     document.getElementById('modal-timesheet')?.classList.remove('active');
     renderTimesheets();
+    if (document.getElementById('modal-manager-timesheet')?.classList.contains('active')) {
+      showManagerTimesheetHours(staffId, state.activeManagerStaffDate || dateVal);
+    }
   });
 
   // Modal de Edição de Perfil (Foto e Nome para Equipe e Gestor)
