@@ -3736,6 +3736,16 @@ function getTimesheetRecordAmount(t) {
   return (minutes / 60) * TIMESHEET_HOURLY_RATE;
 }
 
+// Helper universal para conversão e limpeza de valores monetários digitados (suporta . e ,)
+function parseTimesheetCurrency(val) {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'number') return isNaN(val) ? null : val;
+  const str = String(val).trim().replace(',', '.');
+  if (str === '') return null;
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
 function getTimesheetPaymentDetails(t) {
   if (!t) return { totalAmount: 0, paidAmount: 0, remainingAmount: 0, isFullyPaid: false, isPartial: false };
   if (t.type === 'payment') {
@@ -5660,7 +5670,7 @@ function updateTimesheetCashPaymentPreview() {
 
   const stats = getStaffTimesheetStats(staffId, staffEmail, staffName);
   const currentDebt = stats.unpaidGrandTotal;
-  const payVal = amountInput ? parseFloat(amountInput.value) : 0;
+  const payVal = parseTimesheetCurrency(amountInput ? amountInput.value : "") || 0;
   const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
 
   if (!payVal || isNaN(payVal) || payVal <= 0) {
@@ -5697,8 +5707,8 @@ function updateTimesheetPaidAmountInputBadge() {
   const recType = document.getElementById('timesheet-type-input')?.value || 'hours';
   let totalRecord = 0;
   if (recType === 'service') {
-    const priceVal = parseFloat(document.getElementById('timesheet-service-price')?.value);
-    totalRecord = (!isNaN(priceVal) && priceVal >= 0) ? priceVal : TIMESHEET_CHECKIN_RATE;
+    const priceVal = parseTimesheetCurrency(document.getElementById('timesheet-service-price')?.value);
+    totalRecord = (priceVal !== null && priceVal >= 0) ? priceVal : TIMESHEET_CHECKIN_RATE;
   } else {
     const { start, breakStart, breakEnd, end } = state.tempTimesheetTimes || {};
     if (start && end) {
@@ -5707,8 +5717,8 @@ function updateTimesheetPaidAmountInputBadge() {
     }
   }
 
-  const pVal = parseFloat(paidInput.value);
-  if (isNaN(pVal) || pVal <= 0) {
+  const pVal = parseTimesheetCurrency(paidInput.value);
+  if (pVal === null || pVal <= 0) {
     badge.style.display = 'none';
     return;
   }
@@ -6047,8 +6057,8 @@ function updateTimesheetModalPaymentButtons(isPaid) {
       const recType = document.getElementById('timesheet-type-input')?.value || 'hours';
       let totalRec = 0;
       if (recType === 'service') {
-        const pVal = parseFloat(document.getElementById('timesheet-service-price')?.value);
-        totalRec = (!isNaN(pVal) && pVal >= 0) ? pVal : TIMESHEET_CHECKIN_RATE;
+        const pVal = parseTimesheetCurrency(document.getElementById('timesheet-service-price')?.value);
+        totalRec = (pVal !== null && pVal >= 0) ? pVal : TIMESHEET_CHECKIN_RATE;
       } else {
         const { start, breakStart, breakEnd, end } = state.tempTimesheetTimes || {};
         if (start && end) {
@@ -6056,7 +6066,8 @@ function updateTimesheetModalPaymentButtons(isPaid) {
           totalRec = totalM > 0 ? (totalM / 60) * TIMESHEET_HOURLY_RATE : 0;
         }
       }
-      if (totalRec > 0 && (!paidAmountInput.value || parseFloat(paidAmountInput.value) <= 0)) {
+      const currentPaid = parseTimesheetCurrency(paidAmountInput.value);
+      if (totalRec > 0 && (!paidAmountInput.value || currentPaid === null || currentPaid <= 0)) {
         paidAmountInput.value = totalRec.toFixed(2);
       }
     } else {
@@ -9904,6 +9915,18 @@ function setupEventListeners() {
     renderTimesheets();
   });
 
+  // Sanitização e validação contínua para campos de moeda (permite dígitos, ponto e vírgula)
+  ['timesheet-payment-cash-amount', 'timesheet-paid-amount-input', 'timesheet-service-price'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', (e) => {
+      const cleaned = e.target.value.replace(/[^0-9.,]/g, '');
+      if (cleaned !== e.target.value) {
+        e.target.value = cleaned;
+      }
+    });
+  });
+
   // Listener para input de montante em dinheiro pago no modal de pagamento
   document.getElementById('timesheet-payment-cash-amount')?.addEventListener('input', () => {
     updateTimesheetCashPaymentPreview();
@@ -10067,8 +10090,8 @@ function setupEventListeners() {
     // =========================================================================
     if (recordType === 'payment') {
       const amountInput = document.getElementById('timesheet-payment-cash-amount');
-      const amountVal = amountInput ? parseFloat(amountInput.value) : 0;
-      if (isNaN(amountVal) || amountVal <= 0) {
+      const amountVal = parseTimesheetCurrency(amountInput ? amountInput.value : '');
+      if (amountVal === null || amountVal <= 0) {
         showToast(window.I18N ? window.I18N.t('toast.enterPaymentAmount') : 'Por favor, introduce el monto pagado en efectivo.');
         return;
       }
@@ -10145,15 +10168,15 @@ function setupEventListeners() {
       const propertyId = document.getElementById('timesheet-service-property')?.value || 'JB';
       const serviceTime = state.tempTimesheetTimes.serviceTime || '15:00';
       const priceRaw = document.getElementById('timesheet-service-price')?.value;
-      const parsedPrice = (priceRaw !== '' && priceRaw !== null && !isNaN(Number(priceRaw))) ? Number(priceRaw) : null;
-      const servicePrice = parsedPrice !== null ? parsedPrice : (serviceType === 'checkin' ? TIMESHEET_CHECKIN_RATE : 0);
+      const parsedPrice = parseTimesheetCurrency(priceRaw);
+      const servicePrice = (parsedPrice !== null && parsedPrice >= 0) ? parsedPrice : (serviceType === 'checkin' ? TIMESHEET_CHECKIN_RATE : 0);
       const notes = (document.getElementById('timesheet-service-notes')?.value || '').trim();
 
       const paidAmountRaw = document.getElementById('timesheet-paid-amount-input')?.value;
-      const parsedPaid = (paidAmountRaw !== '' && paidAmountRaw !== null && !isNaN(Number(paidAmountRaw))) ? Math.max(0, Number(paidAmountRaw)) : null;
-      let finalPaidAmount = parsedPaid !== null ? parsedPaid : (isPaid ? servicePrice : 0);
+      const parsedPaid = parseTimesheetCurrency(paidAmountRaw);
+      let finalPaidAmount = (parsedPaid !== null && parsedPaid >= 0) ? parsedPaid : (isPaid ? servicePrice : 0);
       let finalIsPaid = isPaid;
-      if (parsedPaid !== null) {
+      if (parsedPaid !== null && parsedPaid >= 0) {
         finalIsPaid = finalPaidAmount >= (servicePrice - 0.01);
       } else if (isPaid) {
         finalPaidAmount = servicePrice;
@@ -10287,10 +10310,10 @@ function setupEventListeners() {
     const hoursNotes = (document.getElementById('timesheet-hours-notes')?.value || '').trim();
     const dayGrossAmount = (totalMinutes && totalMinutes > 0) ? (totalMinutes / 60) * TIMESHEET_HOURLY_RATE : 0;
     const paidAmountRaw = document.getElementById('timesheet-paid-amount-input')?.value;
-    const parsedPaid = (paidAmountRaw !== '' && paidAmountRaw !== null && !isNaN(Number(paidAmountRaw))) ? Math.max(0, Number(paidAmountRaw)) : null;
-    let finalPaidAmount = parsedPaid !== null ? parsedPaid : (isPaid ? dayGrossAmount : 0);
+    const parsedPaid = parseTimesheetCurrency(paidAmountRaw);
+    let finalPaidAmount = (parsedPaid !== null && parsedPaid >= 0) ? parsedPaid : (isPaid ? dayGrossAmount : 0);
     let finalIsPaid = isPaid;
-    if (parsedPaid !== null && dayGrossAmount > 0) {
+    if (parsedPaid !== null && parsedPaid >= 0 && dayGrossAmount > 0) {
       finalIsPaid = finalPaidAmount >= (dayGrossAmount - 0.01);
     } else if (isPaid && dayGrossAmount > 0) {
       finalPaidAmount = dayGrossAmount;
