@@ -4626,7 +4626,7 @@ function renderTimesheets() {
               <div class="ts-card-header" role="button" tabindex="0">
                 <div class="ts-card-user-info">
                   <div class="ts-card-date-wrap">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #059669; flex-shrink: 0;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); flex-shrink: 0;">
                       <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
                       <line x1="16" x2="16" y1="2" y2="6"></line>
                       <line x1="8" x2="8" y1="2" y2="6"></line>
@@ -4635,7 +4635,7 @@ function renderTimesheets() {
                     <span class="ts-card-date-txt">${dateFormatted}</span>
                   </div>
                   <span class="ts-payment-pill">
-                    <span class="ts-payment-icon">💶</span>
+                    <span class="ts-payment-icon" style="display:inline-flex; align-items:center; flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg></span>
                     <span class="ts-payment-title">${paymentPillTxt}</span>
                   </span>
                 </div>
@@ -4654,11 +4654,11 @@ function renderTimesheets() {
                 <div class="ts-service-details-grid">
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.typePayment') : 'Tipo'}</span>
-                    <span class="ts-service-detail-val">💶 ${paymentPillTxt}</span>
+                    <span class="ts-service-detail-val" style="display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg> <span>${paymentPillTxt}</span></span>
                   </div>
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('timesheet.paidCash') : 'Monto Pagado'}</span>
-                    <span class="ts-service-detail-val" style="color: #047857; font-weight: 800;">${priceDisplay}</span>
+                    <span class="ts-service-detail-val" style="color: var(--text-main); font-weight: 800;">${priceDisplay}</span>
                   </div>
                 </div>
 
@@ -4670,7 +4670,7 @@ function renderTimesheets() {
                 ` : ''}
 
                 <div class="ts-card-actions">
-                  <span class="ts-payment-receipt-tag" style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:700; color:#059669; padding:4px 8px; background:#ECFDF5; border-radius:6px;">
+                  <span class="ts-payment-receipt-tag" style="display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; font-weight:700; color:var(--text-main); padding:3px 8px; background:var(--bg-muted); border-radius:6px; border:1px solid var(--border-light);">
                     ✓ ${receiptTxt}
                   </span>
                   <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
@@ -4698,13 +4698,13 @@ function renderTimesheets() {
         if (isService) {
           const sType = t.serviceType || 'checkin';
           let serviceLabel = 'Check-in';
-          let serviceIcon = '🛎️';
+          let serviceIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
           if (sType === 'checkout') {
             serviceLabel = window.I18N ? window.I18N.t('modalTs.serviceCheckout') : 'Check-out';
-            serviceIcon = '🚪';
+            serviceIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
           } else if (sType === 'outro') {
             serviceLabel = window.I18N ? window.I18N.t('modalTs.serviceOther') : 'Outro Serviço';
-            serviceIcon = '📋';
+            serviceIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>';
           }
 
           const propId = t.propertyId || 'JB';
@@ -4750,7 +4750,7 @@ function renderTimesheets() {
                     <span class="ts-card-date-txt">${dateFormatted}</span>
                   </div>
                   <span class="ts-service-pill">
-                    <span class="ts-service-icon">${serviceIcon}</span>
+                    <span class="ts-service-icon" style="display:inline-flex; align-items:center; flex-shrink:0;">${serviceIconSvg}</span>
                     <span class="ts-service-title">${serviceLabel}</span>
                     <span class="prop-badge-small prop-badge-${propId.toLowerCase()}" data-prop="${escapeHtml(propId)}">${escapeHtml(propId)}</span>
                   </span>
@@ -4771,7 +4771,7 @@ function renderTimesheets() {
                 <div class="ts-service-details-grid">
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.serviceTypeLabel') : 'Serviço'}</span>
-                    <span class="ts-service-detail-val">${serviceIcon} ${serviceLabel}</span>
+                    <span class="ts-service-detail-val" style="display:inline-flex; align-items:center; gap:4px;">${serviceIconSvg} <span>${serviceLabel}</span></span>
                   </div>
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.servicePropertyLabel') : 'Imóvel'}</span>
@@ -4783,7 +4783,7 @@ function renderTimesheets() {
                   </div>
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.servicePriceLabel') : 'Remuneração'}</span>
-                    <span class="ts-service-detail-val" style="color: #4338CA; font-weight: 800;">${formatMoney(serviceAmount)}</span>
+                    <span class="ts-service-detail-val" style="color: var(--text-main); font-weight: 800;">${formatMoney(serviceAmount)}</span>
                   </div>
                 </div>
 
@@ -4822,7 +4822,7 @@ function renderTimesheets() {
         const hoursMinutes = getTimesheetMinutes(t);
         const dayAmount = hasEnd && hoursMinutes > 0 ? (hoursMinutes / 60) * TIMESHEET_HOURLY_RATE : 0;
         const dayAmountHtml = hasEnd && dayAmount > 0
-          ? `<span class="ts-service-price-badge" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 800; border: 1px solid rgba(16, 185, 129, 0.25);" title="10 € / hora">${formatMoney(dayAmount)}</span>`
+          ? `<span class="ts-service-price-badge" style="background: var(--bg-muted, #F1F3F5); color: var(--text-main, #0B0D11); font-weight: 800; border: 1px solid var(--border-light, #E2E4E8);" title="10 € / hora">${formatMoney(dayAmount)}</span>`
           : '';
 
         const totalText = (hasEnd && t.totalMinutes !== null && t.totalMinutes !== undefined)
@@ -5368,7 +5368,12 @@ function renderManagerStaffSummaryBanner(staff) {
       </div>
       <div class="ts-unpaid-banner-right" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
         <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${isAllPaid ? '€ 0,00' : formatMoney(stats.unpaidGrandTotal)}</span>
-        <button type="button" class="btn-mgr-pay-cash" id="btn-mgr-banner-pay" title="${window.I18N ? window.I18N.t('timesheet.btnAddPayment') : 'Registrar Pago'}">💶 ${window.I18N ? (window.I18N.getLanguage() === 'es' ? 'Registrar Pago' : 'Registrar Pago') : 'Registrar Pago'}</button>
+        <button type="button" class="btn-mgr-pay-cash" id="btn-mgr-banner-pay" title="${window.I18N ? window.I18N.t('timesheet.btnAddPayment') : 'Registrar Pago'}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
+          </svg>
+          <span>${window.I18N ? (window.I18N.getLanguage() === 'es' ? '+ Registrar Pago' : '+ Registrar Pagamento') : '+ Registrar Pago'}</span>
+        </button>
         ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="${t('timesheet.viewAllUnpaidTooltip')}">${viewPendingBtnTxt}</button>` : ''}
       </div>
     </div>
@@ -5545,7 +5550,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
               <div class="ts-card-header" role="button" tabindex="0">
                 <div class="ts-card-user-info">
                   <div class="mgr-ts-card-date-wrap">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #059669; flex-shrink: 0;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); flex-shrink: 0;">
                       <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
                       <line x1="16" x2="16" y1="2" y2="6"></line>
                       <line x1="8" x2="8" y1="2" y2="6"></line>
@@ -5554,7 +5559,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
                     <span class="mgr-ts-card-date-txt">${dateFormatted}</span>
                   </div>
                   <span class="ts-payment-pill">
-                    <span class="ts-payment-icon">💶</span>
+                    <span class="ts-payment-icon" style="display:inline-flex; align-items:center; flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg></span>
                     <span class="ts-payment-title">${paymentPillTxt}</span>
                   </span>
                 </div>
@@ -5573,11 +5578,11 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 <div class="ts-service-details-grid">
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.typePayment') : 'Tipo'}</span>
-                    <span class="ts-service-detail-val">💶 ${paymentPillTxt}</span>
+                    <span class="ts-service-detail-val" style="display:inline-flex; align-items:center; gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg> <span>${paymentPillTxt}</span></span>
                   </div>
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('timesheet.paidCash') : 'Monto Pagado'}</span>
-                    <span class="ts-service-detail-val" style="color: #047857; font-weight: 800;">${priceDisplay}</span>
+                    <span class="ts-service-detail-val" style="color: var(--text-main); font-weight: 800;">${priceDisplay}</span>
                   </div>
                 </div>
 
@@ -5717,13 +5722,13 @@ function showManagerTimesheetHours(staffId, dateStr) {
         if (t.type === 'service') {
           const sType = t.serviceType || 'checkin';
           let serviceLabel = 'Check-in';
-          let serviceIcon = '🛎️';
+          let serviceIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
           if (sType === 'checkout') {
             serviceLabel = window.I18N ? window.I18N.t('modalTs.serviceCheckout') : 'Check-out';
-            serviceIcon = '🚪';
+            serviceIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
           } else if (sType === 'outro') {
             serviceLabel = window.I18N ? window.I18N.t('modalTs.serviceOther') : 'Outro Serviço';
-            serviceIcon = '📋';
+            serviceIconSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>';
           }
 
           const propId = t.propertyId || 'JB';
@@ -5750,7 +5755,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
                     <span class="mgr-ts-card-date-txt">${dateFormatted}</span>
                   </div>
                   <span class="ts-service-pill">
-                    <span class="ts-service-icon">${serviceIcon}</span>
+                    <span class="ts-service-icon" style="display:inline-flex; align-items:center; flex-shrink:0;">${serviceIconSvg}</span>
                     <span class="ts-service-title">${serviceLabel}</span>
                     <span class="prop-badge-small prop-badge-${propId.toLowerCase()}" data-prop="${escapeHtml(propId)}">${escapeHtml(propId)}</span>
                   </span>
@@ -5771,7 +5776,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 <div class="ts-service-details-grid">
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.serviceTypeLabel') : 'Serviço'}</span>
-                    <span class="ts-service-detail-val">${serviceIcon} ${serviceLabel}</span>
+                    <span class="ts-service-detail-val" style="display:inline-flex; align-items:center; gap:4px;">${serviceIconSvg} <span>${serviceLabel}</span></span>
                   </div>
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.servicePropertyLabel') : 'Imóvel'}</span>
@@ -5783,7 +5788,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
                   </div>
                   <div class="ts-service-detail-item">
                     <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.servicePriceLabel') : 'Remuneração'}</span>
-                    <span class="ts-service-detail-val" style="color: #4338CA; font-weight: 800;">${formatMoney(serviceAmount)}</span>
+                    <span class="ts-service-detail-val" style="color: var(--text-main); font-weight: 800;">${formatMoney(serviceAmount)}</span>
                   </div>
                 </div>
 
@@ -5820,7 +5825,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
         const hoursMinutes = getTimesheetMinutes(t);
         const dayAmount = hasEnd && hoursMinutes > 0 ? (hoursMinutes / 60) * TIMESHEET_HOURLY_RATE : 0;
         const dayAmountHtml = hasEnd && dayAmount > 0
-          ? `<span class="ts-service-price-badge" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 800; border: 1px solid rgba(16, 185, 129, 0.25);" title="10 € / hora">${formatMoney(dayAmount)}</span>`
+          ? `<span class="ts-service-price-badge" style="background: var(--bg-muted, #F1F3F5); color: var(--text-main, #0B0D11); font-weight: 800; border: 1px solid var(--border-light, #E2E4E8);" title="10 € / hora">${formatMoney(dayAmount)}</span>`
           : '';
 
         return `
@@ -5965,12 +5970,14 @@ function updateTimesheetCashPaymentPreview() {
   const payVal = parseTimesheetCurrency(amountInput ? amountInput.value : "") || 0;
   const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
 
-  if (!payVal || isNaN(payVal) || payVal <= 0) {
+  if (!payVal || payVal <= 0) {
     if (currentDebt > 0) {
       previewBox.style.display = 'block';
-      previewBox.innerHTML = isEs
-        ? `<span>📊 Deuda pendiente actual: <strong>${formatMoney(currentDebt)}</strong></span>`
-        : `<span>📊 Dívida pendente atual: <strong>${formatMoney(currentDebt)}</strong></span>`;
+      previewBox.innerHTML = `
+        <div class="ts-calc-preview-row">
+          <span class="ts-calc-preview-label">${isEs ? 'Deuda actual' : 'Dívida atual'}:</span>
+          <span class="ts-calc-preview-val">${formatMoney(currentDebt)}</span>
+        </div>`;
     } else {
       previewBox.style.display = 'none';
     }
@@ -5981,13 +5988,19 @@ function updateTimesheetCashPaymentPreview() {
   previewBox.style.display = 'block';
 
   if (remaining <= 0.009) {
-    previewBox.innerHTML = isEs
-      ? `<span>🎉 <strong>¡Deuda saldada por completo!</strong> Saldo restante: ${formatMoney(0)}</span>`
-      : `<span>🎉 <strong>Dívida totalmente quitada!</strong> Saldo restante: ${formatMoney(0)}</span>`;
+    previewBox.innerHTML = `
+      <div class="ts-calc-preview-row">
+        <span class="ts-calc-preview-label">${isEs ? 'Saldo restante' : 'Saldo restante'}:</span>
+        <span class="ts-calc-preview-val">${formatMoney(0)}</span>
+      </div>
+      <div class="ts-calc-preview-sub">${isEs ? 'Deuda saldada por completo' : 'Dívida totalmente quitada'}</div>`;
   } else {
-    previewBox.innerHTML = isEs
-      ? `<span>📊 Deuda actual: <strong>${formatMoney(currentDebt)}</strong> − Pago: <strong>${formatMoney(payVal)}</strong> → Restará por pagar: <strong style="color: #D97706;">${formatMoney(remaining)}</strong></span>`
-      : `<span>📊 Dívida atual: <strong>${formatMoney(currentDebt)}</strong> − Pago: <strong>${formatMoney(payVal)}</strong> → Restará a pagar: <strong style="color: #D97706;">${formatMoney(remaining)}</strong></span>`;
+    previewBox.innerHTML = `
+      <div class="ts-calc-preview-row">
+        <span class="ts-calc-preview-label">${isEs ? 'Restará a pagar' : 'Restará a pagar'}:</span>
+        <span class="ts-calc-preview-val">${formatMoney(remaining)}</span>
+      </div>
+      <div class="ts-calc-preview-sub">${isEs ? 'Deuda' : 'Dívida'} ${formatMoney(currentDebt)} − ${isEs ? 'Pago' : 'Pago'} ${formatMoney(payVal)}</div>`;
   }
 }
 

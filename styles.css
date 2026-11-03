@@ -7243,24 +7243,26 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
-.ts-service-title {
-  font-weight: 800;
+.ts-service-title,
+.ts-payment-title {
+  font-weight: 700;
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 95px;
+  max-width: 75px;
+  min-width: 0;
 }
 
 .ts-service-price-badge {
-  font-size: 0.80rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  color: #1E1B4B;
-  background: #EEF2FF;
-  border: 1px solid #C7D2FE;
-  padding: 3px 8px;
+  color: var(--text-main, #0B0D11);
+  background: var(--bg-muted, #F1F3F5);
+  border: 1px solid var(--border-light, #E2E4E8);
+  padding: 2.5px 7px;
   border-radius: 8px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -8650,23 +8652,24 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .timesheet-pay-header-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 34px;
-  padding: 0 11px;
-  border-radius: 10px;
-  background: #ECFDF5;
-  color: #047857;
-  border: 1.5px solid rgba(16, 185, 129, 0.3);
-  font-size: 0.78rem;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--bg-surface, #FFFFFF);
+  color: var(--text-main, #0B0D11);
+  border: 1px solid var(--border-light, #E2E4E8);
+  font-size: 0.74rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .timesheet-pay-header-btn:hover {
-  background: #D1FAE5;
-  border-color: #10B981;
-  transform: translateY(-1px);
+  background: var(--bg-subtle, #F4F5F7);
+  border-color: var(--text-dim, #9CA3AF);
+  color: var(--primary-dark, #0B0D11);
 }
 
 .timesheet-pay-header-btn:active {
@@ -8695,93 +8698,119 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .ts-payment-calc-preview {
-  background: #F0FDF4;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  border-radius: 10px;
+  background: var(--bg-muted, #F1F3F5);
+  border: 1px solid var(--border-light, #E2E4E8);
+  border-radius: 12px;
   padding: 8px 12px;
-  font-size: 0.82rem;
-  color: #065F46;
-  font-weight: 600;
   margin-top: 8px;
-  line-height: 1.4;
+  color: var(--text-main, #0B0D11);
+}
+
+.ts-calc-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+
+.ts-calc-preview-label {
+  font-weight: 600;
+  color: var(--text-muted, #6B7280);
+}
+
+.ts-calc-preview-val {
+  font-weight: 800;
+  color: var(--text-main, #0B0D11);
+}
+
+.ts-calc-preview-sub {
+  font-size: 0.70rem;
+  color: var(--text-muted, #6B7280);
+  margin-top: 2px;
 }
 
 .mgr-ts-cal-pay-btn {
-  background: #ECFDF5 !important;
-  color: #047857 !important;
-  border: 1.5px solid rgba(16, 185, 129, 0.35) !important;
+  background: #FFFFFF !important;
+  color: var(--text-main, #0B0D11) !important;
+  border: 1px solid var(--border-light, #E2E4E8) !important;
   font-weight: 700 !important;
+  box-shadow: 0 1px 3px rgba(11, 13, 17, 0.04) !important;
 }
 
 .mgr-ts-cal-pay-btn:hover {
-  background: #D1FAE5 !important;
-  color: #065F46 !important;
+  background: #F8FAFC !important;
+  border-color: #CBD5E1 !important;
 }
 
 .btn-mgr-pay-cash {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 8px;
-  background: #059669;
+  background: #0B0D11;
   color: #FFFFFF;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 4px rgba(11, 13, 17, 0.15);
 }
 
 .btn-mgr-pay-cash:hover {
-  background: #047857;
-  transform: translateY(-1px);
+  background: #1E293B;
 }
 
 .timesheet-card.ts-card-payment {
-  border-left: 3px solid #10B981 !important;
+  border-left: 3px solid var(--primary-dark, #0B0D11) !important;
 }
 
 .ts-payment-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  background: #ECFDF5;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  font-size: 0.74rem;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-muted, #F1F3F5);
+  border: 1px solid var(--border-subtle, #ECEEF2);
+  font-size: 0.70rem;
   font-weight: 700;
-  color: #047857;
+  color: var(--text-main, #0B0D11);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 1;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .ts-payment-amount-badge {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  color: #065F46;
-  background: #ECFDF5;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 4px 10px;
-  border-radius: 10px;
-  letter-spacing: -0.02em;
+  color: var(--text-main, #0B0D11);
+  background: var(--bg-muted, #F1F3F5);
+  border: 1px solid var(--border-light, #E2E4E8);
+  padding: 3px 8px;
+  border-radius: 8px;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
 }
 
 .ts-partial-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 6px;
-  background: #FFFBEB;
-  color: #D97706;
-  font-size: 0.70rem;
+  background: var(--bg-muted, #F1F3F5);
+  color: var(--text-secondary, #374151);
+  font-size: 0.68rem;
   font-weight: 700;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid var(--border-light, #E2E4E8);
 }
 
 .ts-status-dot.is-partial {
-  background: #F59E0B;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  background: var(--accent-navy, #0F2744);
 }
 
 /* ==========================================================================
@@ -8848,21 +8877,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .timesheet-type-pill.active {
-  background: #4338CA;
-  color: #FFFFFF;
-  box-shadow: 0 3px 10px rgba(67, 56, 202, 0.25);
-}
-
-.timesheet-type-pill[data-ts-type-filter="unpaid"].active {
-  background: #D97706;
-  color: #FFFFFF;
-  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
-}
-
-.timesheet-type-pill[data-ts-type-filter="payment"].active {
-  background: #059669;
-  color: #FFFFFF;
-  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.25);
+  background: var(--primary-dark, #0B0D11) !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary-dark, #0B0D11) !important;
+  box-shadow: 0 2px 6px rgba(11, 13, 17, 0.16) !important;
 }
 
 .timesheet-month-filter-wrap {
@@ -8897,41 +8915,62 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .btn-ts-clear-filters {
   background: transparent;
   border: none;
-  color: #4338CA;
+  color: var(--text-main, #0B0D11);
   font-weight: 700;
-  font-size: 0.73rem;
+  font-size: 0.70rem;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 0;
   text-decoration: underline;
+  text-underline-offset: 2px;
   transition: color 0.15s ease;
 }
 
 .btn-ts-clear-filters:hover {
-  color: #312E81;
+  color: var(--accent-navy, #0F2744);
 }
 
 @media (max-width: 480px) {
   .timesheet-card {
-    padding: 12px 12px !important;
+    padding: 11px 12px !important;
   }
   .ts-card-header {
-    gap: 6px !important;
-  }
-  .ts-card-user-info {
     gap: 5px !important;
   }
-  .ts-service-title {
-    max-width: 70px !important;
+  .ts-card-user-info {
+    gap: 4px !important;
+    min-width: 0 !important;
   }
-  .ts-service-pill {
-    padding: 2px 5px !important;
+  .ts-card-date-txt,
+  .mgr-ts-card-date-txt {
+    font-size: 0.76rem !important;
+  }
+  .ts-service-pill,
+  .ts-payment-pill {
+    padding: 1.5px 4px !important;
+    gap: 2.5px !important;
+    font-size: 0.66rem !important;
+    max-width: 95px !important;
+  }
+  .ts-service-title,
+  .ts-payment-title {
+    max-width: 50px !important;
+  }
+  .ts-card-badges {
     gap: 3px !important;
-    font-size: 0.68rem !important;
+    flex-shrink: 0 !important;
   }
-  .ts-service-price-badge {
-    font-size: 0.75rem !important;
-    padding: 2.5px 6px !important;
+  .ts-service-price-badge,
+  .ts-payment-amount-badge {
+    font-size: 0.72rem !important;
+    padding: 2px 5px !important;
+  }
+  .ts-partial-badge {
+    font-size: 0.62rem !important;
+    padding: 1.5px 4px !important;
+    max-width: 55px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
   .timesheet-pill {
     padding: 5px 8px !important;
@@ -9170,10 +9209,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   position: absolute;
   top: 3px;
   right: 5px;
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: #10B981;
+  background: var(--accent-navy, #0F2744);
 }
 
 /* Range Highlighting */

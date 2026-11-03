@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=111">
-  <script src="i18n.js?v=111"></script>
+  <link rel="stylesheet" href="styles.css?v=112">
+  <script src="i18n.js?v=112"></script>
 </head>
 <body>
 
@@ -449,46 +449,52 @@
           </div>
           <div class="timesheet-staff-filter" id="timesheet-staff-filter" style="display: none;"></div>
 
-          <!-- Filtros de Período e Tipo das Horas Trabalhadas -->
+          <!-- Filtros de Período e Tipo das Horas Trabalhadas (Design Minimalista & Responsivo) -->
           <div class="timesheet-filter-container" id="timesheet-filter-container" style="display: none;">
-            <div class="timesheet-filter-row">
-              <div class="timesheet-filter-scroll" id="timesheet-date-filters">
-                <button type="button" class="timesheet-pill active" data-ts-date-filter="todos" data-i18n="timesheet.filterAll">Todos</button>
-                <button type="button" class="timesheet-pill" data-ts-date-filter="este_mes" data-i18n="timesheet.filterMonth">Este Mes</button>
-                <button type="button" class="timesheet-pill" data-ts-date-filter="semana" data-i18n="timesheet.filterWeek">Esta Semana</button>
-                <button type="button" class="timesheet-pill" data-ts-date-filter="hoje" data-i18n="timesheet.filterToday">Hoy</button>
-                <button type="button" class="timesheet-pill" data-ts-date-filter="ontem" data-i18n="timesheet.filterYesterday">Ayer</button>
-                <button type="button" class="timesheet-pill timesheet-pill-calendar" id="btn-timesheet-open-calendar" data-ts-date-filter="custom_range" aria-label="Elegir período personalizado">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px;">
-                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line>
-                  </svg>
-                  <span id="ts-custom-range-pill-label" data-i18n="timesheet.filterCustomRange">Período...</span>
-                </button>
-              </div>
+            <!-- Linha 1: Filtro de Período em Scroll Horizontal Suave -->
+            <div class="timesheet-filter-scroll" id="timesheet-date-filters">
+              <button type="button" class="timesheet-pill active" data-ts-date-filter="todos" data-i18n="timesheet.filterAll">Todos</button>
+              <button type="button" class="timesheet-pill" data-ts-date-filter="este_mes" data-i18n="timesheet.filterMonth">Este Mes</button>
+              <button type="button" class="timesheet-pill" data-ts-date-filter="semana" data-i18n="timesheet.filterWeek">Esta Semana</button>
+              <button type="button" class="timesheet-pill" data-ts-date-filter="hoje" data-i18n="timesheet.filterToday">Hoy</button>
+              <button type="button" class="timesheet-pill" data-ts-date-filter="ontem" data-i18n="timesheet.filterYesterday">Ayer</button>
+              <button type="button" class="timesheet-pill timesheet-pill-calendar" id="btn-timesheet-open-calendar" data-ts-date-filter="custom_range" aria-label="Elegir período">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px; margin-right: 4px; flex-shrink: 0;">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line>
+                </svg>
+                <span id="ts-custom-range-pill-label" data-i18n="timesheet.filterCustomRange">Período...</span>
+              </button>
+            </div>
 
-              <div class="timesheet-month-filter-wrap">
+            <!-- Linha 2: Filtro por Tipo / Status -->
+            <div class="timesheet-filter-scroll timesheet-filter-types-row" id="timesheet-type-filters">
+              <button type="button" class="timesheet-pill timesheet-type-pill active" data-ts-type-filter="todos" data-i18n="timesheet.filterTypeAll">Todos</button>
+              <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="unpaid" data-i18n="timesheet.filterTypeUnpaid">Por Cobrar</button>
+              <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="paid" data-i18n="timesheet.filterTypePaid">Pagados</button>
+              <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="hours" data-i18n="timesheet.filterTypeHours">Horas</button>
+              <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="service" data-i18n="timesheet.filterTypeService">Check-ins</button>
+              <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="payment" data-i18n="timesheet.filterTypePayment">Pagos</button>
+            </div>
+
+            <!-- Linha 3: Seletor de Mês Específico em Linha Dedicada Hairline -->
+            <div class="timesheet-month-picker-row">
+              <span class="timesheet-month-label">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line>
+                </svg>
+                <span data-i18n="timesheet.filterMonthLabel">Filtrar por mes:</span>
+              </span>
+              <div class="timesheet-month-select-wrap">
                 <select id="timesheet-month-select" class="form-input timesheet-month-select" aria-label="Filtrar por mes" data-i18n-aria="timesheet.filterMonthLabel">
                   <option value="" data-i18n="timesheet.filterAllMonths">Todos los meses...</option>
                 </select>
               </div>
             </div>
 
-            <!-- Segunda linha: Filtro por Tipo / Status (A Cobrar, Pagos, Horas, Check-ins, Pagos €) -->
-            <div class="timesheet-filter-row timesheet-filter-types-row">
-              <div class="timesheet-filter-scroll" id="timesheet-type-filters">
-                <button type="button" class="timesheet-pill timesheet-type-pill active" data-ts-type-filter="todos" data-i18n="timesheet.filterTypeAll">Todos</button>
-                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="unpaid" data-i18n="timesheet.filterTypeUnpaid">Por Cobrar</button>
-                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="paid" data-i18n="timesheet.filterTypePaid">Pagados</button>
-                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="hours" data-i18n="timesheet.filterTypeHours">Horas</button>
-                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="service" data-i18n="timesheet.filterTypeService">Check-ins</button>
-                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="payment" data-i18n="timesheet.filterTypePayment">Pagos €</button>
-              </div>
-            </div>
-
-            <!-- Barra Informativa com contagem e botão de limpar filtros -->
+            <!-- Linha 4: Barra Informativa de Contagem e Reset -->
             <div class="timesheet-filter-info-bar" id="timesheet-filter-info-bar" style="display: none;">
-              <span id="timesheet-filter-info-text"></span>
-              <button type="button" id="btn-timesheet-clear-filters" class="btn-ts-clear-filters" data-i18n="timesheet.filterClear">Limpiar filtros</button>
+              <span id="timesheet-filter-info-text">Mostrando 0 de 0 registros</span>
+              <button type="button" class="btn-ts-clear-filters" id="btn-timesheet-clear-filters" data-i18n="timesheet.filterClear">Limpiar filtros</button>
             </div>
           </div>
           <div id="timesheet-list-container">
@@ -1486,7 +1492,7 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span data-i18n="modalTs.typeHours">Horas de Trabajo</span>
+              <span data-i18n="modalTs.typeHours">Horas</span>
             </button>
             <button type="button" class="ts-type-seg-btn" id="ts-type-btn-service" data-type="service">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1494,7 +1500,7 @@
                 <circle cx="9" cy="7" r="4"></circle>
                 <polyline points="16 11 18 13 22 9"></polyline>
               </svg>
-              <span data-i18n="modalTs.typeService">Servicio (Check-in)</span>
+              <span data-i18n="modalTs.typeService">Check-in</span>
             </button>
             <button type="button" class="ts-type-seg-btn" id="ts-type-btn-payment" data-type="payment">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1502,7 +1508,7 @@
                 <circle cx="12" cy="12" r="2"></circle>
                 <path d="M6 12h.01M18 12h.01"></path>
               </svg>
-              <span data-i18n="modalTs.typePayment">Pago en Efectivo</span>
+              <span data-i18n="modalTs.typePayment">Pago €</span>
             </button>
           </div>
         </div>
@@ -1600,7 +1606,7 @@
             <label for="timesheet-service-price" class="form-label" data-i18n="modalTs.servicePriceLabel">Valor del Servicio (€)</label>
             <div class="price-input-wrap" style="position: relative;">
               <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); font-size: 0.95rem;">€</span>
-              <input type="text" inputmode="decimal" id="timesheet-service-price" class="form-input" placeholder="0,00" autocomplete="off" style="padding-left: 32px; font-weight: 700; font-size: 1.05rem;">
+              <input type="text" inputmode="decimal" id="timesheet-service-price" class="form-input" placeholder="0,00" autocomplete="off" style="padding-left: 30px; font-weight: 700; font-size: 0.90rem;">
             </div>
             <small class="form-hint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;" data-i18n="modalTs.servicePriceHint">Check-in estándar: 7,00 € (o indica otro valor si acordado)</small>
           </div>
@@ -1616,8 +1622,8 @@
           <div class="form-group">
             <label for="timesheet-payment-cash-amount" class="form-label" data-i18n="modalTs.paymentCashAmountLabel">Monto Pagado en Efectivo (€)</label>
             <div class="price-input-wrap" style="position: relative;">
-              <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #059669; font-size: 1.1rem;">€</span>
-              <input type="text" inputmode="decimal" id="timesheet-payment-cash-amount" class="form-input" placeholder="0,00" autocomplete="off" style="padding-left: 34px; font-weight: 800; font-size: 1.15rem; color: #065F46;">
+              <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); font-size: 0.90rem;">€</span>
+              <input type="text" inputmode="decimal" id="timesheet-payment-cash-amount" class="form-input" placeholder="0,00" autocomplete="off" style="padding-left: 30px; font-weight: 700; font-size: 0.90rem; color: var(--text-main);">
             </div>
             <div id="ts-payment-cash-calc-preview" class="ts-payment-calc-preview" style="display: none;"></div>
             <small class="form-hint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;" data-i18n="modalTs.paymentCashHint">
@@ -1657,7 +1663,7 @@
             </label>
             <div class="price-input-wrap" style="position: relative;">
               <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); font-size: 0.95rem;">€</span>
-              <input type="text" inputmode="decimal" id="timesheet-paid-amount-input" class="form-input" placeholder="0,00" autocomplete="off" style="padding-left: 32px; font-weight: 700; font-size: 1.05rem;">
+              <input type="text" inputmode="decimal" id="timesheet-paid-amount-input" class="form-input" placeholder="0,00" autocomplete="off" style="padding-left: 30px; font-weight: 700; font-size: 0.90rem;">
             </div>
             <small class="form-hint" id="ts-paid-amount-hint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;" data-i18n="modalTs.paidAmountHint">
               Si se pagó una parte (ej: debe 175 y paga 150), indica aquí el monto. Se descontará automáticamente.
@@ -1837,7 +1843,12 @@
           <div class="mgr-ts-cal-quick-actions">
             <button type="button" class="mgr-ts-cal-quick-btn" data-action="today" data-i18n="modalMgrTs.today">Hoy</button>
             <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday" data-i18n="modalMgrTs.yesterday">Ayer</button>
-            <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-pay-btn" id="btn-mgr-ts-add-payment" data-i18n="modalMgrTs.btnAddPayment">💶 Registrar Pago (€)</button>
+            <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-pay-btn" id="btn-mgr-ts-add-payment" data-i18n="modalMgrTs.btnAddPayment">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+              <rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
+            </svg>
+            <span data-i18n="modalMgrTs.btnAddPayment">+ Registrar Pago</span>
+          </button>
             <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-add-btn" id="btn-mgr-ts-add-record" data-i18n="modalMgrTs.btnAddHours">+ Añadir Horas / Servicio</button>
           </div>
         </div>
@@ -1973,11 +1984,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=111"></script>
-  <script src="auth.js?v=111"></script>
-  <script src="cloud-sync.js?v=111"></script>
-  <script src="touch-scroll.js?v=111"></script>
-  <script src="initialData.js?v=111"></script>
-  <script src="app.js?v=111"></script>
+  <script src="firebase-config.js?v=112"></script>
+  <script src="auth.js?v=112"></script>
+  <script src="cloud-sync.js?v=112"></script>
+  <script src="touch-scroll.js?v=112"></script>
+  <script src="initialData.js?v=112"></script>
+  <script src="app.js?v=112"></script>
 </body>
 </html>
