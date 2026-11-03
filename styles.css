@@ -9399,3 +9399,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: #FFFFFF !important;
   border-color: var(--accent-navy, #0F2744) !important;
 }
+
+/* Custom Select: Avatar redondo para funcionários */
+.custom-select-wrapper[data-target-id="timesheet-staff-select"] .custom-select-trigger-thumb,
+.custom-select-wrapper[data-target-id="timesheet-staff-select"] .custom-select-option-thumb,
+.custom-select-wrapper[data-target-id="event-staff-select"] .custom-select-trigger-thumb,
+.custom-select-wrapper[data-target-id="event-staff-select"] .custom-select-option-thumb {
+  border-radius: 50% !important;
+}

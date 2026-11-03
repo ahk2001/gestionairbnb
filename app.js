@@ -4300,6 +4300,18 @@ function renderTimesheets() {
   // AO CLICAR EM UM FUNCIONÁRIO, ABRE O POPUP COM CALENDÁRIO E TOTAL PENDENTE
   // =========================================================================
   if (isOwner) {
+    const staffSelect = document.getElementById('timesheet-staff-select');
+    if (staffSelect) {
+      const rawStaffList = (state.data.staff || []).filter(s => s.isActive !== false);
+      const staffListToUse = rawStaffList.length > 0 ? rawStaffList : (state.data.staff || []);
+      staffSelect.innerHTML = staffListToUse.map(s => `
+        <option value="${escapeHtml(s.id)}">${escapeHtml(s.name || s.email)}</option>
+      `).join('');
+      if (!staffSelect.value && staffListToUse.length > 0) {
+        staffSelect.value = state.activeManagerStaffId || staffListToUse[0].id;
+      }
+      syncCustomSelect(staffSelect, true);
+    }
     const rawStaffList = state.data.staff || [];
     if (rawStaffList.length === 0) {
       const emptyOwnerTitle = window.I18N ? window.I18N.t('timesheet.emptyOwner') : 'Nenhum funcionário cadastrado';
@@ -6174,10 +6186,29 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
     staffGroup.style.display = isOwner ? 'block' : 'none';
   }
   if (staffSelect && isOwner) {
-    const rawStaffList = state.data.staff || [];
-    staffSelect.innerHTML = rawStaffList.map(s => `
+    const rawStaffList = (state.data.staff || []).filter(s => s.isActive !== false);
+    const staffListToUse = rawStaffList.length > 0 ? rawStaffList : (state.data.staff || []);
+    staffSelect.innerHTML = staffListToUse.map(s => `
       <option value="${escapeHtml(s.id)}">${escapeHtml(s.name || s.email)}</option>
     `).join('');
+
+    let initialStaffId = null;
+    if (editId) {
+      const record = (state.data.timesheets || []).find(t => t.id === editId);
+      if (record && record.staffId) initialStaffId = record.staffId;
+    } else if (presetStaffId) {
+      initialStaffId = presetStaffId;
+    } else if (state.activeManagerStaffId) {
+      initialStaffId = state.activeManagerStaffId;
+    } else if (staffListToUse.length > 0) {
+      initialStaffId = staffListToUse[0].id;
+    }
+
+    if (initialStaffId) {
+      staffSelect.value = initialStaffId;
+    }
+
+    syncCustomSelect(staffSelect, true);
   }
 
   if (dateInput) {
@@ -6205,6 +6236,7 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
 
     if (staffSelect && isOwner && record.staffId) {
       staffSelect.value = record.staffId;
+      syncCustomSelect(staffSelect);
     }
 
     if (isPayment) {
@@ -6293,11 +6325,14 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
     if (dateInput) dateInput.value = presetDate || getTodayDateString();
 
     if (staffSelect && isOwner) {
-      if (presetStaffId) {
-        staffSelect.value = presetStaffId;
-      } else if (state.activeManagerStaffId) {
-        staffSelect.value = state.activeManagerStaffId;
+      let targetId = presetStaffId || state.activeManagerStaffId;
+      if (!targetId && staffSelect.options.length > 0) {
+        targetId = staffSelect.options[0].value;
       }
+      if (targetId) {
+        staffSelect.value = targetId;
+      }
+      syncCustomSelect(staffSelect);
     }
 
     const now = new Date();
@@ -6351,6 +6386,7 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
   }
 
   updateTimesheetModalFields();
+  syncAllCustomControls();
   modal.classList.add('active');
 }
 
@@ -7785,10 +7821,18 @@ function getCustomOptionMeta(select, opt) {
     return { thumb: '', badge: label, badgeClass: 'badge-jb', title: '', sub: '' };
   }
 
-  // Staff
-  if (select.id === 'event-staff-select') {
-    const initials = label.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    return { thumb: '', badge: initials, badgeClass: 'badge-vn', title: label, sub: t('customSelect.staffSub') };
+  // Staff (Eventos e Timesheet)
+  if (select.id === 'event-staff-select' || select.id === 'timesheet-staff-select') {
+    const sObj = (state.data?.staff || []).find(s => String(s.id) === String(val) || s.name === label || s.email === val);
+    const photo = sObj?.photo || '';
+    const initials = (label || '').split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'EQ';
+    return {
+      thumb: photo,
+      badge: photo ? '' : initials,
+      badgeClass: 'badge-vn',
+      title: sObj?.name || label,
+      sub: sObj?.role === 'manager' || sObj?.role === 'owner' ? 'Gestor' : (t('customSelect.staffSub') || 'Colaboradora')
+    };
   }
 
   // Categoria
@@ -7942,7 +7986,7 @@ function initCustomSelect(select) {
   });
 }
 
-function syncCustomSelect(target) {
+function syncCustomSelect(target, forceRebuild = false) {
   const select = typeof target === 'string' ? document.getElementById(target) : target;
   if (!select) return;
   const wrapper = select.nextElementSibling && select.nextElementSibling.classList.contains('custom-select-wrapper')
@@ -7957,7 +8001,7 @@ function syncCustomSelect(target) {
   const currentOptionsCount = select.options.length;
   const renderedOptionsCount = wrapper.querySelectorAll('.custom-select-option').length;
 
-  if (currentOptionsCount !== renderedOptionsCount) {
+  if (forceRebuild || currentOptionsCount !== renderedOptionsCount) {
     renderCustomSelectContent(select, wrapper);
     return;
   }
@@ -10298,6 +10342,11 @@ function setupEventListeners() {
 
   // Listener para input de montante em dinheiro pago no modal de pagamento
   document.getElementById('timesheet-payment-cash-amount')?.addEventListener('input', () => {
+    updateTimesheetCashPaymentPreview();
+  });
+
+  // Listener para troca de funcionário no seletor do modal de timesheet / pagamento
+  document.getElementById('timesheet-staff-select')?.addEventListener('change', () => {
     updateTimesheetCashPaymentPreview();
   });
 
