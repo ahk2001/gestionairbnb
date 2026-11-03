@@ -7708,41 +7708,99 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: #F59E0B;
 }
 
+.mgr-ts-cal-bottom-bar,
 .mgr-ts-cal-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle, #ECEEF2);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mgr-ts-cal-date-shortcuts {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(15, 23, 42, 0.05);
+  gap: 6px;
 }
 
+.mgr-ts-shortcut-pill,
 .mgr-ts-cal-quick-btn {
-  padding: 4px 14px;
+  padding: 3px 12px;
   border-radius: 999px;
-  border: 1px solid var(--border-light, #E2E8F0);
-  background: #F8FAFC;
+  border: 1px solid var(--border-light, #E2E4E8);
+  background: var(--bg-muted, #F1F3F5);
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--text-main, #0F172A);
+  color: var(--text-main, #0B0D11);
   cursor: pointer;
   transition: all 0.16s ease;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
+.mgr-ts-shortcut-pill:hover,
 .mgr-ts-cal-quick-btn:hover {
-  background: #EEF2F6;
+  background: #E5E7EB;
   border-color: #CBD5E1;
 }
 
-.mgr-ts-cal-add-btn {
-  background: var(--accent-navy, #1E293B) !important;
-  color: #FFFFFF !important;
-  border-color: var(--accent-navy, #1E293B) !important;
-  font-weight: 800 !important;
+.mgr-ts-cal-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+.mgr-ts-act-btn {
+  height: 38px;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  padding: 0 8px;
+  min-width: 0;
+  border: 1px solid transparent;
+}
+
+.mgr-ts-act-btn-secondary,
+.mgr-ts-cal-pay-btn {
+  background: var(--bg-surface, #FFFFFF) !important;
+  color: var(--text-main, #0B0D11) !important;
+  border-color: var(--border-light, #E2E4E8) !important;
+  box-shadow: 0 1px 3px rgba(11, 13, 17, 0.04) !important;
+}
+
+.mgr-ts-act-btn-secondary:hover,
+.mgr-ts-cal-pay-btn:hover {
+  background: var(--bg-subtle, #F4F5F7) !important;
+  border-color: var(--text-dim, #9CA3AF) !important;
+}
+
+.mgr-ts-act-btn-primary,
+.mgr-ts-cal-add-btn {
+  background: var(--primary-dark, #0B0D11) !important;
+  color: #FFFFFF !important;
+  border-color: var(--primary-dark, #0B0D11) !important;
+  box-shadow: 0 2px 6px rgba(11, 13, 17, 0.15) !important;
+}
+
+.mgr-ts-act-btn-primary:hover,
 .mgr-ts-cal-add-btn:hover {
-  background: #0F172A !important;
+  background: #1E293B !important;
+  border-color: #1E293B !important;
 }
 
 .mgr-ts-add-day-btn {
@@ -7953,89 +8011,125 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 /* ==========================================================================
    TOTALIZADOR DE HORAS NÃO PAGAS (FUNCIONÁRIO & GESTOR)
    ========================================================================== */
+.mgr-ts-summary-banner,
 .ts-unpaid-summary-banner {
+  background: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--border-light, #E2E4E8);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(11, 13, 17, 0.03);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.mgr-ts-summary-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  background: #FFFBEB;
-  border: 1px solid rgba(245, 158, 11, 0.32);
-  border-radius: 14px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-  transition: all 0.2s ease;
-}
-
-.ts-unpaid-summary-banner.is-all-paid {
-  background: #ECFDF5;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.ts-unpaid-banner-content {
-  display: flex;
-  align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
-.ts-unpaid-texts {
+.mgr-ts-summary-meta {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
-.ts-unpaid-title {
-  font-size: 0.80rem;
-  font-weight: 800;
-  color: var(--text-main, #0F172A);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ts-unpaid-sub {
-  font-size: 0.70rem;
-  font-weight: 600;
-  color: var(--text-muted, #64748B);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ts-unpaid-banner-right {
+.mgr-ts-summary-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.mgr-ts-summary-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted, #6B7280);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.mgr-ts-summary-sub {
+  font-size: 0.70rem;
+  color: var(--text-dim, #9CA3AF);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mgr-ts-summary-amount-badge,
+.ts-unpaid-hours-badge {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: var(--text-main, #0B0D11);
+  background: var(--bg-muted, #F1F3F5);
+  border: 1px solid var(--border-light, #E2E4E8);
+  padding: 3px 9px;
+  border-radius: 8px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.ts-unpaid-hours-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.84rem;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #FEF3C7;
-  color: #B45309;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
+.mgr-ts-summary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle, #ECEEF2);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.ts-unpaid-hours-badge.is-paid {
-  background: #D1FAE5;
-  color: #047857;
-  border-color: rgba(16, 185, 129, 0.35);
+.mgr-ts-summary-btn {
+  height: 32px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+  min-width: 0;
+  padding: 0 6px;
+  box-sizing: border-box;
+}
+
+.mgr-ts-summary-btn-pay {
+  background: var(--primary-dark, #0B0D11);
+  color: #FFFFFF;
+  border: 1px solid var(--primary-dark, #0B0D11);
+  box-shadow: 0 1px 3px rgba(11, 13, 17, 0.12);
+}
+
+.mgr-ts-summary-btn-pay:hover {
+  background: #1E293B;
+  border-color: #1E293B;
+}
+
+.mgr-ts-summary-btn-view {
+  background: var(--bg-surface, #FFFFFF);
+  color: var(--text-main, #0B0D11);
+  border: 1px solid var(--border-light, #E2E4E8);
+}
+
+.mgr-ts-summary-btn-view:hover {
+  background: var(--bg-subtle, #F4F5F7);
 }
 
 .btn-mgr-view-unpaid-list {
-  background: #0F172A;
-  color: #FFFFFF;
-  border: none;
+  background: var(--bg-surface, #FFFFFF);
+  color: var(--text-main, #0B0D11);
+  border: 1px solid var(--border-light, #E2E4E8);
   font-size: 0.70rem;
   font-weight: 700;
   padding: 5px 10px;
@@ -8043,15 +8137,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   transition: all 0.18s ease;
   white-space: nowrap;
-}
-
-.btn-mgr-view-unpaid-list:hover {
-  background: #1E293B;
-  transform: translateY(-1px);
-}
-
-.btn-mgr-view-unpaid-list:active {
-  transform: scale(0.96);
 }
 
 .mgr-ts-summary-banner-wrap {
@@ -8075,24 +8160,34 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .ts-staff-unpaid-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
+  gap: 6px;
+  font-size: 0.74rem;
   font-weight: 700;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: 8px;
+  background: var(--bg-muted, #F1F3F5);
+  color: var(--text-main, #0B0D11);
+  border: 1px solid var(--border-light, #E2E4E8);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ts-staff-unpaid-pill.is-unpaid {
-  background: #FFFBEB;
-  color: #D97706;
-  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: var(--bg-muted, #F1F3F5);
+  color: var(--text-main, #0B0D11);
+  border: 1px solid var(--border-light, #E2E4E8);
 }
 
 .ts-staff-unpaid-pill.is-paid {
-  background: #ECFDF5;
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: var(--bg-muted, #F1F3F5);
+  color: var(--text-muted, #6B7280);
+  border: 1px solid var(--border-light, #E2E4E8);
+}
+
+.ts-staff-unpaid-val {
+  font-weight: 800;
+  color: var(--text-main, #0B0D11);
+  letter-spacing: -0.01em;
 }
 
 /* ==========================================================================
@@ -8650,20 +8745,24 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .timesheet-pay-header-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 12px;
-  background: var(--bg-surface, #FFFFFF);
-  color: var(--text-main, #0B0D11);
-  border: 1px solid var(--border-light, #E2E4E8);
-  font-size: 0.74rem;
-  font-weight: 700;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  height: 32px !important;
+  width: auto !important;
+  min-width: max-content !important;
+  padding: 0 10px !important;
+  border-radius: 9px !important;
+  background: var(--bg-surface, #FFFFFF) !important;
+  color: var(--text-main, #0B0D11) !important;
+  border: 1px solid var(--border-light, #E2E4E8) !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
   cursor: pointer;
   transition: all 0.18s ease;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 3px rgba(11, 13, 17, 0.04) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .timesheet-pay-header-btn:hover {

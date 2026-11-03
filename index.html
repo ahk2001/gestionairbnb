@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=112">
-  <script src="i18n.js?v=112"></script>
+  <link rel="stylesheet" href="styles.css?v=113">
+  <script src="i18n.js?v=113"></script>
 </head>
 <body>
 
@@ -431,7 +431,7 @@
               <small class="timesheet-section-sub" id="timesheet-section-sub" data-i18n="timesheet.subStaff">Registra inicio, pausa y fin de tu jornada de trabajo</small>
             </div>
             <div class="timesheet-header-actions" style="display: flex; align-items: center; gap: 8px;">
-              <button id="btn-open-payment-modal" class="timesheet-add-btn timesheet-pay-header-btn" type="button" data-i18n-title="timesheet.btnAddPayment" data-i18n-aria="timesheet.btnAddPayment" title="Registrar Pago en Efectivo" aria-label="Registrar Pago en Efectivo">
+              <button id="btn-open-payment-modal" class="timesheet-pay-header-btn" type="button" data-i18n-title="timesheet.btnAddPayment" data-i18n-aria="timesheet.btnAddPayment" title="Registrar Pago en Efectivo" aria-label="Registrar Pago en Efectivo">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <rect width="20" height="12" x="2" y="6" rx="2"></rect>
                   <circle cx="12" cy="12" r="2"></circle>
@@ -1840,16 +1840,25 @@
             <!-- Renderizado dinamicamente via JS -->
           </div>
 
-          <div class="mgr-ts-cal-quick-actions">
-            <button type="button" class="mgr-ts-cal-quick-btn" data-action="today" data-i18n="modalMgrTs.today">Hoy</button>
-            <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday" data-i18n="modalMgrTs.yesterday">Ayer</button>
-            <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-pay-btn" id="btn-mgr-ts-add-payment" data-i18n="modalMgrTs.btnAddPayment">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-              <rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
-            </svg>
-            <span data-i18n="modalMgrTs.btnAddPayment">+ Registrar Pago</span>
-          </button>
-            <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-add-btn" id="btn-mgr-ts-add-record" data-i18n="modalMgrTs.btnAddHours">+ Añadir Horas / Servicio</button>
+          <div class="mgr-ts-cal-bottom-bar">
+            <div class="mgr-ts-cal-date-shortcuts">
+              <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-shortcut-pill" data-action="today" data-i18n="modalMgrTs.today">Hoy</button>
+              <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-shortcut-pill" data-action="yesterday" data-i18n="modalMgrTs.yesterday">Ayer</button>
+            </div>
+            <div class="mgr-ts-cal-action-grid">
+              <button type="button" class="mgr-ts-act-btn mgr-ts-act-btn-secondary" id="btn-mgr-ts-add-payment">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                  <rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
+                </svg>
+                <span data-i18n="modalMgrTs.btnAddPayment">+ Registrar Pago</span>
+              </button>
+              <button type="button" class="mgr-ts-act-btn mgr-ts-act-btn-primary" id="btn-mgr-ts-add-record">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                  <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span data-i18n="modalMgrTs.btnAddHours">+ Horas / Servicio</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1984,11 +1993,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=112"></script>
-  <script src="auth.js?v=112"></script>
-  <script src="cloud-sync.js?v=112"></script>
-  <script src="touch-scroll.js?v=112"></script>
-  <script src="initialData.js?v=112"></script>
-  <script src="app.js?v=112"></script>
+  <script src="firebase-config.js?v=113"></script>
+  <script src="auth.js?v=113"></script>
+  <script src="cloud-sync.js?v=113"></script>
+  <script src="touch-scroll.js?v=113"></script>
+  <script src="initialData.js?v=113"></script>
+  <script src="app.js?v=113"></script>
 </body>
 </html>

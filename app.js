@@ -4349,11 +4349,11 @@ function renderTimesheets() {
           const stats = getStaffTimesheetStats(staff.id, staff.email, staff.name);
           const hasUnpaid = stats.hasUnpaid;
           const unpaidBadge = hasUnpaid
-            ? `<span class="ts-staff-unpaid-pill is-unpaid" title="Total pendente de pagamento">
+            ? `<span class="ts-staff-unpaid-pill is-unpaid" title="${window.I18N ? window.I18N.t('managerTimesheet.totalToPay') : 'Total a Pagar'}">
                 <span class="ts-status-dot is-unpaid"></span>
-                <span>${stats.unpaidFormatted} ${toPayTxt}</span>
+                <span class="ts-staff-unpaid-val">${formatMoney(stats.unpaidGrandTotal)}</span>
               </span>`
-            : `<span class="ts-staff-unpaid-pill is-paid" title="Todas as horas pagas">
+            : `<span class="ts-staff-unpaid-pill is-paid" title="${allPaidTxt}">
                 <span class="ts-status-dot is-paid"></span>
                 <span>${allPaidTxt}</span>
               </span>`;
@@ -5348,34 +5348,48 @@ function renderManagerStaffSummaryBanner(staff) {
 
   const stats = getStaffTimesheetStats(staff.id, staff.email, staff.name);
   const isAllPaid = !stats.hasUnpaid;
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
 
   const summaryTitleTxt = isAllPaid
-    ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas e Serviços Pagos')
+    ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas Pagas')
     : (window.I18N ? window.I18N.t('managerTimesheet.totalToPay') : 'Total a Pagar');
   const summarySubTxt = stats.unpaidCount > 0
-    ? stats.unpaidBreakdown
+    ? (window.I18N ? window.I18N.t('timesheet.pendingCount', { count: stats.unpaidCount }) : `${stats.unpaidCount} expediente(s) pendente(s)`)
     : (window.I18N ? window.I18N.t('managerTimesheet.noPendingTitle') : 'Nenhuma pendência financeira');
-  const viewPendingBtnTxt = window.I18N ? window.I18N.t('managerTimesheet.btnViewPending') : 'Ver Pendentes';
+  const viewPendingBtnTxt = isEs ? 'Ver Pendientes' : 'Ver Pendentes';
+  const addPaymentBtnTxt = isEs ? '+ Registrar Pago' : '+ Registrar Pagamento';
 
   container.innerHTML = `
-    <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
-      <div class="ts-unpaid-banner-content">
-        <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
-        <div class="ts-unpaid-texts">
-          <span class="ts-unpaid-title">${summaryTitleTxt}</span>
-          <span class="ts-unpaid-sub">${summarySubTxt}</span>
+    <div class="mgr-ts-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
+      <div class="mgr-ts-summary-top">
+        <div class="mgr-ts-summary-meta">
+          <div class="mgr-ts-summary-title-row">
+            <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
+            <span class="mgr-ts-summary-title">${summaryTitleTxt}</span>
+          </div>
+          <div class="mgr-ts-summary-sub">${summarySubTxt}</div>
+        </div>
+        <div class="mgr-ts-summary-amount-badge ${isAllPaid ? 'is-paid' : ''}">
+          ${isAllPaid ? '€ 0,00' : formatMoney(stats.unpaidGrandTotal)}
         </div>
       </div>
-      <div class="ts-unpaid-banner-right" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
-        <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${isAllPaid ? '€ 0,00' : formatMoney(stats.unpaidGrandTotal)}</span>
-        <button type="button" class="btn-mgr-pay-cash" id="btn-mgr-banner-pay" title="${window.I18N ? window.I18N.t('timesheet.btnAddPayment') : 'Registrar Pago'}">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-            <rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
-          </svg>
-          <span>${window.I18N ? (window.I18N.getLanguage() === 'es' ? '+ Registrar Pago' : '+ Registrar Pagamento') : '+ Registrar Pago'}</span>
-        </button>
-        ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="${t('timesheet.viewAllUnpaidTooltip')}">${viewPendingBtnTxt}</button>` : ''}
-      </div>
+      ${!isAllPaid ? `
+        <div class="mgr-ts-summary-actions">
+          <button type="button" class="mgr-ts-summary-btn mgr-ts-summary-btn-pay" id="btn-mgr-banner-pay" title="${window.I18N ? window.I18N.t('timesheet.btnAddPayment') : 'Registrar Pago'}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+              <rect width="20" height="12" x="2" y="6" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
+            </svg>
+            <span>${addPaymentBtnTxt}</span>
+          </button>
+          <button type="button" class="mgr-ts-summary-btn mgr-ts-summary-btn-view" id="btn-mgr-view-all-unpaid" title="${t('timesheet.viewAllUnpaidTooltip')}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+              <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
+              <circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle>
+            </svg>
+            <span>${viewPendingBtnTxt}</span>
+          </button>
+        </div>
+      ` : ''}
     </div>
   `;
 
@@ -5386,9 +5400,9 @@ function renderManagerStaffSummaryBanner(staff) {
     });
   }
 
-  const btnBannerPay = container.querySelector('#btn-mgr-banner-pay');
-  if (btnBannerPay) {
-    btnBannerPay.addEventListener('click', () => {
+  const btnPay = container.querySelector('#btn-mgr-banner-pay');
+  if (btnPay) {
+    btnPay.addEventListener('click', () => {
       openTimesheetModal(null, staff.id, null, 'payment');
     });
   }

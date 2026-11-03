@@ -516,7 +516,7 @@
       'modalMgrTs.today': 'Hoy',
       'modalMgrTs.yesterday': 'Ayer',
       'modalMgrTs.noRecord': 'Sin horas registradas en esta fecha.',
-      'modalMgrTs.btnAddHours': 'Registrar Horas / Servicio',
+      'modalMgrTs.btnAddHours': '+ Horas / Servicio',
       'modalMgrTs.btnAddPayment': '+ Registrar Pago',
 
       // Modal Editar Perfil
@@ -1275,7 +1275,7 @@
       'modalMgrTs.today': 'Hoje',
       'modalMgrTs.yesterday': 'Ontem',
       'modalMgrTs.noRecord': 'Nenhum registro de horas nesta data.',
-      'modalMgrTs.btnAddHours': 'Registrar Horas / Serviço',
+      'modalMgrTs.btnAddHours': '+ Horas / Serviço',
       'modalMgrTs.btnAddPayment': '+ Registrar Pago',
 
       // Modal Editar Perfil
