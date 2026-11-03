@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=108">
-  <script src="i18n.js?v=108"></script>
+  <link rel="stylesheet" href="styles.css?v=109">
+  <script src="i18n.js?v=109"></script>
 </head>
 <body>
 
@@ -430,14 +430,61 @@
               <span id="timesheet-section-title" data-i18n="timesheet.titleStaff">Mis Horas</span>
               <small class="timesheet-section-sub" id="timesheet-section-sub" data-i18n="timesheet.subStaff">Registra inicio, pausa y fin de tu jornada de trabajo</small>
             </div>
-            <button id="btn-open-timesheet-modal" class="timesheet-add-btn" type="button" data-i18n-title="timesheet.btnAdd" data-i18n-aria="timesheet.btnAdd" title="Registrar Día" aria-label="Registrar Día">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
+            <div class="timesheet-header-actions" style="display: flex; align-items: center; gap: 8px;">
+              <button id="btn-open-payment-modal" class="timesheet-add-btn timesheet-pay-header-btn" type="button" data-i18n-title="timesheet.btnAddPayment" data-i18n-aria="timesheet.btnAddPayment" title="Registrar Pago en Efectivo" aria-label="Registrar Pago en Efectivo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="20" height="12" x="2" y="6" rx="2"></rect>
+                  <circle cx="12" cy="12" r="2"></circle>
+                  <path d="M6 12h.01M18 12h.01"></path>
+                </svg>
+                <span class="timesheet-pay-btn-label" data-i18n="timesheet.btnAddPaymentShort">Pago €</span>
+              </button>
+              <button id="btn-open-timesheet-modal" class="timesheet-add-btn" type="button" data-i18n-title="timesheet.btnAdd" data-i18n-aria="timesheet.btnAdd" title="Registrar Día" aria-label="Registrar Día">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="timesheet-staff-filter" id="timesheet-staff-filter" style="display: none;"></div>
+
+          <!-- Filtros de Período e Tipo das Horas Trabalhadas -->
+          <div class="timesheet-filter-container" id="timesheet-filter-container" style="display: none;">
+            <div class="timesheet-filter-row">
+              <div class="timesheet-filter-scroll" id="timesheet-date-filters">
+                <button type="button" class="timesheet-pill active" data-ts-date-filter="todos" data-i18n="timesheet.filterAll">Todos</button>
+                <button type="button" class="timesheet-pill" data-ts-date-filter="este_mes" data-i18n="timesheet.filterMonth">Este Mes</button>
+                <button type="button" class="timesheet-pill" data-ts-date-filter="semana" data-i18n="timesheet.filterWeek">Esta Semana</button>
+                <button type="button" class="timesheet-pill" data-ts-date-filter="hoje" data-i18n="timesheet.filterToday">Hoy</button>
+                <button type="button" class="timesheet-pill" data-ts-date-filter="ontem" data-i18n="timesheet.filterYesterday">Ayer</button>
+              </div>
+
+              <div class="timesheet-month-filter-wrap">
+                <select id="timesheet-month-select" class="form-input timesheet-month-select" aria-label="Filtrar por mes" data-i18n-aria="timesheet.filterMonthLabel">
+                  <option value="" data-i18n="timesheet.filterAllMonths">Todos los meses...</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Segunda linha: Filtro por Tipo / Status (A Cobrar, Pagos, Horas, Check-ins, Pagos €) -->
+            <div class="timesheet-filter-row timesheet-filter-types-row">
+              <div class="timesheet-filter-scroll" id="timesheet-type-filters">
+                <button type="button" class="timesheet-pill timesheet-type-pill active" data-ts-type-filter="todos" data-i18n="timesheet.filterTypeAll">Todos</button>
+                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="unpaid" data-i18n="timesheet.filterTypeUnpaid">Por Cobrar</button>
+                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="paid" data-i18n="timesheet.filterTypePaid">Pagados</button>
+                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="hours" data-i18n="timesheet.filterTypeHours">Horas</button>
+                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="service" data-i18n="timesheet.filterTypeService">Check-ins</button>
+                <button type="button" class="timesheet-pill timesheet-type-pill" data-ts-type-filter="payment" data-i18n="timesheet.filterTypePayment">Pagos €</button>
+              </div>
+            </div>
+
+            <!-- Barra Informativa com contagem e botão de limpar filtros -->
+            <div class="timesheet-filter-info-bar" id="timesheet-filter-info-bar" style="display: none;">
+              <span id="timesheet-filter-info-text"></span>
+              <button type="button" id="btn-timesheet-clear-filters" class="btn-ts-clear-filters" data-i18n="timesheet.filterClear">Limpiar filtros</button>
+            </div>
+          </div>
           <div id="timesheet-list-container">
             <!-- Injetado dinamicamente via JS -->
           </div>
@@ -1428,7 +1475,7 @@
         <!-- Seletor do Tipo de Registro: Horas ou Serviço (Check-in) -->
         <div class="form-group" style="margin-bottom: 14px;">
           <label class="form-label" data-i18n="modalTs.recordTypeLabel">Tipo de Registro</label>
-          <div class="ts-type-segmented-wrap">
+          <div class="ts-type-segmented-wrap ts-type-3-cols">
             <button type="button" class="ts-type-seg-btn active" id="ts-type-btn-hours" data-type="hours">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
@@ -1442,6 +1489,14 @@
                 <polyline points="16 11 18 13 22 9"></polyline>
               </svg>
               <span data-i18n="modalTs.typeService">Servicio (Check-in)</span>
+            </button>
+            <button type="button" class="ts-type-seg-btn" id="ts-type-btn-payment" data-type="payment">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="12" x="2" y="6" rx="2"></rect>
+                <circle cx="12" cy="12" r="2"></circle>
+                <path d="M6 12h.01M18 12h.01"></path>
+              </svg>
+              <span data-i18n="modalTs.typePayment">Pago en Efectivo</span>
             </button>
           </div>
         </div>
@@ -1550,7 +1605,27 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
+        <!-- GRUPO PAGO EN EFECTIVO DEDICADO -->
+        <div id="ts-payment-fields-group" style="display: none;">
+          <div class="form-group">
+            <label for="timesheet-payment-cash-amount" class="form-label" data-i18n="modalTs.paymentCashAmountLabel">Monto Pagado en Efectivo (€)</label>
+            <div class="price-input-wrap" style="position: relative;">
+              <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #059669; font-size: 1.1rem;">€</span>
+              <input type="number" id="timesheet-payment-cash-amount" class="form-input" placeholder="0,00" step="0.50" min="0.01" style="padding-left: 34px; font-weight: 800; font-size: 1.15rem; color: #065F46;">
+            </div>
+            <div id="ts-payment-cash-calc-preview" class="ts-payment-calc-preview" style="display: none;"></div>
+            <small class="form-hint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;" data-i18n="modalTs.paymentCashHint">
+              Este valor se descontará automáticamente del total adeudado a la colaboradora.
+            </small>
+          </div>
+
+          <div class="form-group" style="margin-top: 12px;">
+            <label for="timesheet-payment-notes" class="form-label" data-i18n="modalTs.paymentNotesLabel">Descripción / Motivo del Pago (Opcional)</label>
+            <textarea id="timesheet-payment-notes" class="form-input" rows="2" placeholder="Ej: Pago parcial de la semana, abono en efectivo..." data-i18n-placeholder="modalTs.paymentNotesPlaceholder" style="resize: vertical; min-height: 56px; font-size: 0.9rem; line-height: 1.4;"></textarea>
+          </div>
+        </div>
+
+        <div id="ts-payment-status-group" class="form-group" style="margin-top: 12px; margin-bottom: 14px;">
           <label class="form-label" id="timesheet-payment-label" data-i18n="modalTs.paymentStatus">Estado de Pago de las Horas</label>
           <div class="ts-payment-toggle-wrap">
             <button type="button" class="ts-payment-opt-btn active opt-unpaid" id="ts-modal-btn-unpaid" data-status="unpaid">
@@ -1567,6 +1642,21 @@
             </button>
           </div>
           <input type="hidden" id="timesheet-is-paid-input" value="false">
+
+          <!-- Campo de Quanto em Dinheiro Foi Pago no Registro -->
+          <div class="ts-paid-amount-wrap" id="ts-paid-amount-wrap" style="margin-top: 10px;">
+            <label for="timesheet-paid-amount-input" class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+              <span data-i18n="modalTs.paidAmountLabel">Dinero pagado en efectivo (€)</span>
+              <span id="ts-paid-remaining-badge" class="ts-paid-remaining-badge" style="display: none;"></span>
+            </label>
+            <div class="price-input-wrap" style="position: relative;">
+              <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: var(--text-muted); font-size: 0.95rem;">€</span>
+              <input type="number" id="timesheet-paid-amount-input" class="form-input" placeholder="0,00" step="0.50" min="0" style="padding-left: 32px; font-weight: 700; font-size: 1.05rem;">
+            </div>
+            <small class="form-hint" id="ts-paid-amount-hint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;" data-i18n="modalTs.paidAmountHint">
+              Si se pagó una parte (ej: debe 175 y paga 150), indica aquí el monto. Se descontará automáticamente.
+            </small>
+          </div>
         </div>
 
         <button type="submit" class="btn-submit-primary" data-i18n="modalTs.btnSubmit">Guardar Registro</button>
@@ -1661,6 +1751,7 @@
           <div class="mgr-ts-cal-quick-actions">
             <button type="button" class="mgr-ts-cal-quick-btn" data-action="today" data-i18n="modalMgrTs.today">Hoy</button>
             <button type="button" class="mgr-ts-cal-quick-btn" data-action="yesterday" data-i18n="modalMgrTs.yesterday">Ayer</button>
+            <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-pay-btn" id="btn-mgr-ts-add-payment" data-i18n="modalMgrTs.btnAddPayment">💶 Registrar Pago (€)</button>
             <button type="button" class="mgr-ts-cal-quick-btn mgr-ts-cal-add-btn" id="btn-mgr-ts-add-record" data-i18n="modalMgrTs.btnAddHours">+ Añadir Horas / Servicio</button>
           </div>
         </div>
@@ -1796,11 +1887,11 @@
   <div id="toast-container" aria-live="polite"></div>
 
   <!-- Scripts -->
-  <script src="firebase-config.js?v=108"></script>
-  <script src="auth.js?v=108"></script>
-  <script src="cloud-sync.js?v=108"></script>
-  <script src="touch-scroll.js?v=108"></script>
-  <script src="initialData.js?v=108"></script>
-  <script src="app.js?v=108"></script>
+  <script src="firebase-config.js?v=109"></script>
+  <script src="auth.js?v=109"></script>
+  <script src="cloud-sync.js?v=109"></script>
+  <script src="touch-scroll.js?v=109"></script>
+  <script src="initialData.js?v=109"></script>
+  <script src="app.js?v=109"></script>
 </body>
 </html>

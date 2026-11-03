@@ -86,6 +86,9 @@ const state = {
 
   // Controle de Horas Trabalhadas (Timesheet)
   timesheetStaffFilter: 'all', // 'all' | staffId
+  timesheetDateFilter: 'todos', // 'todos' | 'hoje' | 'ontem' | 'semana' | 'este_mes' | 'mes_especifico'
+  timesheetSelectedMonth: '', // 'YYYY-MM'
+  timesheetTypeFilter: 'todos', // 'todos' | 'unpaid' | 'paid' | 'hours' | 'service' | 'payment'
   activeManagerStaffId: null, // staffId aberta no popup do gestor
   activeManagerStaffDate: '', // data selecionada no popup do gestor
   managerCalendarYear: new Date().getFullYear(),
@@ -3718,6 +3721,10 @@ const TIMESHEET_CHECKIN_RATE = 7.0; // 7 euros por check-in
 
 function getTimesheetRecordAmount(t) {
   if (!t) return 0;
+  if (t.type === 'payment') {
+    const val = Number(t.amount);
+    return (!isNaN(val) && val > 0) ? val : 0;
+  }
   if (t.type === 'service') {
     if (t.servicePrice !== null && t.servicePrice !== undefined && !isNaN(Number(t.servicePrice)) && Number(t.servicePrice) > 0) {
       return Number(t.servicePrice);
@@ -3727,6 +3734,25 @@ function getTimesheetRecordAmount(t) {
   const minutes = getTimesheetMinutes(t);
   if (!minutes || minutes <= 0) return 0;
   return (minutes / 60) * TIMESHEET_HOURLY_RATE;
+}
+
+function getTimesheetPaymentDetails(t) {
+  if (!t) return { totalAmount: 0, paidAmount: 0, remainingAmount: 0, isFullyPaid: false, isPartial: false };
+  if (t.type === 'payment') {
+    const val = Number(t.amount) || 0;
+    return { totalAmount: val, paidAmount: val, remainingAmount: 0, isFullyPaid: true, isPartial: false };
+  }
+  const totalAmount = getTimesheetRecordAmount(t);
+  let paidAmount = 0;
+  if (t.paidAmount !== undefined && t.paidAmount !== null && t.paidAmount !== '' && !isNaN(Number(t.paidAmount))) {
+    paidAmount = Math.max(0, Number(t.paidAmount));
+  } else if (t.isPaid) {
+    paidAmount = totalAmount;
+  }
+  const remainingAmount = Math.max(0, totalAmount - paidAmount);
+  const isFullyPaid = (totalAmount > 0 && remainingAmount < 0.01) || Boolean(t.isPaid && paidAmount >= totalAmount - 0.01);
+  const isPartial = paidAmount > 0.009 && remainingAmount > 0.009;
+  return { totalAmount, paidAmount, remainingAmount, isFullyPaid, isPartial };
 }
 
 function getStaffTimesheetStats(staffId, staffEmail, staffName) {
@@ -3742,24 +3768,51 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
     return false;
   });
 
-  const unpaidRecords = staffRecords.filter(t => !t.isPaid);
-  const unpaidHoursRecords = unpaidRecords.filter(t => t.type !== 'service' && Boolean(t.endTime));
-  const inProgressRecords = unpaidRecords.filter(t => t.type !== 'service' && !t.endTime);
-  const unpaidServicesRecords = unpaidRecords.filter(t => t.type === 'service');
+  const hoursRecords = staffRecords.filter(t => t.type !== 'service' && t.type !== 'payment');
+  const completedHoursRecords = hoursRecords.filter(t => Boolean(t.endTime));
+  const inProgressRecords = hoursRecords.filter(t => !t.endTime);
+  const serviceRecords = staffRecords.filter(t => t.type === 'service');
+  const paymentRecords = staffRecords.filter(t => t.type === 'payment');
+
+  const grossHoursMinutes = completedHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
+  const grossHoursTotal = (grossHoursMinutes / 60) * TIMESHEET_HOURLY_RATE;
+  const grossServicesCount = serviceRecords.length;
+  const grossServicesTotal = serviceRecords.reduce((acc, t) => acc + getTimesheetRecordAmount(t), 0);
+  const grossGrandTotal = grossHoursTotal + grossServicesTotal;
+
+  // Pagamentos em dinheiro dedicados (créditos que abatem o total devedor)
+  const standalonePaymentsTotal = paymentRecords.reduce((acc, t) => {
+    const val = Number(t.amount);
+    return acc + (!isNaN(val) && val > 0 ? val : 0);
+  }, 0);
+
+  // Pagamentos parciais ou totais nos próprios registros
+  let recordPaymentsTotal = 0;
+  completedHoursRecords.forEach(t => {
+    const d = getTimesheetPaymentDetails(t);
+    recordPaymentsTotal += d.paidAmount;
+  });
+  serviceRecords.forEach(t => {
+    const d = getTimesheetPaymentDetails(t);
+    recordPaymentsTotal += d.paidAmount;
+  });
+
+  const paidGrandTotal = standalonePaymentsTotal + recordPaymentsTotal;
+  const unpaidGrandTotal = Math.max(0, grossGrandTotal - paidGrandTotal);
+
+  // Registros individuais com pendência (não totalmente quitados)
+  const unpaidHoursRecords = completedHoursRecords.filter(t => !getTimesheetPaymentDetails(t).isFullyPaid);
+  const unpaidServicesRecords = serviceRecords.filter(t => !getTimesheetPaymentDetails(t).isFullyPaid);
   const unpaidMinutes = unpaidHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
   const unpaidHoursTotal = (unpaidMinutes / 60) * TIMESHEET_HOURLY_RATE;
   const unpaidServicesCount = unpaidServicesRecords.length;
   const unpaidServicesTotal = unpaidServicesRecords.reduce((acc, t) => acc + getTimesheetRecordAmount(t), 0);
-  const unpaidGrandTotal = unpaidHoursTotal + unpaidServicesTotal;
 
-  const paidRecords = staffRecords.filter(t => Boolean(t.isPaid));
-  const paidHoursRecords = paidRecords.filter(t => t.type !== 'service' && Boolean(t.endTime));
-  const paidServicesRecords = paidRecords.filter(t => t.type === 'service');
-  const paidMinutes = paidHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
-  const paidHoursTotal = (paidMinutes / 60) * TIMESHEET_HOURLY_RATE;
-  const paidServicesCount = paidServicesRecords.length;
-  const paidServicesTotal = paidServicesRecords.reduce((acc, t) => acc + getTimesheetRecordAmount(t), 0);
-  const paidGrandTotal = paidHoursTotal + paidServicesTotal;
+  const paidHoursRecords = completedHoursRecords.filter(t => getTimesheetPaymentDetails(t).isFullyPaid);
+  const paidServicesRecords = serviceRecords.filter(t => getTimesheetPaymentDetails(t).isFullyPaid);
+  const paidRecords = [...paidHoursRecords, ...paidServicesRecords, ...paymentRecords];
+
+  const hasUnpaid = unpaidGrandTotal > 0.009;
 
   let unpaidFormatted = '';
   let unpaidBreakdown = '';
@@ -3767,29 +3820,42 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
   const servPlural = window.I18N ? window.I18N.t('timesheet.servicePlural') : 'serviços';
   const inProgressTxt = window.I18N ? window.I18N.t('timesheet.inProgress') : 'Em andamento';
   const servTxt = unpaidServicesCount === 1 ? servSingular : servPlural;
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
 
-  if (unpaidMinutes > 0 && unpaidServicesCount > 0) {
-    unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${minutesToFormatted(unpaidMinutes)} + ${unpaidServicesCount} ${servTxt}`;
-    unpaidBreakdown = `${minutesToFormatted(unpaidMinutes)} (${formatMoney(unpaidHoursTotal)}) + ${unpaidServicesCount} ${servTxt} (${formatMoney(unpaidServicesTotal)})`;
-  } else if (unpaidServicesCount > 0) {
-    unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${unpaidServicesCount} ${servTxt}`;
-    unpaidBreakdown = `${unpaidServicesCount} ${servTxt} (${formatMoney(unpaidServicesTotal)})`;
-  } else if (unpaidMinutes > 0) {
-    unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${minutesToFormatted(unpaidMinutes)}`;
-    unpaidBreakdown = `${minutesToFormatted(unpaidMinutes)} (${formatMoney(unpaidHoursTotal)})`;
+  if (hasUnpaid) {
+    if (paidGrandTotal > 0) {
+      unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${isEs ? 'Pendiente' : 'Falta pagar'}`;
+      unpaidBreakdown = isEs
+        ? `Total adeudado: ${formatMoney(grossGrandTotal)} • Pagado en efectivo: ${formatMoney(paidGrandTotal)} • Falta pagar: ${formatMoney(unpaidGrandTotal)}`
+        : `Total devedor: ${formatMoney(grossGrandTotal)} • Pago em dinheiro: ${formatMoney(paidGrandTotal)} • Falta pagar: ${formatMoney(unpaidGrandTotal)}`;
+    } else if (unpaidMinutes > 0 && unpaidServicesCount > 0) {
+      unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${minutesToFormatted(unpaidMinutes)} + ${unpaidServicesCount} ${servTxt}`;
+      unpaidBreakdown = `${minutesToFormatted(unpaidMinutes)} (${formatMoney(unpaidHoursTotal)}) + ${unpaidServicesCount} ${servTxt} (${formatMoney(unpaidServicesTotal)})`;
+    } else if (unpaidServicesCount > 0) {
+      unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${unpaidServicesCount} ${servTxt}`;
+      unpaidBreakdown = `${unpaidServicesCount} ${servTxt} (${formatMoney(unpaidServicesTotal)})`;
+    } else if (unpaidMinutes > 0) {
+      unpaidFormatted = `${formatMoney(unpaidGrandTotal)} • ${minutesToFormatted(unpaidMinutes)}`;
+      unpaidBreakdown = `${minutesToFormatted(unpaidMinutes)} (${formatMoney(unpaidHoursTotal)})`;
+    } else {
+      unpaidFormatted = formatMoney(unpaidGrandTotal);
+      unpaidBreakdown = `${isEs ? 'Falta pagar' : 'Falta pagar'}: ${formatMoney(unpaidGrandTotal)}`;
+    }
   } else if (inProgressRecords.length > 0) {
     unpaidFormatted = inProgressTxt;
     unpaidBreakdown = inProgressTxt;
   } else {
     unpaidFormatted = '€ 0,00';
-    unpaidBreakdown = '';
+    unpaidBreakdown = paidGrandTotal > 0
+      ? (isEs ? `Pagado en efectivo: ${formatMoney(paidGrandTotal)} (Todo saldado)` : `Pago em dinheiro: ${formatMoney(paidGrandTotal)} (Totalmente quitado)`)
+      : '';
   }
 
   return {
     allRecords: staffRecords,
-    unpaidRecords,
+    unpaidRecords: [...unpaidHoursRecords, ...unpaidServicesRecords],
     inProgressCount: inProgressRecords.length,
-    unpaidCount: unpaidRecords.length,
+    unpaidCount: unpaidHoursRecords.length + unpaidServicesRecords.length,
     unpaidMinutes,
     unpaidHoursTotal,
     unpaidServicesCount,
@@ -3799,13 +3865,125 @@ function getStaffTimesheetStats(staffId, staffEmail, staffName) {
     unpaidBreakdown,
     paidRecords,
     paidCount: paidRecords.length,
-    paidMinutes,
-    paidHoursTotal,
-    paidServicesCount,
-    paidServicesTotal,
+    paidMinutes: paidHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0),
+    paidHoursTotal: (paidHoursRecords.reduce((acc, t) => acc + getTimesheetMinutes(t), 0) / 60) * TIMESHEET_HOURLY_RATE,
+    paidServicesCount: paidServicesRecords.length,
+    paidServicesTotal: recordPaymentsTotal,
     paidGrandTotal,
-    hasUnpaid: unpaidMinutes > 0 || unpaidServicesCount > 0
+    grossGrandTotal,
+    standalonePaymentsTotal,
+    paymentRecordsCount: paymentRecords.length,
+    hasUnpaid
   };
+}
+
+function filterTimesheetsList(timesheets) {
+  const { todayStr, yesterdayStr, mondayStr, sundayStr, currentYearMonth } = getPurchaseDateFilterRange();
+  const dateFilter = state.timesheetDateFilter || 'todos';
+  const selectedMonth = state.timesheetSelectedMonth || '';
+  const typeFilter = state.timesheetTypeFilter || 'todos';
+
+  return (timesheets || []).filter(t => {
+    if (!t) return false;
+    const tDate = t.date || '';
+
+    // Filtro por Data / Período
+    let matchDate = true;
+    switch (dateFilter) {
+      case 'hoje':
+        matchDate = (tDate === todayStr);
+        break;
+      case 'ontem':
+        matchDate = (tDate === yesterdayStr);
+        break;
+      case 'semana':
+        matchDate = (tDate >= mondayStr && tDate <= sundayStr);
+        break;
+      case 'este_mes':
+        matchDate = tDate.startsWith(currentYearMonth);
+        break;
+      case 'mes_especifico':
+        matchDate = selectedMonth ? tDate.startsWith(selectedMonth) : true;
+        break;
+      case 'todos':
+      default:
+        matchDate = true;
+        break;
+    }
+    if (!matchDate) return false;
+
+    // Filtro por Tipo / Status
+    const payDetails = getTimesheetPaymentDetails(t);
+    switch (typeFilter) {
+      case 'unpaid':
+        return !payDetails.isFullyPaid;
+      case 'paid':
+        return payDetails.isFullyPaid;
+      case 'hours':
+        return t.type !== 'service' && t.type !== 'payment';
+      case 'service':
+        return t.type === 'service';
+      case 'payment':
+        return t.type === 'payment';
+      case 'todos':
+      default:
+        return true;
+    }
+  });
+}
+
+function populateTimesheetMonthSelector(timesheets) {
+  const select = document.getElementById('timesheet-month-select');
+  if (!select) return;
+
+  const currentVal = state.timesheetSelectedMonth || '';
+  const monthsSet = new Set();
+
+  const now = new Date();
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  monthsSet.add(currentYm);
+
+  (timesheets || []).forEach(t => {
+    if (t.date && t.date.length >= 7) {
+      monthsSet.add(t.date.substring(0, 7));
+    }
+  });
+
+  const sortedMonths = Array.from(monthsSet).sort().reverse();
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+  const monthNamesEs = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const monthNamesPt = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const monthNames = isEs ? monthNamesEs : monthNamesPt;
+  const allMonthsTxt = window.I18N ? window.I18N.t('timesheet.filterAllMonths') : 'Todos los meses...';
+
+  let html = `<option value="">${allMonthsTxt}</option>`;
+  sortedMonths.forEach(ym => {
+    const parts = ym.split('-');
+    const y = parts[0];
+    const m = parts[1];
+    const mIdx = parseInt(m, 10) - 1;
+    const name = monthNames[mIdx] || ym;
+    const isSel = (ym === currentVal) ? 'selected' : '';
+    html += `<option value="${ym}" ${isSel}>${name} ${y}</option>`;
+  });
+
+  select.innerHTML = html;
+}
+
+function resetTimesheetFilters() {
+  state.timesheetDateFilter = 'todos';
+  state.timesheetSelectedMonth = '';
+  state.timesheetTypeFilter = 'todos';
+
+  const mSelect = document.getElementById('timesheet-month-select');
+  if (mSelect) mSelect.value = '';
+
+  document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.tsDateFilter === 'todos');
+  });
+  document.querySelectorAll('#timesheet-type-filters .timesheet-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.tsTypeFilter === 'todos');
+  });
 }
 
 function renderTimesheets() {
@@ -3834,9 +4012,13 @@ function renderTimesheets() {
     btnAdd.style.display = 'inline-flex';
   }
 
-  // Na visão do gestor o filtro antigo é ocultado
+  // Na visão do gestor o filtro antigo e filtros de horas da equipe são ocultados
   if (filterWrap) {
     filterWrap.style.display = 'none';
+  }
+  const tsFilterBox = document.getElementById('timesheet-filter-container');
+  if (isOwner && tsFilterBox) {
+    tsFilterBox.style.display = 'none';
   }
 
   // =========================================================================
@@ -3972,6 +4154,12 @@ function renderTimesheets() {
     return (b.startTime || '').localeCompare(a.startTime || '');
   });
 
+  // Exibe e atualiza barra de filtros de horas para a equipe
+  if (tsFilterBox) {
+    tsFilterBox.style.display = timesheets.length > 0 ? 'flex' : 'none';
+    populateTimesheetMonthSelector(timesheets);
+  }
+
   if (timesheets.length === 0) {
     const emptyStaffTitle = window.I18N ? window.I18N.t('timesheet.emptyStaff') : 'Nenhuma hora registrada ainda';
     const emptyStaffSub = window.I18N ? window.I18N.t('timesheet.emptyStaffSub') : 'Clique em "Registrar Dia" acima para marcar o início, pausa e fim do seu serviço.';
@@ -3990,29 +4178,29 @@ function renderTimesheets() {
     return;
   }
 
-  // Totalizador de horas e serviços pendentes de pagamento para a colaboradora
-  const unpaidTimesheets = timesheets.filter(t => !t.isPaid && (t.type === 'service' || Boolean(t.endTime)));
-  const unpaidHours = unpaidTimesheets.filter(t => t.type !== 'service');
-  const unpaidServices = unpaidTimesheets.filter(t => t.type === 'service');
-  const unpaidMinutes = unpaidHours.reduce((acc, t) => acc + getTimesheetMinutes(t), 0);
-  const unpaidHoursTotal = (unpaidMinutes / 60) * TIMESHEET_HOURLY_RATE;
-  const unpaidServicesTotal = unpaidServices.reduce((acc, t) => acc + getTimesheetRecordAmount(t), 0);
-  const unpaidGrandTotal = unpaidHoursTotal + unpaidServicesTotal;
-
-  const isAllPaid = unpaidTimesheets.length === 0;
+  // Totalizador de horas e serviços pendentes de pagamento para a colaboradora (considerando adiantamentos e pagamentos em dinheiro)
+  const staffStats = getStaffTimesheetStats(currentId || matchedStaffId, currentEmail, currentName);
+  const unpaidGrandTotal = staffStats.unpaidGrandTotal;
+  const isAllPaid = !staffStats.hasUnpaid;
 
   const servSingular = window.I18N ? window.I18N.t('timesheet.serviceSingle') : 'serviço';
   const servPlural = window.I18N ? window.I18N.t('timesheet.servicePlural') : 'serviços';
-  const servTxt = unpaidServices.length === 1 ? servSingular : servPlural;
+  const servTxt = staffStats.unpaidServicesCount === 1 ? servSingular : servPlural;
 
   let summarySubTxt = '';
   if (isAllPaid) {
-    summarySubTxt = window.I18N ? window.I18N.t('timesheet.noPending') : 'Nenhum valor pendente';
+    summarySubTxt = staffStats.paidGrandTotal > 0
+      ? (window.I18N ? window.I18N.t('modalTs.debtCleared') : 'Dívida quitada! Nenhum valor pendente')
+      : (window.I18N ? window.I18N.t('timesheet.noPending') : 'Nenhum valor pendente');
   } else {
-    const parts = [];
-    if (unpaidMinutes > 0) parts.push(`${minutesToFormatted(unpaidMinutes)} (${formatMoney(unpaidHoursTotal)})`);
-    if (unpaidServices.length > 0) parts.push(`${unpaidServices.length} ${servTxt} (${formatMoney(unpaidServicesTotal)})`);
-    summarySubTxt = parts.join(' + ');
+    if (staffStats.paidGrandTotal > 0) {
+      summarySubTxt = staffStats.unpaidBreakdown;
+    } else {
+      const parts = [];
+      if (staffStats.unpaidMinutes > 0) parts.push(`${minutesToFormatted(staffStats.unpaidMinutes)} (${formatMoney(staffStats.unpaidHoursTotal)})`);
+      if (staffStats.unpaidServicesCount > 0) parts.push(`${staffStats.unpaidServicesCount} ${servTxt} (${formatMoney(staffStats.unpaidServicesTotal)})`);
+      summarySubTxt = parts.join(' + ') || formatMoney(unpaidGrandTotal);
+    }
   }
 
   const summaryTitleTxt = isAllPaid
@@ -4052,13 +4240,155 @@ function renderTimesheets() {
     HN: 'Horta Nova (HN)'
   };
 
+  // Aplica filtros selecionados pelo funcionário
+  const filteredTimesheets = filterTimesheetsList(timesheets);
+
+  // Sincroniza estado visual das pílulas de filtro
+  document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.tsDateFilter === state.timesheetDateFilter && !state.timesheetSelectedMonth);
+  });
+  document.querySelectorAll('#timesheet-type-filters .timesheet-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.tsTypeFilter === state.timesheetTypeFilter);
+  });
+
+  const infoBar = document.getElementById('timesheet-filter-info-bar');
+  const infoText = document.getElementById('timesheet-filter-info-text');
+  const isFiltered = (state.timesheetDateFilter && state.timesheetDateFilter !== 'todos') ||
+                     (state.timesheetTypeFilter && state.timesheetTypeFilter !== 'todos') ||
+                     Boolean(state.timesheetSelectedMonth);
+
+  if (infoBar && infoText) {
+    if (isFiltered) {
+      infoBar.style.display = 'flex';
+      const countTxt = window.I18N
+        ? window.I18N.t('timesheet.filterShowing', { count: filteredTimesheets.length, total: timesheets.length })
+        : `Mostrando ${filteredTimesheets.length} de ${timesheets.length} registros`;
+      infoText.textContent = countTxt;
+    } else {
+      infoBar.style.display = 'none';
+    }
+  }
+
+  // Se o filtro ativo não retornar nenhum registro:
+  if (filteredTimesheets.length === 0) {
+    const emptyTitle = window.I18N ? window.I18N.t('timesheet.emptyFiltered') : 'Nenhum registro encontrado com os filtros selecionados.';
+    const emptySub = window.I18N ? window.I18N.t('timesheet.emptyFilteredSub') : 'Tente alterar ou limpar os filtros para visualizar outros dias trabalhados.';
+    const clearBtnTxt = window.I18N ? window.I18N.t('timesheet.filterClear') : 'Limpar filtros';
+
+    listContainer.innerHTML = `
+      ${summaryBannerHtml}
+      <div class="ts-empty-state">
+        <div class="ts-empty-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <div class="ts-empty-title">${emptyTitle}</div>
+        <div class="ts-empty-sub">${emptySub}</div>
+        <button type="button" class="btn-ts-retry-filter" id="btn-ts-empty-clear-filters" style="margin-top: 12px; padding: 7px 16px; border-radius: 10px; background: #0B0D11; color: #FFFFFF; font-weight: 700; font-size: 0.78rem; border: none; cursor: pointer;">
+          ${clearBtnTxt}
+        </button>
+      </div>
+    `;
+
+    document.getElementById('btn-ts-empty-clear-filters')?.addEventListener('click', () => {
+      resetTimesheetFilters();
+      renderTimesheets();
+    });
+    return;
+  }
+
   listContainer.innerHTML = `
     ${summaryBannerHtml}
     <div class="timesheet-list-wrap">
-      ${timesheets.map(t => {
+      ${filteredTimesheets.map(t => {
         const isService = t.type === 'service';
+        const isPayment = t.type === 'payment';
         const dateFormatted = formatTimesheetDateNoYear(t.date);
-        const isPaid = Boolean(t.isPaid);
+        const payDetails = getTimesheetPaymentDetails(t);
+        const isPaid = payDetails.isFullyPaid;
+        const isPartial = payDetails.isPartial;
+
+        // =====================================================================
+        // CARD DE PAGAMENTO EM DINHEIRO (PAGO EN EFECTIVO)
+        // =====================================================================
+        if (isPayment) {
+          const paymentAmount = Number(t.amount) || 0;
+          const priceDisplay = formatMoney(paymentAmount);
+          const paymentPillTxt = window.I18N ? window.I18N.t('timesheet.paymentPill') : 'Pago en Efectivo';
+          const receiptTxt = window.I18N ? window.I18N.t('timesheet.paymentReceipt') : 'Comprobante de Pago';
+
+          return `
+            <div class="timesheet-card ts-card-payment is-collapsed" data-ts-id="${t.id}">
+              <div class="ts-card-header" role="button" tabindex="0">
+                <div class="ts-card-user-info">
+                  <div class="ts-card-date-wrap">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #059669; flex-shrink: 0;">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                      <line x1="16" x2="16" y1="2" y2="6"></line>
+                      <line x1="8" x2="8" y1="2" y2="6"></line>
+                      <line x1="3" x2="21" y1="10" y2="10"></line>
+                    </svg>
+                    <span class="ts-card-date-txt">${dateFormatted}</span>
+                  </div>
+                  <span class="ts-payment-pill">
+                    <span class="ts-payment-icon">💶</span>
+                    <span class="ts-payment-title">${paymentPillTxt}</span>
+                  </span>
+                </div>
+                <div class="ts-card-badges">
+                  <span class="ts-status-dot is-paid" title="${receiptTxt}"></span>
+                  <span class="ts-payment-amount-badge">
+                    - ${priceDisplay}
+                  </span>
+                  <svg class="ts-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="ts-card-details">
+                <div class="ts-service-details-grid">
+                  <div class="ts-service-detail-item">
+                    <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.typePayment') : 'Tipo'}</span>
+                    <span class="ts-service-detail-val">💶 ${paymentPillTxt}</span>
+                  </div>
+                  <div class="ts-service-detail-item">
+                    <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('timesheet.paidCash') : 'Monto Pagado'}</span>
+                    <span class="ts-service-detail-val" style="color: #047857; font-weight: 800;">${priceDisplay}</span>
+                  </div>
+                </div>
+
+                ${t.notes ? `
+                  <div class="ts-service-notes-box" style="margin-top: 10px;">
+                    <span class="ts-service-notes-label">${window.I18N ? window.I18N.t('modalTs.paymentNotesLabel') : 'Descripción / Motivo'}:</span>
+                    <p class="ts-service-notes-text">${escapeHtml(t.notes)}</p>
+                  </div>
+                ` : ''}
+
+                <div class="ts-card-actions">
+                  <span class="ts-payment-receipt-tag" style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; font-weight:700; color:#059669; padding:4px 8px; background:#ECFDF5; border-radius:6px;">
+                    ✓ ${receiptTxt}
+                  </span>
+                  <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
+                    </svg>
+                    <span>${exportWaTxt}</span>
+                  </button>
+                  <button type="button" class="btn-ts-edit" data-ts-id="${t.id}" title="${editBtnTxt}">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    <span>${editBtnTxt}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
 
         // =====================================================================
         // CARD DE SERVIÇO REALIZADO (CHECK-IN)
@@ -4080,9 +4410,14 @@ function renderTimesheets() {
           const serviceAmount = getTimesheetRecordAmount(t);
           const priceDisplay = formatMoney(serviceAmount);
 
-          const paidBadgeHtml = isPaid
-            ? `<span class="ts-status-dot is-paid" title="${servicePaidTxt}"></span>`
-            : `<span class="ts-status-dot is-unpaid" title="${serviceUnpaidTxt}"></span>`;
+          let paidBadgeHtml = '';
+          if (isPaid) {
+            paidBadgeHtml = `<span class="ts-status-dot is-paid" title="${servicePaidTxt}"></span>`;
+          } else if (isPartial) {
+            paidBadgeHtml = `<span class="ts-status-dot is-partial" title="${window.I18N ? window.I18N.t('timesheet.partialPaidBadge', { paid: formatMoney(payDetails.paidAmount), remaining: formatMoney(payDetails.remainingAmount) }) : `Pago: ${formatMoney(payDetails.paidAmount)} • Falta: ${formatMoney(payDetails.remainingAmount)}`}"></span>`;
+          } else {
+            paidBadgeHtml = `<span class="ts-status-dot is-unpaid" title="${serviceUnpaidTxt}"></span>`;
+          }
 
           const paidBtnHtml = isPaid
             ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="${servicePaidTxt}">
@@ -4091,12 +4426,12 @@ function renderTimesheets() {
                 </svg>
                 <span>${servicePaidTxt}</span>
               </button>`
-            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${serviceUnpaidTxt}">
+            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${isPartial ? (window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`) : serviceUnpaidTxt}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>${serviceUnpaidTxt}</span>
+                <span>${isPartial ? `${formatMoney(payDetails.paidAmount)} / ${formatMoney(payDetails.totalAmount)}` : serviceUnpaidTxt}</span>
               </button>`;
 
           return `
@@ -4120,6 +4455,7 @@ function renderTimesheets() {
                 </div>
                 <div class="ts-card-badges">
                   ${paidBadgeHtml}
+                  ${isPartial ? `<span class="ts-partial-badge">${window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`}</span>` : ''}
                   <span class="ts-service-price-badge">
                     ${priceDisplay}
                   </span>
@@ -4199,9 +4535,14 @@ function renderTimesheets() {
           breakDisplay = `${labelBreakTxt}: ${t.breakStartTime}`;
         }
 
-        const paidBadgeHtml = isPaid
-          ? `<span class="ts-status-dot is-paid" title="${statusPaidTxt}"></span>`
-          : `<span class="ts-status-dot is-unpaid" title="${statusUnpaidTxt}"></span>`;
+        let paidBadgeHtml = '';
+        if (isPaid) {
+          paidBadgeHtml = `<span class="ts-status-dot is-paid" title="${statusPaidTxt}"></span>`;
+        } else if (isPartial) {
+          paidBadgeHtml = `<span class="ts-status-dot is-partial" title="${window.I18N ? window.I18N.t('timesheet.partialPaidBadge', { paid: formatMoney(payDetails.paidAmount), remaining: formatMoney(payDetails.remainingAmount) }) : `Pago: ${formatMoney(payDetails.paidAmount)} • Falta: ${formatMoney(payDetails.remainingAmount)}`}"></span>`;
+        } else {
+          paidBadgeHtml = `<span class="ts-status-dot is-unpaid" title="${statusUnpaidTxt}"></span>`;
+        }
 
         const paidBtnHtml = isPaid
           ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="${statusPaidTxt}">
@@ -4210,12 +4551,12 @@ function renderTimesheets() {
               </svg>
               <span>${statusPaidTxt}</span>
             </button>`
-          : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${statusUnpaidTxt}">
+          : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${isPartial ? (window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`) : statusUnpaidTxt}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>${statusUnpaidTxt}</span>
+              <span>${isPartial ? `${formatMoney(payDetails.paidAmount)} / ${formatMoney(payDetails.totalAmount)}` : statusUnpaidTxt}</span>
             </button>`;
 
         return `
@@ -4234,6 +4575,7 @@ function renderTimesheets() {
               </div>
               <div class="ts-card-badges">
                 ${paidBadgeHtml}
+                ${isPartial ? `<span class="ts-partial-badge">${window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`}</span>` : ''}
                 <span class="ts-total-badge ${!hasEnd ? 'in-progress' : ''}">
                   ${totalText}
                 </span>
@@ -4261,6 +4603,7 @@ function renderTimesheets() {
                   <div class="ts-time-pill" style="background: rgba(16, 185, 129, 0.10); border: 1px solid rgba(16, 185, 129, 0.28);">
                     <span class="ts-time-pill-label" style="color: #047857;">${window.I18N ? window.I18N.t('timesheet.calculatedPay') : 'Remuneração'}</span>
                     <span class="ts-time-pill-val" style="color: #065F46; font-weight: 800;">${formatMoney(dayAmount)} <small style="font-size: 0.68rem; font-weight: 600; color: #047857;">(10 €/h)</small></span>
+                    ${isPartial ? `<span style="font-size: 0.70rem; font-weight: 700; color: #D97706; margin-top: 2px;">${window.I18N ? window.I18N.t('timesheet.partialPaidBadge', { paid: formatMoney(payDetails.paidAmount), remaining: formatMoney(payDetails.remainingAmount) }) : `Pago: ${formatMoney(payDetails.paidAmount)} • Falta: ${formatMoney(payDetails.remainingAmount)}`}</span>` : ''}
                   </div>
                 ` : ''}
               </div>
@@ -4368,6 +4711,43 @@ function exportTimesheetToWhatsApp(recordId) {
   const defaultStaff = isEs ? 'Colaboradora' : 'Colaboradora';
   const staffName = record.staffName || (staffObj ? staffObj.name : defaultStaff);
   const dateFormatted = formatTimesheetDate(record.date);
+
+  // =========================================================================
+  // EXPORTAÇÃO DE PAGAMENTO EM DINHEIRO
+  // =========================================================================
+  if (record.type === 'payment') {
+    const textLines = isEs ? [
+      `💶 *Comprobante de Pago en Efectivo*`,
+      `👤 *Colaboradora:* ${staffName}`,
+      `📅 *Fecha:* ${dateFormatted}`,
+      ``,
+      `💰 *Monto Pagado:* ${formatMoney(record.amount || 0)}`,
+      record.notes ? `📝 *Observaciones / Motivo:* ${record.notes}` : null,
+      ``,
+      `🏢 _Airbnb Gestión & Control_`
+    ].filter(Boolean) : [
+      `💶 *Comprovante de Pagamento em Dinheiro*`,
+      `👤 *Colaboradora:* ${staffName}`,
+      `📅 *Data:* ${dateFormatted}`,
+      ``,
+      `💰 *Valor Pago:* ${formatMoney(record.amount || 0)}`,
+      record.notes ? `📝 *Observações / Motivo:* ${record.notes}` : null,
+      ``,
+      `🏢 _Airbnb Gestão & Controle_`
+    ].filter(Boolean);
+
+    const message = textLines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(message).catch(() => {});
+    }
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+    const toastMsg = window.I18N
+      ? window.I18N.t('toast.whatsappExported')
+      : (isEs ? '¡Registro exportado a WhatsApp!' : 'Registro exportado para o WhatsApp!');
+    showToast(toastMsg);
+    return;
+  }
 
   // =========================================================================
   // EXPORTAÇÃO DE SERVIÇO REALIZADO (CHECK-IN)
@@ -4684,8 +5064,9 @@ function renderManagerStaffSummaryBanner(staff) {
           <span class="ts-unpaid-sub">${summarySubTxt}</span>
         </div>
       </div>
-      <div class="ts-unpaid-banner-right">
+      <div class="ts-unpaid-banner-right" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
         <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${isAllPaid ? '€ 0,00' : formatMoney(stats.unpaidGrandTotal)}</span>
+        <button type="button" class="btn-mgr-pay-cash" id="btn-mgr-banner-pay" title="${window.I18N ? window.I18N.t('timesheet.btnAddPayment') : 'Registrar Pago'}">💶 ${window.I18N ? (window.I18N.getLanguage() === 'es' ? 'Registrar Pago' : 'Registrar Pago') : 'Registrar Pago'}</button>
         ${stats.unpaidCount > 0 ? `<button type="button" class="btn-mgr-view-unpaid-list" id="btn-mgr-view-all-unpaid" title="${t('timesheet.viewAllUnpaidTooltip')}">${viewPendingBtnTxt}</button>` : ''}
       </div>
     </div>
@@ -4695,6 +5076,13 @@ function renderManagerStaffSummaryBanner(staff) {
   if (btnView) {
     btnView.addEventListener('click', () => {
       showManagerTimesheetHours(staff.id, 'unpaid');
+    });
+  }
+
+  const btnBannerPay = container.querySelector('#btn-mgr-banner-pay');
+  if (btnBannerPay) {
+    btnBannerPay.addEventListener('click', () => {
+      openTimesheetModal(null, staff.id, null, 'payment');
     });
   }
 }
@@ -4759,7 +5147,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
     if (!matchStaff) return false;
 
     if (isUnpaidMode) {
-      return !t.isPaid;
+      return !getTimesheetPaymentDetails(t).isFullyPaid;
     }
     return t.date === dateStr;
   });
@@ -4834,6 +5222,102 @@ function showManagerTimesheetHours(staffId, dateStr) {
   hoursContainer.innerHTML = `
     <div class="mgr-ts-records-list">
       ${records.map(t => {
+        const isService = t.type === 'service';
+        const isPayment = t.type === 'payment';
+        const dateFormatted = formatTimesheetDateNoYear(t.date || dateStr);
+        const payDetails = getTimesheetPaymentDetails(t);
+        const isPaid = payDetails.isFullyPaid;
+        const isPartial = payDetails.isPartial;
+
+        // =====================================================================
+        // CARD DE PAGAMENTO EM DINHEIRO (PAGO EN EFECTIVO)
+        // =====================================================================
+        if (isPayment) {
+          const paymentAmount = Number(t.amount) || 0;
+          const priceDisplay = formatMoney(paymentAmount);
+          const paymentPillTxt = window.I18N ? window.I18N.t('timesheet.paymentPill') : 'Pago en Efectivo';
+          const receiptTxt = window.I18N ? window.I18N.t('timesheet.paymentReceipt') : 'Comprobante de Pago';
+
+          return `
+            <div class="timesheet-card mgr-ts-record-card ts-card-payment is-collapsed" data-ts-id="${t.id}">
+              <div class="ts-card-header" role="button" tabindex="0">
+                <div class="ts-card-user-info">
+                  <div class="mgr-ts-card-date-wrap">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #059669; flex-shrink: 0;">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                      <line x1="16" x2="16" y1="2" y2="6"></line>
+                      <line x1="8" x2="8" y1="2" y2="6"></line>
+                      <line x1="3" x2="21" y1="10" y2="10"></line>
+                    </svg>
+                    <span class="mgr-ts-card-date-txt">${dateFormatted}</span>
+                  </div>
+                  <span class="ts-payment-pill">
+                    <span class="ts-payment-icon">💶</span>
+                    <span class="ts-payment-title">${paymentPillTxt}</span>
+                  </span>
+                </div>
+                <div class="ts-card-badges">
+                  <span class="ts-status-dot is-paid" title="${receiptTxt}"></span>
+                  <span class="ts-payment-amount-badge">
+                    - ${priceDisplay}
+                  </span>
+                  <svg class="ts-card-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="ts-card-details">
+                <div class="ts-service-details-grid">
+                  <div class="ts-service-detail-item">
+                    <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('modalTs.typePayment') : 'Tipo'}</span>
+                    <span class="ts-service-detail-val">💶 ${paymentPillTxt}</span>
+                  </div>
+                  <div class="ts-service-detail-item">
+                    <span class="ts-service-detail-label">${window.I18N ? window.I18N.t('timesheet.paidCash') : 'Monto Pagado'}</span>
+                    <span class="ts-service-detail-val" style="color: #047857; font-weight: 800;">${priceDisplay}</span>
+                  </div>
+                </div>
+
+                ${t.notes ? `
+                  <div class="ts-service-notes-box" style="margin-top: 10px;">
+                    <span class="ts-service-notes-label">${window.I18N ? window.I18N.t('modalTs.paymentNotesLabel') : 'Descripción / Motivo'}:</span>
+                    <p class="ts-service-notes-text">${escapeHtml(t.notes)}</p>
+                  </div>
+                ` : ''}
+
+                <div class="mgr-ts-payment-status is-paid">
+                  <div class="mgr-ts-status-icon-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <div class="mgr-ts-status-texts">
+                    <span class="mgr-ts-status-title">${receiptTxt}</span>
+                    <span class="mgr-ts-status-desc">${window.I18N ? window.I18N.t('modalTs.paymentCashHint') : 'Monto descontado automáticamente del valor adeudado.'}</span>
+                  </div>
+                </div>
+
+                <div class="ts-card-actions">
+                  <button type="button" class="btn-ts-whatsapp" data-ts-id="${t.id}" title="${exportWaTxt}">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 16.67c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.36c0-4.52 3.68-8.2 8.2-8.2 2.19 0 4.25.85 5.8 2.4 1.55 1.55 2.41 3.61 2.41 5.8 0 4.53-3.68 8.21-8.2 8.21zm4.5-6.15c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.65.8-.8 1-.15.19-.3.21-.55.09-.25-.12-1.05-.39-2-1.24-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.46-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/>
+                    </svg>
+                    <span>${exportWaTxt}</span>
+                  </button>
+                  <button type="button" class="btn-ts-edit" data-ts-id="${t.id}" title="${editBtnTxt}">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"></path>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    <span>${editBtnTxt}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
         const hasEnd = Boolean(t.endTime);
         const totalText = (hasEnd && t.totalMinutes !== null && t.totalMinutes !== undefined)
           ? minutesToFormatted(t.totalMinutes)
@@ -4847,11 +5331,14 @@ function showManagerTimesheetHours(staffId, dateStr) {
           breakDisplay = `${labelBreakTxt}: ${t.breakStartTime}`;
         }
 
-        const dateFormatted = formatTimesheetDateNoYear(t.date || dateStr);
-        const isPaid = Boolean(t.isPaid);
-        const paidBadgeHtml = isPaid
-          ? `<span class="ts-status-dot is-paid" title="${paidTitle}"></span>`
-          : `<span class="ts-status-dot is-unpaid" title="${unpaidTitle}"></span>`;
+        let paidBadgeHtml = '';
+        if (isPaid) {
+          paidBadgeHtml = `<span class="ts-status-dot is-paid" title="${paidTitle}"></span>`;
+        } else if (isPartial) {
+          paidBadgeHtml = `<span class="ts-status-dot is-partial" title="${window.I18N ? window.I18N.t('timesheet.partialPaidBadge', { paid: formatMoney(payDetails.paidAmount), remaining: formatMoney(payDetails.remainingAmount) }) : `Pago: ${formatMoney(payDetails.paidAmount)} • Falta: ${formatMoney(payDetails.remainingAmount)}`}"></span>`;
+        } else {
+          paidBadgeHtml = `<span class="ts-status-dot is-unpaid" title="${unpaidTitle}"></span>`;
+        }
 
         const paidBtnHtml = t.type === 'service'
           ? (isPaid
@@ -4861,12 +5348,12 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 </svg>
                 <span>${servicePaidTxt}</span>
               </button>`
-            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${serviceUnpaidTxt}">
+            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${isPartial ? (window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`) : serviceUnpaidTxt}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>${serviceUnpaidTxt}</span>
+                <span>${isPartial ? `${formatMoney(payDetails.paidAmount)} / ${formatMoney(payDetails.totalAmount)}` : serviceUnpaidTxt}</span>
               </button>`)
           : (isPaid
             ? `<button type="button" class="btn-ts-toggle-paid is-paid" data-ts-id="${t.id}" title="${statusPaidTxt}">
@@ -4875,16 +5362,17 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 </svg>
                 <span>${statusPaidTxt}</span>
               </button>`
-            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${statusUnpaidTxt}">
+            : `<button type="button" class="btn-ts-toggle-paid is-unpaid" data-ts-id="${t.id}" title="${isPartial ? (window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`) : statusUnpaidTxt}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <span>${statusUnpaidTxt}</span>
+                <span>${isPartial ? `${formatMoney(payDetails.paidAmount)} / ${formatMoney(payDetails.totalAmount)}` : statusUnpaidTxt}</span>
               </button>`);
 
-        const managerStatusHtml = isPaid
-          ? `<div class="mgr-ts-payment-status is-paid">
+        let managerStatusHtml = '';
+        if (isPaid) {
+          managerStatusHtml = `<div class="mgr-ts-payment-status is-paid">
               <div class="mgr-ts-status-icon-box">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
@@ -4894,8 +5382,23 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 <span class="mgr-ts-status-title">${paidTitle}</span>
                 <span class="mgr-ts-status-desc">${paidDesc}</span>
               </div>
-            </div>`
-          : `<div class="mgr-ts-payment-status is-unpaid">
+            </div>`;
+        } else if (isPartial) {
+          managerStatusHtml = `<div class="mgr-ts-payment-status is-partial" style="background: #FFFBEB; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+              <div class="mgr-ts-status-icon-box" style="background: #F59E0B; color: #FFFFFF; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div class="mgr-ts-status-texts">
+                <span class="mgr-ts-status-title" style="font-size: 0.82rem; font-weight: 700; color: #B45309;">${window.I18N ? window.I18N.t('timesheet.partialPaidBadge', { paid: formatMoney(payDetails.paidAmount), remaining: formatMoney(payDetails.remainingAmount) }) : `Pago: ${formatMoney(payDetails.paidAmount)} • Falta: ${formatMoney(payDetails.remainingAmount)}`}</span>
+                <span class="mgr-ts-status-desc" style="font-size: 0.74rem; color: #78350F;">${window.I18N ? window.I18N.t('modalTs.paidAmountHint') : 'Pago parcial registrado.'}</span>
+              </div>
+            </div>`;
+        } else {
+          managerStatusHtml = `<div class="mgr-ts-payment-status is-unpaid">
               <div class="mgr-ts-status-icon-box">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -4907,6 +5410,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 <span class="mgr-ts-status-desc">${unpaidDesc}</span>
               </div>
             </div>`;
+        }
 
         if (t.type === 'service') {
           const sType = t.serviceType || 'checkin';
@@ -4951,6 +5455,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
                 </div>
                 <div class="ts-card-badges">
                   ${paidBadgeHtml}
+                  ${isPartial ? `<span class="ts-partial-badge">${window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`}</span>` : ''}
                   <span class="ts-service-price-badge">
                     ${priceDisplay}
                   </span>
@@ -5032,6 +5537,7 @@ function showManagerTimesheetHours(staffId, dateStr) {
               </div>
               <div class="ts-card-badges">
                 ${paidBadgeHtml}
+                ${isPartial ? `<span class="ts-partial-badge">${window.I18N ? window.I18N.t('timesheet.remainingShort', { amount: formatMoney(payDetails.remainingAmount) }) : `Falta: ${formatMoney(payDetails.remainingAmount)}`}</span>` : ''}
                 <span class="ts-total-badge ${!hasEnd ? 'in-progress' : ''}">
                   ${totalText}
                 </span>
@@ -5128,24 +5634,146 @@ function showManagerTimesheetHours(staffId, dateStr) {
   });
 }
 
+
+function updateTimesheetCashPaymentPreview() {
+  const previewBox = document.getElementById('ts-payment-cash-calc-preview');
+  const amountInput = document.getElementById('timesheet-payment-cash-amount');
+  const staffSelect = document.getElementById('timesheet-staff-select');
+  if (!previewBox) return;
+
+  const isOwner = state.currentUser?.type === 'owner' || state.role === 'owner';
+  let staffId = null;
+  let staffEmail = null;
+  let staffName = null;
+
+  if (isOwner) {
+    const selId = staffSelect?.value;
+    const sObj = (state.data.staff || []).find(s => s.id === selId);
+    staffId = sObj?.id || selId;
+    staffEmail = sObj?.email;
+    staffName = sObj?.name;
+  } else {
+    staffId = state.currentUser?.id;
+    staffEmail = state.currentUser?.email;
+    staffName = state.currentUser?.name;
+  }
+
+  const stats = getStaffTimesheetStats(staffId, staffEmail, staffName);
+  const currentDebt = stats.unpaidGrandTotal;
+  const payVal = amountInput ? parseFloat(amountInput.value) : 0;
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+
+  if (!payVal || isNaN(payVal) || payVal <= 0) {
+    if (currentDebt > 0) {
+      previewBox.style.display = 'block';
+      previewBox.innerHTML = isEs
+        ? `<span>📊 Deuda pendiente actual: <strong>${formatMoney(currentDebt)}</strong></span>`
+        : `<span>📊 Dívida pendente atual: <strong>${formatMoney(currentDebt)}</strong></span>`;
+    } else {
+      previewBox.style.display = 'none';
+    }
+    return;
+  }
+
+  const remaining = Math.max(0, currentDebt - payVal);
+  previewBox.style.display = 'block';
+
+  if (remaining <= 0.009) {
+    previewBox.innerHTML = isEs
+      ? `<span>🎉 <strong>¡Deuda saldada por completo!</strong> Saldo restante: ${formatMoney(0)}</span>`
+      : `<span>🎉 <strong>Dívida totalmente quitada!</strong> Saldo restante: ${formatMoney(0)}</span>`;
+  } else {
+    previewBox.innerHTML = isEs
+      ? `<span>📊 Deuda actual: <strong>${formatMoney(currentDebt)}</strong> − Pago: <strong>${formatMoney(payVal)}</strong> → Restará por pagar: <strong style="color: #D97706;">${formatMoney(remaining)}</strong></span>`
+      : `<span>📊 Dívida atual: <strong>${formatMoney(currentDebt)}</strong> − Pago: <strong>${formatMoney(payVal)}</strong> → Restará a pagar: <strong style="color: #D97706;">${formatMoney(remaining)}</strong></span>`;
+  }
+}
+
+function updateTimesheetPaidAmountInputBadge() {
+  const paidInput = document.getElementById('timesheet-paid-amount-input');
+  const badge = document.getElementById('ts-paid-remaining-badge');
+  if (!paidInput || !badge) return;
+
+  const recType = document.getElementById('timesheet-type-input')?.value || 'hours';
+  let totalRecord = 0;
+  if (recType === 'service') {
+    const priceVal = parseFloat(document.getElementById('timesheet-service-price')?.value);
+    totalRecord = (!isNaN(priceVal) && priceVal >= 0) ? priceVal : TIMESHEET_CHECKIN_RATE;
+  } else {
+    const { start, breakStart, breakEnd, end } = state.tempTimesheetTimes || {};
+    if (start && end) {
+      const totalM = calculateTimesheetTotalMinutes(start, breakStart, breakEnd, end);
+      totalRecord = totalM > 0 ? (totalM / 60) * TIMESHEET_HOURLY_RATE : 0;
+    }
+  }
+
+  const pVal = parseFloat(paidInput.value);
+  if (isNaN(pVal) || pVal <= 0) {
+    badge.style.display = 'none';
+    return;
+  }
+
+  badge.style.display = 'inline-block';
+  const remaining = Math.max(0, totalRecord - pVal);
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+
+  if (totalRecord > 0 && remaining <= 0.009) {
+    badge.className = 'ts-paid-remaining-badge is-paid-full';
+    badge.textContent = isEs ? '¡Pagado completo!' : 'Totalmente pago!';
+  } else {
+    badge.className = 'ts-paid-remaining-badge';
+    badge.textContent = `Falta: ${formatMoney(remaining)}`;
+  }
+}
+
 function setTimesheetModalType(type) {
   const typeInput = document.getElementById('timesheet-type-input');
   if (typeInput) typeInput.value = type;
 
   const btnHours = document.getElementById('ts-type-btn-hours');
   const btnService = document.getElementById('ts-type-btn-service');
+  const btnPayment = document.getElementById('ts-type-btn-payment');
   const hoursGroup = document.getElementById('ts-hours-fields-group');
   const serviceGroup = document.getElementById('ts-service-fields-group');
+  const paymentGroup = document.getElementById('ts-payment-fields-group');
+  const paymentStatusGroup = document.getElementById('ts-payment-status-group');
   const dateLabel = document.getElementById('timesheet-date-label');
   const paymentLabel = document.getElementById('timesheet-payment-label');
   const unpaidTxt = document.getElementById('ts-modal-unpaid-txt');
   const paidTxt = document.getElementById('ts-modal-paid-txt');
+  const modalTitle = document.getElementById('timesheet-modal-title');
+  const submitBtn = document.querySelector('#timesheet-form button[type="submit"]');
 
-  if (type === 'service') {
+  if (type === 'payment') {
+    btnHours?.classList.remove('active');
+    btnService?.classList.remove('active');
+    btnPayment?.classList.add('active');
+    if (hoursGroup) hoursGroup.style.display = 'none';
+    if (serviceGroup) serviceGroup.style.display = 'none';
+    if (paymentGroup) paymentGroup.style.display = 'block';
+    if (paymentStatusGroup) paymentStatusGroup.style.display = 'none';
+
+    if (dateLabel) {
+      dateLabel.textContent = window.I18N ? window.I18N.t('modalTs.datePaymentLabel') : 'Data do Pagamento';
+    }
+    if (modalTitle) {
+      const editId = document.getElementById('timesheet-edit-id')?.value;
+      modalTitle.textContent = editId
+        ? (window.I18N ? window.I18N.t('modalTs.titleEditPayment') : 'Editar Pagamento em Dinheiro')
+        : (window.I18N ? window.I18N.t('modalTs.titlePayment') : 'Registrar Pagamento em Dinheiro');
+    }
+    if (submitBtn) {
+      submitBtn.textContent = window.I18N ? window.I18N.t('modalTs.btnSubmitPayment') : 'Salvar Pagamento em Dinheiro';
+    }
+    updateTimesheetCashPaymentPreview();
+  } else if (type === 'service') {
     btnHours?.classList.remove('active');
     btnService?.classList.add('active');
+    btnPayment?.classList.remove('active');
     if (hoursGroup) hoursGroup.style.display = 'none';
     if (serviceGroup) serviceGroup.style.display = 'block';
+    if (paymentGroup) paymentGroup.style.display = 'none';
+    if (paymentStatusGroup) paymentStatusGroup.style.display = 'block';
 
     const priceInput = document.getElementById('timesheet-service-price');
     const sNameSelect = document.getElementById('timesheet-service-name');
@@ -5167,11 +5795,18 @@ function setTimesheetModalType(type) {
     if (paidTxt) {
       paidTxt.textContent = window.I18N ? window.I18N.t('modalTs.paidService') : 'Serviço Pago';
     }
+    if (submitBtn) {
+      submitBtn.textContent = window.I18N ? window.I18N.t('modalTs.btnSubmit') : 'Salvar Registro';
+    }
+    updateTimesheetPaidAmountInputBadge();
   } else {
     btnHours?.classList.add('active');
     btnService?.classList.remove('active');
+    btnPayment?.classList.remove('active');
     if (hoursGroup) hoursGroup.style.display = 'block';
     if (serviceGroup) serviceGroup.style.display = 'none';
+    if (paymentGroup) paymentGroup.style.display = 'none';
+    if (paymentStatusGroup) paymentStatusGroup.style.display = 'block';
 
     if (dateLabel) {
       dateLabel.textContent = window.I18N ? window.I18N.t('modalTs.dateLabel') : 'Dia trabalhado';
@@ -5185,10 +5820,14 @@ function setTimesheetModalType(type) {
     if (paidTxt) {
       paidTxt.textContent = window.I18N ? window.I18N.t('modalTs.paid') : 'Horas Pagas';
     }
+    if (submitBtn) {
+      submitBtn.textContent = window.I18N ? window.I18N.t('modalTs.btnSubmit') : 'Salvar Registro';
+    }
+    updateTimesheetPaidAmountInputBadge();
   }
 }
 
-function openTimesheetModal(editId = null, presetStaffId = null, presetDate = null) {
+function openTimesheetModal(editId = null, presetStaffId = null, presetDate = null, presetType = null) {
   const modal = document.getElementById('modal-timesheet');
   const titleEl = document.getElementById('timesheet-modal-title');
   const dateInput = document.getElementById('timesheet-date-input');
@@ -5225,9 +5864,12 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
   if (editId) {
     const record = (state.data.timesheets || []).find(t => t.id === editId);
     if (!record) return;
+    const isPayment = record.type === 'payment';
     const isService = record.type === 'service';
     if (titleEl) {
-      titleEl.textContent = window.I18N ? window.I18N.t('modalTs.titleEdit') : 'Editar Registro';
+      titleEl.textContent = isPayment
+        ? (window.I18N ? window.I18N.t('modalTs.titleEditPayment') : 'Editar Pagamento em Dinheiro')
+        : (window.I18N ? window.I18N.t('modalTs.titleEdit') : 'Editar Registro');
     }
     if (editIdInput) editIdInput.value = record.id;
     if (dateInput) dateInput.value = record.date || getTodayDateString();
@@ -5236,9 +5878,15 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
       staffSelect.value = record.staffId;
     }
 
-    setTimesheetModalType(isService ? 'service' : 'hours');
-
-    if (isService) {
+    if (isPayment) {
+      setTimesheetModalType('payment');
+      const payAmountInput = document.getElementById('timesheet-payment-cash-amount');
+      if (payAmountInput) payAmountInput.value = record.amount || '';
+      const payNotesInput = document.getElementById('timesheet-payment-notes');
+      if (payNotesInput) payNotesInput.value = record.notes || '';
+      updateTimesheetCashPaymentPreview();
+    } else if (isService) {
+      setTimesheetModalType('service');
       const sNameSelect = document.getElementById('timesheet-service-name');
       if (sNameSelect) sNameSelect.value = record.serviceType || 'checkin';
 
@@ -5272,7 +5920,16 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
       if (notesInput) notesInput.value = record.notes || '';
       const hoursNotesInput = document.getElementById('timesheet-hours-notes');
       if (hoursNotesInput) hoursNotesInput.value = '';
+
+      const paidAmountInput = document.getElementById('timesheet-paid-amount-input');
+      if (paidAmountInput) {
+        paidAmountInput.value = (record.paidAmount !== undefined && record.paidAmount !== null && record.paidAmount !== '')
+          ? record.paidAmount
+          : (record.isPaid ? getTimesheetRecordAmount(record) : '');
+      }
+      updateTimesheetPaidAmountInputBadge();
     } else {
+      setTimesheetModalType('hours');
       state.tempTimesheetTimes = {
         start: record.startTime || '',
         breakStart: record.breakStartTime || '',
@@ -5285,12 +5942,24 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
       if (hoursNotesInput) hoursNotesInput.value = record.notes || '';
       const notesInput = document.getElementById('timesheet-service-notes');
       if (notesInput) notesInput.value = '';
+
+      const paidAmountInput = document.getElementById('timesheet-paid-amount-input');
+      if (paidAmountInput) {
+        paidAmountInput.value = (record.paidAmount !== undefined && record.paidAmount !== null && record.paidAmount !== '')
+          ? record.paidAmount
+          : (record.isPaid ? getTimesheetRecordAmount(record) : '');
+      }
+      updateTimesheetPaidAmountInputBadge();
     }
 
     if (btnDelete) btnDelete.style.display = 'block';
     updateTimesheetModalPaymentButtons(Boolean(record.isPaid));
   } else {
-    if (titleEl) titleEl.textContent = window.I18N ? window.I18N.t('modalTs.title') : 'Registrar Horas ou Serviço';
+    if (titleEl) {
+      titleEl.textContent = presetType === 'payment'
+        ? (window.I18N ? window.I18N.t('modalTs.titlePayment') : 'Registrar Pagamento em Dinheiro')
+        : (window.I18N ? window.I18N.t('modalTs.title') : 'Registrar Horas ou Serviço');
+    }
     if (editIdInput) editIdInput.value = '';
     if (dateInput) dateInput.value = presetDate || getTodayDateString();
 
@@ -5315,8 +5984,6 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
       serviceTime: '15:00'
     };
 
-    setTimesheetModalType('hours');
-
     const sNameSelect = document.getElementById('timesheet-service-name');
     if (sNameSelect) sNameSelect.value = 'checkin';
 
@@ -5334,6 +6001,21 @@ function openTimesheetModal(editId = null, presetStaffId = null, presetDate = nu
 
     const hoursNotesInput = document.getElementById('timesheet-hours-notes');
     if (hoursNotesInput) hoursNotesInput.value = '';
+
+    const payAmountInput = document.getElementById('timesheet-payment-cash-amount');
+    if (payAmountInput) payAmountInput.value = '';
+    const payNotesInput = document.getElementById('timesheet-payment-notes');
+    if (payNotesInput) payNotesInput.value = '';
+
+    const paidAmountInput = document.getElementById('timesheet-paid-amount-input');
+    if (paidAmountInput) paidAmountInput.value = '';
+    updateTimesheetPaidAmountInputBadge();
+
+    if (presetType === 'payment') {
+      setTimesheetModalType('payment');
+    } else {
+      setTimesheetModalType('hours');
+    }
 
     if (btnDelete) btnDelete.style.display = 'none';
     updateTimesheetModalPaymentButtons(false);
@@ -5357,6 +6039,30 @@ function updateTimesheetModalPaymentButtons(isPaid) {
       btnUnpaid.classList.add('active');
       btnPaid.classList.remove('active');
     }
+  }
+
+  const paidAmountInput = document.getElementById('timesheet-paid-amount-input');
+  if (paidAmountInput) {
+    if (isPaid) {
+      const recType = document.getElementById('timesheet-type-input')?.value || 'hours';
+      let totalRec = 0;
+      if (recType === 'service') {
+        const pVal = parseFloat(document.getElementById('timesheet-service-price')?.value);
+        totalRec = (!isNaN(pVal) && pVal >= 0) ? pVal : TIMESHEET_CHECKIN_RATE;
+      } else {
+        const { start, breakStart, breakEnd, end } = state.tempTimesheetTimes || {};
+        if (start && end) {
+          const totalM = calculateTimesheetTotalMinutes(start, breakStart, breakEnd, end);
+          totalRec = totalM > 0 ? (totalM / 60) * TIMESHEET_HOURLY_RATE : 0;
+        }
+      }
+      if (totalRec > 0 && (!paidAmountInput.value || parseFloat(paidAmountInput.value) <= 0)) {
+        paidAmountInput.value = totalRec.toFixed(2);
+      }
+    } else {
+      paidAmountInput.value = '';
+    }
+    updateTimesheetPaidAmountInputBadge();
   }
 }
 
@@ -9137,12 +9843,78 @@ function setupEventListeners() {
     openTimePicker('end', 'Fim do trabalho');
   });
 
-  // Listeners do Seletor de Tipo de Registro (Horas vs Serviço / Check-in)
+  // Listeners do Seletor de Tipo de Registro (Horas vs Serviço / Check-in vs Pago en Efectivo)
   document.getElementById('ts-type-btn-hours')?.addEventListener('click', () => {
     setTimesheetModalType('hours');
   });
   document.getElementById('ts-type-btn-service')?.addEventListener('click', () => {
     setTimesheetModalType('service');
+  });
+  document.getElementById('ts-type-btn-payment')?.addEventListener('click', () => {
+    setTimesheetModalType('payment');
+  });
+
+  // Botões de abrir modal para registrar pagamento em dinheiro direto
+  document.getElementById('btn-open-payment-modal')?.addEventListener('click', () => {
+    openTimesheetModal(null, null, null, 'payment');
+  });
+  document.getElementById('btn-mgr-ts-add-payment')?.addEventListener('click', () => {
+    openTimesheetModal(null, state.activeManagerStaffId, null, 'payment');
+  });
+
+  // Listeners de Filtro de Horas Trabalhadas (Período e Tipo)
+  document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      state.timesheetDateFilter = pill.dataset.tsDateFilter || 'todos';
+      state.timesheetSelectedMonth = '';
+      const mSelect = document.getElementById('timesheet-month-select');
+      if (mSelect) mSelect.value = '';
+      renderTimesheets();
+    });
+  });
+
+  document.getElementById('timesheet-month-select')?.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val) {
+      document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => p.classList.remove('active'));
+      state.timesheetDateFilter = 'mes_especifico';
+      state.timesheetSelectedMonth = val;
+    } else {
+      state.timesheetDateFilter = 'todos';
+      state.timesheetSelectedMonth = '';
+      const allPill = document.querySelector('#timesheet-date-filters .timesheet-pill[data-ts-date-filter="todos"]');
+      if (allPill) allPill.classList.add('active');
+    }
+    renderTimesheets();
+  });
+
+  document.querySelectorAll('#timesheet-type-filters .timesheet-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#timesheet-type-filters .timesheet-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      state.timesheetTypeFilter = pill.dataset.tsTypeFilter || 'todos';
+      renderTimesheets();
+    });
+  });
+
+  document.getElementById('btn-timesheet-clear-filters')?.addEventListener('click', () => {
+    resetTimesheetFilters();
+    renderTimesheets();
+  });
+
+  // Listener para input de montante em dinheiro pago no modal de pagamento
+  document.getElementById('timesheet-payment-cash-amount')?.addEventListener('input', () => {
+    updateTimesheetCashPaymentPreview();
+  });
+
+  // Listener para input de valor parcial pago no modal de horas/serviço
+  document.getElementById('timesheet-paid-amount-input')?.addEventListener('input', () => {
+    updateTimesheetPaidAmountInputBadge();
+  });
+  document.getElementById('timesheet-service-price')?.addEventListener('input', () => {
+    updateTimesheetPaidAmountInputBadge();
   });
 
   // Listener para Tipo de Serviço (preenche 7.00 para check-in se estiver vazio ou zerado)
@@ -9181,12 +9953,26 @@ function setupEventListeners() {
     if (!editId) return;
 
     const record = (state.data.timesheets || []).find(t => t.id === editId);
+    const isPayment = record && record.type === 'payment';
     const isService = record && record.type === 'service';
 
+    let confirmTitle = t('dialog.deleteTimesheetTitle');
+    let confirmMsg = t('dialog.deleteTimesheetMsg');
+    let confirmBtn = t('dialog.deleteTimesheetConfirmBtn');
+    if (isPayment) {
+      confirmTitle = window.I18N ? window.I18N.t('modalTs.titlePayment') : 'Eliminar Pago';
+      confirmMsg = window.I18N ? window.I18N.t('dialog.deletePaymentConfirm') : '¿Realmente deseas eliminar este registro de pago en efectivo?';
+      confirmBtn = window.I18N ? window.I18N.t('dialog.deleteTimesheetConfirmBtn') : 'Eliminar';
+    } else if (isService) {
+      confirmTitle = t('dialog.deleteServiceTitle');
+      confirmMsg = t('dialog.deleteServiceMsg');
+      confirmBtn = t('dialog.deleteServiceConfirmBtn');
+    }
+
     const confirmed = await showConfirmDialog({
-      title: isService ? t('dialog.deleteServiceTitle') : t('dialog.deleteTimesheetTitle'),
-      message: isService ? t('dialog.deleteServiceMsg') : t('dialog.deleteTimesheetMsg'),
-      confirmText: isService ? t('dialog.deleteServiceConfirmBtn') : t('dialog.deleteTimesheetConfirmBtn'),
+      title: confirmTitle,
+      message: confirmMsg,
+      confirmText: confirmBtn,
       cancelText: t('dialog.cancelBtn'),
       confirmDanger: true,
       icon: 'trash'
@@ -9204,7 +9990,18 @@ function setupEventListeners() {
 
       document.getElementById('modal-timesheet')?.classList.remove('active');
       renderTimesheets();
-      showToast(isService ? t('toast.serviceDeleted') : t('toast.timesheetDeleted'));
+      if (document.getElementById('modal-manager-timesheet')?.classList.contains('active')) {
+        const staffObj = (state.data.staff || []).find(s => s.id === record?.staffId);
+        if (staffObj) renderManagerStaffSummaryBanner(staffObj);
+        showManagerTimesheetHours(record?.staffId || state.activeManagerStaffId, state.activeManagerStaffDate || record?.date);
+      }
+      if (isPayment) {
+        showToast(window.I18N ? window.I18N.t('toast.paymentDeleted') : '¡Pago en efectivo eliminado!');
+      } else if (isService) {
+        showToast(t('toast.serviceDeleted'));
+      } else {
+        showToast(t('toast.timesheetDeleted'));
+      }
     }
   });
 
@@ -9266,6 +10063,81 @@ function setupEventListeners() {
     if (!state.data.timesheets) state.data.timesheets = [];
 
     // =========================================================================
+    // FLUXO DE REGISTRO DE PAGAMENTO EM DINHEIRO (PAGO EN EFECTIVO)
+    // =========================================================================
+    if (recordType === 'payment') {
+      const amountInput = document.getElementById('timesheet-payment-cash-amount');
+      const amountVal = amountInput ? parseFloat(amountInput.value) : 0;
+      if (isNaN(amountVal) || amountVal <= 0) {
+        showToast(window.I18N ? window.I18N.t('toast.enterPaymentAmount') : 'Por favor, introduce el monto pagado en efectivo.');
+        return;
+      }
+
+      const notes = (document.getElementById('timesheet-payment-notes')?.value || '').trim();
+
+      if (editId) {
+        const existing = state.data.timesheets.find(t => t.id === editId);
+        if (existing) {
+          existing.type = 'payment';
+          existing.amount = amountVal;
+          existing.notes = notes;
+          existing.date = dateVal;
+          existing.isPaid = true;
+          existing.staffId = staffId;
+          existing.staffName = staffName;
+          if (staffEmail) existing.staffEmail = staffEmail;
+          if (staffPhoto) existing.staffPhoto = staffPhoto;
+          existing.updatedAt = new Date().toISOString();
+
+          saveData();
+
+          if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+            AirbnbCloudSync.saveDocument('timesheets', existing.id, existing).catch(err => {
+              console.warn('[CloudSync] Falha ao atualizar pagamento no Firestore:', err);
+            });
+          }
+
+          showToast(window.I18N ? window.I18N.t('toast.paymentUpdated') : '¡Pago en efectivo actualizado!');
+        }
+      } else {
+        const newRecord = {
+          id: 'ts_pay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          type: 'payment',
+          amount: amountVal,
+          notes: notes,
+          date: dateVal,
+          isPaid: true,
+          staffId: staffId,
+          staffName: staffName,
+          staffEmail: staffEmail,
+          staffPhoto: staffPhoto,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        state.data.timesheets.push(newRecord);
+        saveData();
+
+        if (window.AirbnbCloudSync && window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+          AirbnbCloudSync.saveDocument('timesheets', newRecord.id, newRecord).catch(err => {
+            console.warn('[CloudSync] Falha ao salvar pagamento no Firestore:', err);
+          });
+        }
+
+        showToast(window.I18N ? window.I18N.t('toast.paymentSaved') : '¡Pago en efectivo guardado con éxito!');
+      }
+
+      document.getElementById('modal-timesheet')?.classList.remove('active');
+      renderTimesheets();
+      if (document.getElementById('modal-manager-timesheet')?.classList.contains('active')) {
+        const staffObj = (state.data.staff || []).find(s => s.id === staffId);
+        if (staffObj) renderManagerStaffSummaryBanner(staffObj);
+        showManagerTimesheetHours(staffId, state.activeManagerStaffDate || dateVal);
+      }
+      return;
+    }
+
+    // =========================================================================
     // FLUXO DE REGISTRO DE SERVIÇO (CHECK-IN)
     // =========================================================================
     if (recordType === 'service') {
@@ -9277,6 +10149,18 @@ function setupEventListeners() {
       const servicePrice = parsedPrice !== null ? parsedPrice : (serviceType === 'checkin' ? TIMESHEET_CHECKIN_RATE : 0);
       const notes = (document.getElementById('timesheet-service-notes')?.value || '').trim();
 
+      const paidAmountRaw = document.getElementById('timesheet-paid-amount-input')?.value;
+      const parsedPaid = (paidAmountRaw !== '' && paidAmountRaw !== null && !isNaN(Number(paidAmountRaw))) ? Math.max(0, Number(paidAmountRaw)) : null;
+      let finalPaidAmount = parsedPaid !== null ? parsedPaid : (isPaid ? servicePrice : 0);
+      let finalIsPaid = isPaid;
+      if (parsedPaid !== null) {
+        finalIsPaid = finalPaidAmount >= (servicePrice - 0.01);
+      } else if (isPaid) {
+        finalPaidAmount = servicePrice;
+      } else {
+        finalPaidAmount = 0;
+      }
+
       if (editId) {
         const existing = state.data.timesheets.find(t => t.id === editId);
         if (existing) {
@@ -9285,8 +10169,9 @@ function setupEventListeners() {
           existing.propertyId = propertyId;
           existing.serviceTime = serviceTime;
           existing.servicePrice = servicePrice;
+          existing.paidAmount = finalPaidAmount;
           existing.date = dateVal;
-          existing.isPaid = isPaid;
+          existing.isPaid = finalIsPaid;
           existing.notes = notes;
           existing.staffId = staffId;
           existing.staffName = staffName;
@@ -9312,8 +10197,9 @@ function setupEventListeners() {
           propertyId: propertyId,
           serviceTime: serviceTime,
           servicePrice: servicePrice,
+          paidAmount: finalPaidAmount,
           date: dateVal,
-          isPaid: isPaid,
+          isPaid: finalIsPaid,
           notes: notes,
           staffId: staffId,
           staffName: staffName,
@@ -9399,6 +10285,18 @@ function setupEventListeners() {
       : null;
 
     const hoursNotes = (document.getElementById('timesheet-hours-notes')?.value || '').trim();
+    const dayGrossAmount = (totalMinutes && totalMinutes > 0) ? (totalMinutes / 60) * TIMESHEET_HOURLY_RATE : 0;
+    const paidAmountRaw = document.getElementById('timesheet-paid-amount-input')?.value;
+    const parsedPaid = (paidAmountRaw !== '' && paidAmountRaw !== null && !isNaN(Number(paidAmountRaw))) ? Math.max(0, Number(paidAmountRaw)) : null;
+    let finalPaidAmount = parsedPaid !== null ? parsedPaid : (isPaid ? dayGrossAmount : 0);
+    let finalIsPaid = isPaid;
+    if (parsedPaid !== null && dayGrossAmount > 0) {
+      finalIsPaid = finalPaidAmount >= (dayGrossAmount - 0.01);
+    } else if (isPaid && dayGrossAmount > 0) {
+      finalPaidAmount = dayGrossAmount;
+    } else if (!isPaid) {
+      finalPaidAmount = 0;
+    }
 
     if (editId) {
       const existing = state.data.timesheets.find(t => t.id === editId);
@@ -9410,7 +10308,8 @@ function setupEventListeners() {
         existing.breakEndTime = breakEnd;
         existing.endTime = end;
         existing.totalMinutes = totalMinutes;
-        existing.isPaid = isPaid;
+        existing.paidAmount = finalPaidAmount;
+        existing.isPaid = finalIsPaid;
         existing.notes = hoursNotes;
         existing.staffId = staffId;
         existing.staffName = staffName;
@@ -9442,7 +10341,8 @@ function setupEventListeners() {
         breakEndTime: breakEnd,
         endTime: end,
         totalMinutes: totalMinutes,
-        isPaid: isPaid,
+        paidAmount: finalPaidAmount,
+        isPaid: finalIsPaid,
         notes: hoursNotes,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -9463,6 +10363,8 @@ function setupEventListeners() {
     document.getElementById('modal-timesheet')?.classList.remove('active');
     renderTimesheets();
     if (document.getElementById('modal-manager-timesheet')?.classList.contains('active')) {
+      const staffObj = (state.data.staff || []).find(s => s.id === staffId);
+      if (staffObj) renderManagerStaffSummaryBanner(staffObj);
       showManagerTimesheetHours(staffId, state.activeManagerStaffDate || dateVal);
     }
   });
