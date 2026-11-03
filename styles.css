@@ -8918,12 +8918,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .timesheet-filter-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #F8FAFC;
-  border: 1px solid var(--border-light, #E2E8F0);
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 12px;
 }
 
 .timesheet-filter-row {
@@ -8931,28 +8930,37 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .timesheet-filter-scroll {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
-  flex: 1 1 auto;
-  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.timesheet-filter-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .timesheet-pill {
-  border: 1px solid transparent;
-  background: #FFFFFF;
+  border: 1px solid var(--border-light, #E2E4E8);
+  background: var(--bg-surface, #FFFFFF);
   color: var(--text-dim, #64748B);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 6px 12px;
+  height: 30px;
+  padding: 0 11px;
   border-radius: var(--radius-full, 9999px);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 3px rgba(11, 13, 17, 0.04);
+  transition: all 0.16s ease;
+  box-shadow: 0 1px 2px rgba(11, 13, 17, 0.03);
   outline: none;
   display: inline-flex;
   align-items: center;
@@ -8960,6 +8968,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   text-align: center;
   white-space: nowrap;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .timesheet-pill:hover {
@@ -9406,4 +9415,71 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .custom-select-wrapper[data-target-id="event-staff-select"] .custom-select-trigger-thumb,
 .custom-select-wrapper[data-target-id="event-staff-select"] .custom-select-option-thumb {
   border-radius: 50% !important;
+}
+
+/* Totalizador de Horas Pendentes da Colaboradora (Staff View) */
+.ts-unpaid-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.ts-unpaid-summary-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ts-unpaid-summary-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ts-unpaid-summary-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted, #6B7280);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.ts-unpaid-summary-sub {
+  font-size: 0.72rem;
+  color: var(--text-dim, #9CA3AF);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ts-unpaid-summary-amount-badge {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--text-main, #0B0D11);
+  background: var(--bg-muted, #F1F3F5);
+  border: 1px solid var(--border-light, #E2E4E8);
+  padding: 4px 10px;
+  border-radius: 8px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ts-unpaid-summary-amount-badge.is-paid {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Oculta seletor redundante de mês em prol da pílula moderna com modal de calendário */
+.timesheet-month-picker-row {
+  display: none !important;
+}
+
+/* Espaçamento de segurança para não ser coberto pela barra de navegação inferior */
+#timesheet-list-container {
+  padding-bottom: 96px;
 }

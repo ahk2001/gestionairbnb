@@ -4286,13 +4286,19 @@ function renderTimesheets() {
     btnAdd.style.display = 'inline-flex';
   }
 
+  // Botão de registrar pagamento visível APENAS para gestor
+  const btnOpenPayment = document.getElementById('btn-open-payment-modal');
+  if (btnOpenPayment) {
+    btnOpenPayment.style.display = isOwner ? 'inline-flex' : 'none';
+  }
+
   // Na visão do gestor o filtro antigo e filtros de horas da equipe são ocultados
   if (filterWrap) {
     filterWrap.style.display = 'none';
   }
   const tsFilterBox = document.getElementById('timesheet-filter-container');
-  if (isOwner && tsFilterBox) {
-    tsFilterBox.style.display = 'none';
+  if (tsFilterBox) {
+    tsFilterBox.style.display = isOwner ? 'none' : 'flex';
   }
 
   // =========================================================================
@@ -4468,6 +4474,7 @@ function renderTimesheets() {
   const staffStats = getStaffTimesheetStats(currentId || matchedStaffId, currentEmail, currentName);
   const unpaidGrandTotal = staffStats.unpaidGrandTotal;
   const isAllPaid = !staffStats.hasUnpaid;
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
 
   const servSingular = window.I18N ? window.I18N.t('timesheet.serviceSingle') : 'serviço';
   const servPlural = window.I18N ? window.I18N.t('timesheet.servicePlural') : 'serviços';
@@ -4476,34 +4483,40 @@ function renderTimesheets() {
   let summarySubTxt = '';
   if (isAllPaid) {
     summarySubTxt = staffStats.paidGrandTotal > 0
-      ? (window.I18N ? window.I18N.t('modalTs.debtCleared') : 'Dívida quitada! Nenhum valor pendente')
-      : (window.I18N ? window.I18N.t('timesheet.noPending') : 'Nenhum valor pendente');
+      ? (isEs ? 'Todo saldado • Sin valores pendientes' : 'Tudo quitado • Sem valores pendentes')
+      : (window.I18N ? window.I18N.t('timesheet.noPending') : (isEs ? 'No tienes pagos pendientes' : 'Nenhum valor pendente'));
   } else {
     if (staffStats.paidGrandTotal > 0) {
-      summarySubTxt = staffStats.unpaidBreakdown;
+      summarySubTxt = isEs
+        ? `Trabajado: ${formatMoney(staffStats.grossGrandTotal)} • Ya pagado: ${formatMoney(staffStats.paidGrandTotal)}`
+        : `Trabalhado: ${formatMoney(staffStats.grossGrandTotal)} • Já pago: ${formatMoney(staffStats.paidGrandTotal)}`;
     } else {
       const parts = [];
-      if (staffStats.unpaidMinutes > 0) parts.push(`${minutesToFormatted(staffStats.unpaidMinutes)} (${formatMoney(staffStats.unpaidHoursTotal)})`);
-      if (staffStats.unpaidServicesCount > 0) parts.push(`${staffStats.unpaidServicesCount} ${servTxt} (${formatMoney(staffStats.unpaidServicesTotal)})`);
-      summarySubTxt = parts.join(' + ') || formatMoney(unpaidGrandTotal);
+      if (staffStats.unpaidMinutes > 0) parts.push(minutesToFormatted(staffStats.unpaidMinutes));
+      if (staffStats.unpaidServicesCount > 0) parts.push(`${staffStats.unpaidServicesCount} ${servTxt}`);
+      summarySubTxt = parts.length > 0
+        ? `${parts.join(' + ')} • ${staffStats.unpaidCount} ${isEs ? 'pendiente(s)' : 'pendente(s)'}`
+        : `${staffStats.unpaidCount} ${isEs ? 'expediente(s) pendiente(s)' : 'expediente(s) pendente(s)'}`;
     }
   }
 
   const summaryTitleTxt = isAllPaid
-    ? (window.I18N ? window.I18N.t('timesheet.allPaid') : 'Todas as Horas Pagas')
-    : (window.I18N ? window.I18N.t('timesheet.toReceive') : 'Total a Receber');
+    ? (window.I18N ? window.I18N.t('timesheet.allPaid') : (isEs ? 'Todas las Horas Pagadas' : 'Todas as Horas Pagas'))
+    : (window.I18N ? window.I18N.t('timesheet.toReceive') : (isEs ? 'Total por Cobrar' : 'Total a Receber'));
 
   const summaryBannerHtml = `
     <div class="ts-unpaid-summary-banner ${isAllPaid ? 'is-all-paid' : ''}">
-      <div class="ts-unpaid-banner-content">
-        <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
-        <div class="ts-unpaid-texts">
-          <span class="ts-unpaid-title">${summaryTitleTxt}</span>
-          <span class="ts-unpaid-sub">${summarySubTxt}</span>
+      <div class="ts-unpaid-summary-top">
+        <div class="ts-unpaid-summary-meta">
+          <div class="ts-unpaid-summary-title-row">
+            <span class="ts-status-dot ${isAllPaid ? 'is-paid' : 'is-unpaid'}"></span>
+            <span class="ts-unpaid-summary-title">${summaryTitleTxt}</span>
+          </div>
+          <div class="ts-unpaid-summary-sub">${summarySubTxt}</div>
         </div>
-      </div>
-      <div class="ts-unpaid-banner-right">
-        <span class="ts-unpaid-hours-badge ${isAllPaid ? 'is-paid' : ''}">${isAllPaid ? (window.I18N ? window.I18N.t('timesheet.allPaidShort') : 'Tudo Pago') : formatMoney(unpaidGrandTotal)}</span>
+        <div class="ts-unpaid-summary-amount-badge ${isAllPaid ? 'is-paid' : ''}">
+          ${isAllPaid ? '€ 0,00' : formatMoney(unpaidGrandTotal)}
+        </div>
       </div>
     </div>
   `;
