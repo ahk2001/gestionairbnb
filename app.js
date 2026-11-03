@@ -89,6 +89,7 @@ const state = {
   timesheetDateFilter: 'todos', // 'todos' | 'hoje' | 'ontem' | 'semana' | 'este_mes' | 'mes_especifico'
   timesheetSelectedMonth: '', // 'YYYY-MM'
   timesheetTypeFilter: 'todos', // 'todos' | 'unpaid' | 'paid' | 'hours' | 'service' | 'payment'
+  timesheetCustomRange: { start: '', end: '' }, // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
   activeManagerStaffId: null, // staffId aberta no popup do gestor
   activeManagerStaffDate: '', // data selecionada no popup do gestor
   managerCalendarYear: new Date().getFullYear(),
@@ -3912,6 +3913,17 @@ function filterTimesheetsList(timesheets) {
       case 'este_mes':
         matchDate = tDate.startsWith(currentYearMonth);
         break;
+      case 'custom_range': {
+        const { start, end } = state.timesheetCustomRange || {};
+        if (start && end) {
+          matchDate = (tDate >= start && tDate <= end);
+        } else if (start) {
+          matchDate = (tDate === start);
+        } else {
+          matchDate = true;
+        }
+        break;
+      }
       case 'mes_especifico':
         matchDate = selectedMonth ? tDate.startsWith(selectedMonth) : true;
         break;
@@ -3980,13 +3992,26 @@ function populateTimesheetMonthSelector(timesheets) {
   select.innerHTML = html;
 }
 
+let _tsCalYear = new Date().getFullYear();
+let _tsCalMonth = new Date().getMonth();
+let _tsRangeStart = null;
+let _tsRangeEnd = null;
+
 function resetTimesheetFilters() {
   state.timesheetDateFilter = 'todos';
   state.timesheetSelectedMonth = '';
   state.timesheetTypeFilter = 'todos';
+  state.timesheetCustomRange = { start: '', end: '' };
+  _tsRangeStart = null;
+  _tsRangeEnd = null;
 
   const mSelect = document.getElementById('timesheet-month-select');
   if (mSelect) mSelect.value = '';
+
+  const rangeLabel = document.getElementById('ts-custom-range-pill-label');
+  if (rangeLabel) {
+    rangeLabel.textContent = window.I18N ? window.I18N.t('timesheet.filterCustomRange') : 'Período...';
+  }
 
   document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.tsDateFilter === 'todos');
@@ -3994,6 +4019,245 @@ function resetTimesheetFilters() {
   document.querySelectorAll('#timesheet-type-filters .timesheet-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.tsTypeFilter === 'todos');
   });
+}
+
+function openTimesheetCalendarModal() {
+  const modal = document.getElementById('modal-timesheet-calendar-range');
+  if (!modal) return;
+
+  if (state.timesheetCustomRange?.start) {
+    _tsRangeStart = state.timesheetCustomRange.start;
+    _tsRangeEnd = state.timesheetCustomRange.end || state.timesheetCustomRange.start;
+    const parts = _tsRangeStart.split('-');
+    if (parts.length === 3) {
+      _tsCalYear = parseInt(parts[0], 10);
+      _tsCalMonth = parseInt(parts[1], 10) - 1;
+    }
+  } else {
+    _tsRangeStart = null;
+    _tsRangeEnd = null;
+    const now = new Date();
+    _tsCalYear = now.getFullYear();
+    _tsCalMonth = now.getMonth();
+  }
+
+  updateTimesheetCalendarPreview();
+  renderTimesheetCalendarGrid();
+  modal.classList.add('active');
+}
+
+function closeTimesheetCalendarModal() {
+  document.getElementById('modal-timesheet-calendar-range')?.classList.remove('active');
+}
+
+function updateTimesheetCalendarPreview() {
+  const startEl = document.getElementById('ts-cal-val-start');
+  const endEl = document.getElementById('ts-cal-val-end');
+  if (startEl) {
+    startEl.textContent = _tsRangeStart ? formatTimesheetDateNoYear(_tsRangeStart) : '--/--/----';
+  }
+  if (endEl) {
+    endEl.textContent = _tsRangeEnd ? formatTimesheetDateNoYear(_tsRangeEnd) : (_tsRangeStart ? formatTimesheetDateNoYear(_tsRangeStart) : '--/--/----');
+  }
+
+  document.querySelectorAll('.ts-cal-preset-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+}
+
+function renderTimesheetCalendarGrid() {
+  const titleEl = document.getElementById('ts-cal-month-title');
+  const weekdaysEl = document.getElementById('ts-cal-weekdays');
+  const gridEl = document.getElementById('ts-cal-days-grid');
+  if (!gridEl) return;
+
+  const isEs = (window.I18N ? window.I18N.getLanguage() : 'es') === 'es';
+  const monthNamesEs = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const monthNamesPt = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const monthNames = isEs ? monthNamesEs : monthNamesPt;
+
+  if (titleEl) {
+    titleEl.textContent = `${monthNames[_tsCalMonth]} ${_tsCalYear}`;
+  }
+
+  if (weekdaysEl) {
+    weekdaysEl.innerHTML = isEs
+      ? '<span>DOM</span><span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span>'
+      : '<span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span>';
+  }
+
+  const staffRecordsDates = new Set();
+  (state.data.timesheets || []).forEach(t => {
+    if (t.date) staffRecordsDates.add(t.date);
+  });
+
+  const todayIso = new Date().toISOString().split('T')[0];
+  const firstDayIndex = new Date(_tsCalYear, _tsCalMonth, 1).getDay();
+  const daysInMonth = new Date(_tsCalYear, _tsCalMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(_tsCalYear, _tsCalMonth, 0).getDate();
+
+  let daysHtml = '';
+
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const prevDay = daysInPrevMonth - i;
+    daysHtml += `
+      <div class="ts-cal-day-cell">
+        <button type="button" class="ts-cal-day-btn is-other-month" tabindex="-1">${prevDay}</button>
+      </div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dPad = String(d).padStart(2, '0');
+    const mPad = String(_tsCalMonth + 1).padStart(2, '0');
+    const isoDate = `${_tsCalYear}-${mPad}-${dPad}`;
+
+    const isToday = (isoDate === todayIso);
+    const hasRecords = staffRecordsDates.has(isoDate);
+
+    let cellClass = 'ts-cal-day-cell';
+    let btnClass = 'ts-cal-day-btn';
+
+    if (isToday) btnClass += ' is-today';
+    if (hasRecords) btnClass += ' has-records';
+
+    if (_tsRangeStart && _tsRangeEnd) {
+      if (isoDate === _tsRangeStart && isoDate === _tsRangeEnd) {
+        btnClass += ' selected';
+      } else if (isoDate === _tsRangeStart) {
+        cellClass += ' is-range-start';
+        btnClass += ' selected';
+      } else if (isoDate === _tsRangeEnd) {
+        cellClass += ' is-range-end';
+        btnClass += ' selected';
+      } else if (isoDate > _tsRangeStart && isoDate < _tsRangeEnd) {
+        cellClass += ' in-range';
+      }
+    } else if (_tsRangeStart && isoDate === _tsRangeStart) {
+      btnClass += ' selected';
+    }
+
+    daysHtml += `
+      <div class="${cellClass}">
+        <button type="button" class="${btnClass}" data-date="${isoDate}">
+          ${d}
+        </button>
+      </div>`;
+  }
+
+  const totalSlots = firstDayIndex + daysInMonth;
+  const remaining = totalSlots <= 35 ? 35 - totalSlots : 42 - totalSlots;
+  for (let n = 1; n <= remaining; n++) {
+    daysHtml += `
+      <div class="ts-cal-day-cell">
+        <button type="button" class="ts-cal-day-btn is-other-month" tabindex="-1">${n}</button>
+      </div>`;
+  }
+
+  gridEl.innerHTML = daysHtml;
+
+  gridEl.querySelectorAll('.ts-cal-day-btn:not(.is-other-month)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const clickedDate = btn.dataset.date;
+      if (!clickedDate) return;
+
+      if (_tsRangeStart && _tsRangeEnd) {
+        _tsRangeStart = clickedDate;
+        _tsRangeEnd = null;
+      } else if (_tsRangeStart && !_tsRangeEnd) {
+        if (clickedDate < _tsRangeStart) {
+          _tsRangeEnd = _tsRangeStart;
+          _tsRangeStart = clickedDate;
+        } else {
+          _tsRangeEnd = clickedDate;
+        }
+      } else {
+        _tsRangeStart = clickedDate;
+        _tsRangeEnd = null;
+      }
+
+      updateTimesheetCalendarPreview();
+      renderTimesheetCalendarGrid();
+    });
+  });
+}
+
+function applyTimesheetCalendarPreset(preset) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
+  let start = '';
+  let end = todayStr;
+
+  switch (preset) {
+    case 'last7': {
+      const d = new Date();
+      d.setDate(d.getDate() - 6);
+      start = d.toISOString().split('T')[0];
+      break;
+    }
+    case 'last15': {
+      const d = new Date();
+      d.setDate(d.getDate() - 14);
+      start = d.toISOString().split('T')[0];
+      break;
+    }
+    case 'thisMonth': {
+      start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      break;
+    }
+    case 'lastMonth': {
+      const prevM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDayPrevM = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+      start = `${prevM.getFullYear()}-${String(prevM.getMonth() + 1).padStart(2, '0')}-01`;
+      end = `${prevM.getFullYear()}-${String(prevM.getMonth() + 1).padStart(2, '0')}-${String(lastDayPrevM).padStart(2, '0')}`;
+      break;
+    }
+    default:
+      return;
+  }
+
+  _tsRangeStart = start;
+  _tsRangeEnd = end;
+
+  const parts = start.split('-');
+  _tsCalYear = parseInt(parts[0], 10);
+  _tsCalMonth = parseInt(parts[1], 10) - 1;
+
+  updateTimesheetCalendarPreview();
+  renderTimesheetCalendarGrid();
+
+  document.querySelectorAll('.ts-cal-preset-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tsRangePreset === preset);
+  });
+}
+
+function applyTimesheetCalendarRange() {
+  if (!_tsRangeStart) {
+    const today = new Date().toISOString().split('T')[0];
+    _tsRangeStart = today;
+    _tsRangeEnd = today;
+  } else if (!_tsRangeEnd) {
+    _tsRangeEnd = _tsRangeStart;
+  }
+
+  state.timesheetDateFilter = 'custom_range';
+  state.timesheetCustomRange = { start: _tsRangeStart, end: _tsRangeEnd };
+  state.timesheetSelectedMonth = '';
+  const mSelect = document.getElementById('timesheet-month-select');
+  if (mSelect) mSelect.value = '';
+
+  closeTimesheetCalendarModal();
+  renderTimesheets();
+}
+
+function clearTimesheetCalendarRange() {
+  _tsRangeStart = null;
+  _tsRangeEnd = null;
+  state.timesheetCustomRange = { start: '', end: '' };
+  state.timesheetDateFilter = 'todos';
+
+  closeTimesheetCalendarModal();
+  renderTimesheets();
 }
 
 function renderTimesheets() {
@@ -4255,8 +4519,27 @@ function renderTimesheets() {
 
   // Sincroniza estado visual das pílulas de filtro
   document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => {
-    p.classList.toggle('active', p.dataset.tsDateFilter === state.timesheetDateFilter && !state.timesheetSelectedMonth);
+    if (p.id === 'btn-timesheet-open-calendar') {
+      p.classList.toggle('active', state.timesheetDateFilter === 'custom_range');
+    } else {
+      p.classList.toggle('active', p.dataset.tsDateFilter === state.timesheetDateFilter && !state.timesheetSelectedMonth);
+    }
   });
+
+  const rangePillLabel = document.getElementById('ts-custom-range-pill-label');
+  if (rangePillLabel) {
+    if (state.timesheetDateFilter === 'custom_range' && state.timesheetCustomRange?.start) {
+      const sStr = formatTimesheetDateNoYear(state.timesheetCustomRange.start);
+      if (state.timesheetCustomRange.end && state.timesheetCustomRange.end !== state.timesheetCustomRange.start) {
+        const eStr = formatTimesheetDateNoYear(state.timesheetCustomRange.end);
+        rangePillLabel.textContent = `${sStr} - ${eStr}`;
+      } else {
+        rangePillLabel.textContent = sStr;
+      }
+    } else {
+      rangePillLabel.textContent = window.I18N ? window.I18N.t('timesheet.filterCustomRange') : 'Período...';
+    }
+  }
   document.querySelectorAll('#timesheet-type-filters .timesheet-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.tsTypeFilter === state.timesheetTypeFilter);
   });
@@ -4270,9 +4553,18 @@ function renderTimesheets() {
   if (infoBar && infoText) {
     if (isFiltered) {
       infoBar.style.display = 'flex';
-      const countTxt = window.I18N
-        ? window.I18N.t('timesheet.filterShowing', { count: filteredTimesheets.length, total: timesheets.length })
-        : `Mostrando ${filteredTimesheets.length} de ${timesheets.length} registros`;
+      let countTxt = '';
+      if (state.timesheetDateFilter === 'custom_range' && state.timesheetCustomRange?.start) {
+        const sFmt = formatTimesheetDate(state.timesheetCustomRange.start);
+        const eFmt = state.timesheetCustomRange.end ? formatTimesheetDate(state.timesheetCustomRange.end) : sFmt;
+        countTxt = window.I18N
+          ? window.I18N.t('timesheet.filterShowingRange', { count: filteredTimesheets.length, total: timesheets.length, start: sFmt, end: eFmt })
+          : `Mostrando ${filteredTimesheets.length} de ${timesheets.length} registros (${sFmt} até ${eFmt})`;
+      } else {
+        countTxt = window.I18N
+          ? window.I18N.t('timesheet.filterShowing', { count: filteredTimesheets.length, total: timesheets.length })
+          : `Mostrando ${filteredTimesheets.length} de ${timesheets.length} registros`;
+      }
       infoText.textContent = countTxt;
     } else {
       infoBar.style.display = 'none';
@@ -9876,14 +10168,64 @@ function setupEventListeners() {
   // Listeners de Filtro de Horas Trabalhadas (Período e Tipo)
   document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(pill => {
     pill.addEventListener('click', () => {
+      if (pill.id === 'btn-timesheet-open-calendar') {
+        openTimesheetCalendarModal();
+        return;
+      }
       document.querySelectorAll('#timesheet-date-filters .timesheet-pill').forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       state.timesheetDateFilter = pill.dataset.tsDateFilter || 'todos';
       state.timesheetSelectedMonth = '';
+      state.timesheetCustomRange = { start: '', end: '' };
       const mSelect = document.getElementById('timesheet-month-select');
       if (mSelect) mSelect.value = '';
       renderTimesheets();
     });
+  });
+
+  // Listeners do Modal de Calendário de Período Customizado (Timesheet)
+  document.getElementById('btn-close-ts-cal-modal')?.addEventListener('click', closeTimesheetCalendarModal);
+  document.getElementById('modal-timesheet-calendar-range')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-timesheet-calendar-range') {
+      closeTimesheetCalendarModal();
+    }
+  });
+
+  document.getElementById('btn-ts-cal-prev')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _tsCalMonth--;
+    if (_tsCalMonth < 0) {
+      _tsCalMonth = 11;
+      _tsCalYear--;
+    }
+    renderTimesheetCalendarGrid();
+  });
+
+  document.getElementById('btn-ts-cal-next')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _tsCalMonth++;
+    if (_tsCalMonth > 11) {
+      _tsCalMonth = 0;
+      _tsCalYear++;
+    }
+    renderTimesheetCalendarGrid();
+  });
+
+  document.querySelectorAll('.ts-cal-preset-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyTimesheetCalendarPreset(btn.dataset.tsRangePreset);
+    });
+  });
+
+  document.getElementById('btn-ts-cal-clear-selection')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearTimesheetCalendarRange();
+  });
+
+  document.getElementById('btn-ts-cal-apply-range')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    applyTimesheetCalendarRange();
   });
 
   document.getElementById('timesheet-month-select')?.addEventListener('change', (e) => {
